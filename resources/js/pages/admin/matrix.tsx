@@ -36,7 +36,7 @@ export default function MatrixIndex({ editors, clients, accesses }: Props) {
     return (
         <>
             <Head title="Matriz de accesos" />
-            <div className="mx-auto max-w-5xl px-4 py-6 space-y-5">
+            <div className="px-4 py-6 space-y-5">
                 <div>
                     <h1 className="text-2xl font-bold text-zinc-100">Matriz de accesos</h1>
                     <p className="text-zinc-400 text-sm mt-0.5">Controlá qué editores pueden ver cada cliente. Hacé clic en una celda para otorgar o revocar acceso.</p>

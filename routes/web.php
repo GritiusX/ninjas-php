@@ -18,6 +18,15 @@ Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
+Route::middleware('auth')->get('/dashboard', function () {
+    return match (auth()->user()->role) {
+        'admin' => redirect()->route('admin.users.index'),
+        'pm' => redirect()->route('pm.dashboard'),
+        'editor' => redirect()->route('editor.dashboard'),
+        default => redirect()->route('home'),
+    };
+})->name('dashboard');
+
 // --- Editor ---
 Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->group(function () {
     Route::get('/', [EditorController::class, 'dashboard'])->name('dashboard');
