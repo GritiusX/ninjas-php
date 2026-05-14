@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             TemporaryAccessSeeder::class,
             ContentPieceSeeder::class,
             AdMetricSeeder::class,
+            NotificationSeeder::class,
         ]);
     }
 }

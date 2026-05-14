@@ -11,6 +11,8 @@ class AppNotification extends Model
 
     protected $table = 'notifications';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'user_id',
         'type',
@@ -18,6 +20,7 @@ class AppNotification extends Model
         'body',
         'link',
         'read_at',
+        'created_at',
     ];
 
     protected function casts(): array
