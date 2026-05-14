@@ -36,6 +36,9 @@ class AdsController extends Controller
                 $roas = (float) $row->roas_periodo;
                 $goal = (float) $row->roas_goal;
 
+                $row->roas_periodo = $roas;
+                $row->roas_goal    = $goal;
+
                 $row->semaforo = match (true) {
                     $roas >= $goal          => 'green',
                     $roas >= $goal * 0.8    => 'yellow',

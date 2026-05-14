@@ -160,7 +160,7 @@ function NewBriefModal({
         raw_material_link: '',
         priority: '3',
         deadline: '',
-        editor_id: '',
+        editor_id: 'none',
         is_scheduled: false,
     });
 
@@ -171,6 +171,7 @@ function NewBriefModal({
                 reset();
                 onClose();
             },
+            transform: (d) => ({ ...d, editor_id: d.editor_id === 'none' ? '' : d.editor_id }),
         });
     }
 
@@ -325,7 +326,7 @@ function NewBriefModal({
                                     <SelectValue placeholder="Sin asignar" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">
+                                    <SelectItem value="none">
                                         Sin asignar
                                     </SelectItem>
                                     {editors.map((e) => (
