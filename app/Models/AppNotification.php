@@ -11,8 +11,6 @@ class AppNotification extends Model
 
     protected $table = 'notifications';
 
-    public $timestamps = false;
-
     protected $fillable = [
         'user_id',
         'type',
