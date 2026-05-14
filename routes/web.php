@@ -30,6 +30,7 @@ Route::middleware('auth')->get('/dashboard', function () {
 // --- Editor ---
 Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->group(function () {
     Route::get('/', [EditorController::class, 'dashboard'])->name('dashboard');
+    Route::get('/task/{piece}', [EditorController::class, 'task'])->name('task');
     Route::post('/submit-video/{piece}', [EditorController::class, 'submitVideo'])->name('submit-video');
 });
 

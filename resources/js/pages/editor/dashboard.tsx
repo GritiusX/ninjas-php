@@ -1,14 +1,9 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, Clock, ExternalLink, Film, Send } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { AlertCircle, CheckCircle2, ChevronRight, Clock, ExternalLink } from 'lucide-react';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
 import * as editorRoutes from '@/routes/editor';
 import type { Auth, ContentPiece } from '@/types';
 
@@ -36,80 +31,19 @@ function formatDeadline(deadline: string | null) {
     return { label: `${diffDays}d`, urgent: false };
 };
 
-function SubmitVideoModal({
-    piece,
-    open,
-    onClose,
-}: {
-    piece: ContentPiece;
-    open: boolean;
-    onClose: () => void;
-}) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        final_video_link: piece.final_video_link ?? '',
-    });
-
-    function submit(e: React.FormEvent) {
-        e.preventDefault();
-        post(editorRoutes.submitVideo.url(piece.id), {
-            onSuccess: () => {
-                reset();
-                onClose();
-            },
-        });
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Subir link del video</DialogTitle>
-                </DialogHeader>
-                <div className="py-1">
-                    <p className="text-sm text-muted-foreground mb-4">
-                        <span className="font-medium text-foreground">{piece.client?.name}</span>
-                        {piece.concept && <> — {piece.concept}</>}
-                    </p>
-                    <form id="submit-video-form" onSubmit={submit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="video-link">Link de Google Drive</Label>
-                            <Input
-                                id="video-link"
-                                type="url"
-                                placeholder="https://drive.google.com/file/d/..."
-                                value={data.final_video_link}
-                                onChange={(e) => setData('final_video_link', e.target.value)}
-                                autoFocus
-                            />
-                            {errors.final_video_link && (
-                                <p className="text-sm text-destructive">{errors.final_video_link}</p>
-                            )}
-                        </div>
-                    </form>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose} disabled={processing}>
-                        Cancelar
-                    </Button>
-                    <Button type="submit" form="submit-video-form" disabled={processing}>
-                        <Send className="mr-2 h-4 w-4" />
-                        {processing ? 'Enviando...' : 'Enviar para revisión'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-function PieceCard({ piece }: { piece: ContentPiece }) {
-    const [modalOpen, setModalOpen] = useState(false);
+function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolean }) {
     const deadline = formatDeadline(piece.deadline);
-    const canSubmit = piece.status === 'EDITING' || piece.status === 'REVISION';
 
     return (
         <>
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className={`bg-zinc-900 ${isActive ? 'border-blue-500/60' : 'border-zinc-800'}`}>
                 <CardContent className="p-4">
+                    {isActive && (
+                        <div className="flex items-center gap-1.5 mb-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                            <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">Tarea activa</span>
+                        </div>
+                    )}
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -159,27 +93,15 @@ function PieceCard({ piece }: { piece: ContentPiece }) {
                             )}
                         </div>
 
-                        {canSubmit && (
-                            <Button
-                                size="sm"
-                                onClick={() => setModalOpen(true)}
-                                className="shrink-0"
-                            >
-                                <Film className="mr-1.5 h-3.5 w-3.5" />
-                                {piece.final_video_link ? 'Actualizar' : 'Subir video'}
+                        <Link href={editorRoutes.task.url(piece.id)} className="shrink-0">
+                            <Button size="sm" variant={isActive ? 'default' : 'outline'}>
+                                Abrir tarea
+                                <ChevronRight className="ml-1 h-3.5 w-3.5" />
                             </Button>
-                        )}
+                        </Link>
                     </div>
                 </CardContent>
             </Card>
-
-            {modalOpen && (
-                <SubmitVideoModal
-                    piece={piece}
-                    open={modalOpen}
-                    onClose={() => setModalOpen(false)}
-                />
-            )}
         </>
     );
 }
@@ -232,8 +154,8 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
                             Para trabajar ({pending.length})
                         </h2>
-                        {pending.map((piece) => (
-                            <PieceCard key={piece.id} piece={piece} />
+                        {pending.map((piece, i) => (
+                            <PieceCard key={piece.id} piece={piece} isActive={i === 0} />
                         ))}
                     </section>
                 )}

@@ -45,6 +45,21 @@ class EditorController extends Controller
         ]);
     }
 
+    public function task(Request $request, ContentPiece $piece): Response
+    {
+        $user = $request->user();
+
+        if ($piece->assigned_editor_id !== $user->id) {
+            abort(403);
+        }
+
+        $piece->load('client');
+
+        return Inertia::render('editor/task', [
+            'piece' => $piece,
+        ]);
+    }
+
     public function submitVideo(Request $request, ContentPiece $piece): RedirectResponse
     {
         $this->authorize('access-client', $piece->client_id);

@@ -157,6 +157,7 @@ function NewBriefModal({
         development: '',
         cta: '',
         brief_notes: '',
+        raw_material_link: '',
         priority: '3',
         deadline: '',
         editor_id: '',
@@ -340,10 +341,9 @@ function NewBriefModal({
                         </div>
                     </div>
 
-                    {field('Notas para el editor', 'brief_notes', {
-                        textarea: true,
-                        placeholder: 'Instrucciones adicionales...',
-                    })}
+                    {field('Material de referencia (link)', 'raw_material_link', { type: 'url', placeholder: 'https://drive.google.com/...' })}
+
+                    {field('Notas para el editor', 'brief_notes', { textarea: true, placeholder: 'Instrucciones adicionales...' })}
                 </form>
 
                 <DialogFooter>
