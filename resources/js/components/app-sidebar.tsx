@@ -50,7 +50,6 @@ function useNavItems(): NavItem[] {
             { title: 'Usuarios', href: adminUserRoutes.index(), icon: Users },
             { title: 'Clientes', href: adminClientRoutes.index(), icon: Film },
             { title: 'Accesos / Matriz', href: adminRoutes.matrix(), icon: Shield },
-            { title: 'Auditoría', href: adminRoutes.audit(), icon: Settings },
         );
     }
 
