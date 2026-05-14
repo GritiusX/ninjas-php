@@ -10,27 +10,24 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::create([
+        User::firstOrCreate(['email' => 'admin@littleninjas.com.ar'], [
             'name' => 'Admin',
-            'email' => 'admin@littleninjas.com.ar',
             'password' => Hash::make('ninja123'),
             'role' => 'admin',
             'is_active' => true,
             'email_verified_at' => now(),
         ]);
 
-        User::create([
+        User::firstOrCreate(['email' => 'pm@littleninjas.com.ar'], [
             'name' => 'PM Ninja',
-            'email' => 'pm@littleninjas.com.ar',
             'password' => Hash::make('ninja123'),
             'role' => 'pm',
             'is_active' => true,
             'email_verified_at' => now(),
         ]);
 
-        User::create([
+        User::firstOrCreate(['email' => 'ana@littleninjas.com.ar'], [
             'name' => 'Ana Editora',
-            'email' => 'ana@littleninjas.com.ar',
             'password' => Hash::make('ninja123'),
             'role' => 'editor',
             'is_active' => true,

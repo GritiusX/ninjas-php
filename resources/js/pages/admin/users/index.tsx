@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+﻿import { Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2, UserCheck, UserX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ type User = {
 const ROLE_BADGE: Record<string, string> = {
     admin: 'bg-purple-600/20 text-purple-300 border-purple-600/30',
     pm: 'bg-blue-600/20 text-blue-300 border-blue-600/30',
-    editor: 'bg-zinc-600/20 text-zinc-300 border-zinc-600/30',
+    editor: 'bg-secondary text-secondary-foreground border-border',
 };
 
 export default function UsersIndex({ users }: { users: User[] }) {
@@ -33,7 +33,7 @@ export default function UsersIndex({ users }: { users: User[] }) {
             <Head title="Usuarios" />
             <div className="space-y-5 px-4 py-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-zinc-100">
+                    <h1 className="text-2xl font-bold text-foreground">
                         Usuarios
                     </h1>
                     <Link href={userRoutes.create()}>
@@ -44,11 +44,11 @@ export default function UsersIndex({ users }: { users: User[] }) {
                     </Link>
                 </div>
 
-                <Card className="border-zinc-800 bg-zinc-900">
+                <Card className="border-border bg-card">
                     <CardContent className="p-0">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-zinc-800 text-xs tracking-wider text-zinc-400 uppercase">
+                                <tr className="border-b border-border text-xs tracking-wider text-muted-foreground uppercase">
                                     <th className="px-4 py-3 text-left">
                                         Nombre
                                     </th>
@@ -69,12 +69,12 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                 {users.map((u) => (
                                     <tr
                                         key={u.id}
-                                        className="transition-colors hover:bg-zinc-800/40"
+                                        className="transition-colors hover:bg-muted/40"
                                     >
-                                        <td className="px-4 py-3 font-medium text-zinc-200">
+                                        <td className="px-4 py-3 font-medium text-foreground">
                                             {u.name}
                                         </td>
-                                        <td className="px-4 py-3 text-zinc-400">
+                                        <td className="px-4 py-3 text-muted-foreground">
                                             {u.email}
                                         </td>
                                         <td className="px-4 py-3">
@@ -91,13 +91,13 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                                     Activo
                                                 </span>
                                             ) : (
-                                                <span className="flex items-center gap-1 text-xs text-zinc-500">
+                                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                                     <UserX className="h-3.5 w-3.5" />{' '}
                                                     Inactivo
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-zinc-400">
+                                        <td className="px-4 py-3 text-xs text-muted-foreground">
                                             {u.whatsapp_number ?? '—'}
                                         </td>
                                         <td className="px-4 py-3">
@@ -110,7 +110,7 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-200"
+                                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                                                     >
                                                         <Pencil className="h-3.5 w-3.5" />
                                                     </Button>
@@ -118,7 +118,7 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-7 w-7 p-0 text-zinc-600 hover:text-red-400"
+                                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
                                                     onClick={() =>
                                                         destroy(u.id, u.name)
                                                     }
@@ -132,7 +132,7 @@ export default function UsersIndex({ users }: { users: User[] }) {
                             </tbody>
                         </table>
                         {users.length === 0 && (
-                            <p className="py-10 text-center text-zinc-500">
+                            <p className="py-10 text-center text-muted-foreground">
                                 No hay usuarios.
                             </p>
                         )}

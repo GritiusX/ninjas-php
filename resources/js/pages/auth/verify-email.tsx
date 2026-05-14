@@ -1,4 +1,4 @@
-// Components
+﻿// Components
 import { Form, Head } from '@inertiajs/react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';

@@ -12,6 +12,10 @@ class ContentPieceSeeder extends Seeder
     {
         $ana = User::where('email', 'ana@littleninjas.com.ar')->first();
 
+        if (ContentPiece::count() > 0) {
+            return;
+        }
+
         // Pieza 1: Café Gourmet BA — Editor Ana — EDITING — prioridad crítica — deadline mañana
         ContentPiece::create([
             'client_id' => 1,

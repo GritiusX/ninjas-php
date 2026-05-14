@@ -45,7 +45,7 @@ class AdsController extends Controller
                 return $row;
             });
 
-        return Inertia::render('ads/index', [
+        return Inertia::render('metrics/index', [
             'metrics' => $metrics,
             'filters' => ['from' => $dateFrom, 'to' => $dateTo],
         ]);

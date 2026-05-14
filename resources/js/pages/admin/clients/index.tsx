@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+﻿import { Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,7 +21,7 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
             <Head title="Clientes" />
             <div className="space-y-5 px-4 py-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-zinc-100">
+                    <h1 className="text-2xl font-bold text-foreground">
                         Clientes
                     </h1>
                     <Link href={clientRoutes.create()}>
@@ -32,11 +32,11 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                     </Link>
                 </div>
 
-                <Card className="border-zinc-800 bg-zinc-900">
+                <Card className="border-border bg-card">
                     <CardContent className="p-0">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-zinc-800 text-xs tracking-wider text-zinc-400 uppercase">
+                                <tr className="border-b border-border text-xs tracking-wider text-muted-foreground uppercase">
                                     <th className="px-4 py-3 text-left">
                                         Cliente
                                     </th>
@@ -56,12 +56,12 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                                 {clients.map((c) => (
                                     <tr
                                         key={c.id}
-                                        className="transition-colors hover:bg-zinc-800/40"
+                                        className="transition-colors hover:bg-muted/40"
                                     >
-                                        <td className="px-4 py-3 font-medium text-zinc-200">
+                                        <td className="px-4 py-3 font-medium text-foreground">
                                             {c.name}
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-zinc-400">
+                                        <td className="px-4 py-3 text-xs text-muted-foreground">
                                             {c.whatsapp_number ?? '—'}
                                         </td>
                                         <td className="px-4 py-3">
@@ -69,7 +69,7 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                                                 {Number(c.roas_goal).toFixed(2)}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 font-mono text-xs text-zinc-500">
+                                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                                             {c.meta_ad_account_id ?? '—'}
                                         </td>
                                         <td className="px-4 py-3">
@@ -82,7 +82,7 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-200"
+                                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                                                     >
                                                         <Pencil className="h-3.5 w-3.5" />
                                                     </Button>
@@ -90,7 +90,7 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-7 w-7 p-0 text-zinc-600 hover:text-red-400"
+                                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
                                                     onClick={() =>
                                                         destroy(c.id, c.name)
                                                     }
@@ -104,7 +104,7 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                             </tbody>
                         </table>
                         {clients.length === 0 && (
-                            <p className="py-10 text-center text-zinc-500">
+                            <p className="py-10 text-center text-muted-foreground">
                                 No hay clientes.
                             </p>
                         )}

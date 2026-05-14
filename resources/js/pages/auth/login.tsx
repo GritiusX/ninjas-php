@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+﻿import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';

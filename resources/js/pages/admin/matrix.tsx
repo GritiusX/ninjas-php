@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+﻿import { Head, router, useForm } from '@inertiajs/react';
 import { Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,20 +38,20 @@ export default function MatrixIndex({ editors, clients, accesses }: Props) {
             <Head title="Matriz de accesos" />
             <div className="px-4 py-6 space-y-5">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-100">Matriz de accesos</h1>
-                    <p className="text-zinc-400 text-sm mt-0.5">Controlá qué editores pueden ver cada cliente. Hacé clic en una celda para otorgar o revocar acceso.</p>
+                    <h1 className="text-2xl font-bold text-foreground">Matriz de accesos</h1>
+                    <p className="text-muted-foreground text-sm mt-0.5">Controlá qué editores pueden ver cada cliente. Hacé clic en una celda para otorgar o revocar acceso.</p>
                 </div>
 
-                <Card className="bg-zinc-900 border-zinc-800 overflow-x-auto">
+                <Card className="bg-card border-border overflow-x-auto">
                     <CardContent className="p-0">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-zinc-800">
-                                    <th className="text-left px-4 py-3 text-zinc-400 text-xs uppercase tracking-wider min-w-[140px]">
+                                <tr className="border-b border-border">
+                                    <th className="text-left px-4 py-3 text-muted-foreground text-xs uppercase tracking-wider min-w-[140px]">
                                         Editor
                                     </th>
                                     {clients.map((c) => (
-                                        <th key={c.id} className="px-3 py-3 text-xs text-zinc-400 uppercase tracking-wider text-center min-w-[110px]">
+                                        <th key={c.id} className="px-3 py-3 text-xs text-muted-foreground uppercase tracking-wider text-center min-w-[110px]">
                                             {c.name}
                                         </th>
                                     ))}
@@ -59,8 +59,8 @@ export default function MatrixIndex({ editors, clients, accesses }: Props) {
                             </thead>
                             <tbody className="divide-y divide-zinc-800">
                                 {editors.map((editor) => (
-                                    <tr key={editor.id} className="hover:bg-zinc-800/30 transition-colors">
-                                        <td className="px-4 py-3 font-medium text-zinc-200">{editor.name}</td>
+                                    <tr key={editor.id} className="hover:bg-muted/30 transition-colors">
+                                        <td className="px-4 py-3 font-medium text-foreground">{editor.name}</td>
                                         {clients.map((client) => {
                                             const access = hasAccess(editor.id, client.id);
                                             return (
@@ -70,7 +70,7 @@ export default function MatrixIndex({ editors, clients, accesses }: Props) {
                                                         className={`inline-flex items-center justify-center h-8 w-8 rounded-md border transition-all ${
                                                             access
                                                                 ? 'bg-green-600/20 border-green-600/50 text-green-400 hover:bg-red-600/20 hover:border-red-600/50 hover:text-red-400'
-                                                                : 'bg-zinc-800 border-zinc-700 text-zinc-600 hover:bg-green-600/20 hover:border-green-600/50 hover:text-green-400'
+                                                                : 'bg-muted border-border text-muted-foreground hover:bg-green-600/20 hover:border-green-600/50 hover:text-green-400'
                                                         }`}
                                                         title={access ? 'Revocar acceso' : 'Dar acceso'}
                                                     >
@@ -84,12 +84,12 @@ export default function MatrixIndex({ editors, clients, accesses }: Props) {
                             </tbody>
                         </table>
                         {editors.length === 0 && (
-                            <p className="text-center text-zinc-500 py-10">No hay editores activos.</p>
+                            <p className="text-center text-muted-foreground py-10">No hay editores activos.</p>
                         )}
                     </CardContent>
                 </Card>
 
-                <p className="text-xs text-zinc-600">
+                <p className="text-xs text-muted-foreground">
                     Los accesos sin fecha de vencimiento son permanentes. Para accesos temporales, usá la sección de Accesos.
                 </p>
             </div>

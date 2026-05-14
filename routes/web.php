@@ -52,8 +52,8 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::post('/review/{piece}/approve-client', [ReviewController::class, 'approveClientRevision'])->name('review.approve-client');
 });
 
-// --- Panel de Ads (PM + Admin) ---
-Route::middleware(['auth', 'role:pm'])->get('/ads', [AdsController::class, 'index'])->name('ads.index');
+// --- Panel de Métricas (PM + Admin) ---
+Route::middleware(['auth', 'role:pm'])->get('/metrics', [AdsController::class, 'index'])->name('metrics.index');
 
 // --- Notificaciones (todos los roles) ---
 Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {

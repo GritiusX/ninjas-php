@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+﻿import { Badge } from '@/components/ui/badge';
 import type { ContentStatus } from '@/types';
 
 const STATUS_CONFIG: Record<ContentStatus, { label: string; className: string }> = {

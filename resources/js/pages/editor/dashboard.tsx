@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+﻿import { Head, Link, usePage } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, ChevronRight, Clock, ExternalLink } from 'lucide-react';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
@@ -36,7 +36,7 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
 
     return (
         <>
-            <Card className={`bg-zinc-900 ${isActive ? 'border-blue-500/60' : 'border-zinc-800'}`}>
+            <Card className={`bg-card ${isActive ? 'border-blue-500/60' : 'border-border'}`}>
                 <CardContent className="p-4">
                     {isActive && (
                         <div className="flex items-center gap-1.5 mb-2">
@@ -47,36 +47,36 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                                     {piece.client?.name}
                                 </span>
                                 <StatusBadge status={piece.status} />
                                 <PriorityBadge priority={piece.priority} />
                                 {deadline && (
-                                    <span className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-zinc-400'}`}>
+                                    <span className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}>
                                         <Clock className="h-3 w-3" />
                                         {deadline.label}
                                     </span>
                                 )}
                             </div>
 
-                            <p className="font-medium text-zinc-100 truncate">
+                            <p className="font-medium text-foreground truncate">
                                 {piece.concept || piece.product || 'Sin concepto'}
                             </p>
 
                             {piece.objective && (
-                                <p className="text-sm text-zinc-400 mt-1 line-clamp-2">
+                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                                     {piece.objective}
                                 </p>
                             )}
 
                             {piece.status === 'REVISION' && piece.internal_comments && (
-                                <div className="mt-3 p-3 rounded-md bg-orange-950/50 border border-orange-800/50">
+                                <div className="mt-3 p-3 rounded-md bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800/50">
                                     <div className="flex items-center gap-1.5 mb-1">
-                                        <AlertCircle className="h-3.5 w-3.5 text-orange-400" />
-                                        <span className="text-xs font-medium text-orange-400">Comentarios del PM</span>
+                                        <AlertCircle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                                        <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Comentarios del PM</span>
                                     </div>
-                                    <p className="text-sm text-orange-200">{piece.internal_comments}</p>
+                                    <p className="text-sm text-orange-800 dark:text-orange-200">{piece.internal_comments}</p>
                                 </div>
                             )}
 
@@ -120,30 +120,30 @@ export default function EditorDashboard({ pieces, stats }: Props) {
             <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-100">
+                    <h1 className="text-2xl font-bold text-foreground">
                         Hola, {auth.user.name.split(' ')[0]} 👋
                     </h1>
-                    <p className="text-zinc-400 mt-1">Tus tareas activas</p>
+                    <p className="text-muted-foreground mt-1">Tus tareas activas</p>
                 </div>
 
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-4">
-                    <Card className="bg-zinc-900 border-zinc-800">
+                    <Card className="bg-card border-border">
                         <CardContent className="p-4 text-center">
-                            <p className="text-3xl font-bold text-zinc-100">{stats.pending}</p>
-                            <p className="text-xs text-zinc-400 mt-1">En proceso</p>
+                            <p className="text-3xl font-bold text-foreground">{stats.pending}</p>
+                            <p className="text-xs text-muted-foreground mt-1">En proceso</p>
                         </CardContent>
                     </Card>
-                    <Card className="bg-zinc-900 border-zinc-800">
+                    <Card className="bg-card border-border">
                         <CardContent className="p-4 text-center">
                             <p className="text-3xl font-bold text-amber-400">{stats.in_review}</p>
-                            <p className="text-xs text-zinc-400 mt-1">En revisión</p>
+                            <p className="text-xs text-muted-foreground mt-1">En revisión</p>
                         </CardContent>
                     </Card>
-                    <Card className="bg-zinc-900 border-zinc-800">
+                    <Card className="bg-card border-border">
                         <CardContent className="p-4 text-center">
                             <p className="text-3xl font-bold text-green-400">{stats.approved_week}</p>
-                            <p className="text-xs text-zinc-400 mt-1">Aprobados (7d)</p>
+                            <p className="text-xs text-muted-foreground mt-1">Aprobados (7d)</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -151,7 +151,7 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                 {/* Pendientes */}
                 {pending.length > 0 && (
                     <section className="space-y-3">
-                        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+                        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                             Para trabajar ({pending.length})
                         </h2>
                         {pending.map((piece, i) => (
@@ -163,7 +163,7 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                 {/* En revisión */}
                 {inReview.length > 0 && (
                     <section className="space-y-3">
-                        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+                        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                             En revisión interna ({inReview.length})
                         </h2>
                         {inReview.map((piece) => (
@@ -175,7 +175,7 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                 {/* En revisión del cliente */}
                 {clientReview.length > 0 && (
                     <section className="space-y-3">
-                        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+                        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                             Con el cliente ({clientReview.length})
                         </h2>
                         {clientReview.map((piece) => (
@@ -187,8 +187,8 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                 {pieces.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                         <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
-                        <p className="text-lg font-medium text-zinc-300">Todo al día</p>
-                        <p className="text-sm text-zinc-500 mt-1">No tenés tareas asignadas en este momento.</p>
+                        <p className="text-lg font-medium text-foreground">Todo al día</p>
+                        <p className="text-sm text-muted-foreground mt-1">No tenés tareas asignadas en este momento.</p>
                     </div>
                 )}
             </div>

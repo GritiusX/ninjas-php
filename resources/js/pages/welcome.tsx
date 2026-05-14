@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+﻿import { Head, Link, usePage } from '@inertiajs/react';
 import { login, register } from '@/routes';
 import { dashboard } from '@/routes/pm';
 

@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+﻿import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     AlertCircle,
     Calendar,
@@ -383,32 +383,32 @@ function BriefCard({
 
     return (
         <>
-            <Card className="border-zinc-800 bg-zinc-900">
+            <Card className="border-border bg-card">
                 <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                             <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-semibold tracking-wide text-zinc-400 uppercase">
+                                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                     {piece.client?.name}
                                 </span>
                                 <StatusBadge status={piece.status} />
                                 <PriorityBadge priority={piece.priority} />
                                 {deadline && (
                                     <span
-                                        className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-zinc-400'}`}
+                                        className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}
                                     >
                                         <Clock className="h-3 w-3" />
                                         {deadline.label}
                                     </span>
                                 )}
                             </div>
-                            <p className="truncate font-medium text-zinc-100">
+                            <p className="truncate font-medium text-foreground">
                                 {piece.concept ??
                                     piece.product ??
                                     'Sin concepto'}
                             </p>
                             {piece.editor && (
-                                <p className="mt-0.5 text-xs text-zinc-500">
+                                <p className="mt-0.5 text-xs text-muted-foreground">
                                     Editor: {piece.editor.name}
                                 </p>
                             )}
@@ -427,7 +427,7 @@ function BriefCard({
                             )}
                             <button
                                 onClick={() => setExpanded(!expanded)}
-                                className="text-zinc-400 transition-colors hover:text-zinc-200"
+                                className="text-muted-foreground transition-colors hover:text-foreground"
                             >
                                 {expanded ? (
                                     <ChevronDown className="h-4 w-4" />
@@ -439,10 +439,10 @@ function BriefCard({
                     </div>
 
                     {expanded && (
-                        <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3 text-sm text-zinc-300">
+                        <div className="mt-3 space-y-2 border-t border-border pt-3 text-sm text-foreground">
                             {piece.objective && (
                                 <div>
-                                    <span className="text-xs tracking-wide text-zinc-500 uppercase">
+                                    <span className="text-xs tracking-wide text-muted-foreground uppercase">
                                         Objetivo
                                     </span>
                                     <p>{piece.objective}</p>
@@ -450,7 +450,7 @@ function BriefCard({
                             )}
                             {piece.hook && (
                                 <div>
-                                    <span className="text-xs tracking-wide text-zinc-500 uppercase">
+                                    <span className="text-xs tracking-wide text-muted-foreground uppercase">
                                         Hook
                                     </span>
                                     <p>{piece.hook}</p>
@@ -458,14 +458,14 @@ function BriefCard({
                             )}
                             {piece.cta && (
                                 <div>
-                                    <span className="text-xs tracking-wide text-zinc-500 uppercase">
+                                    <span className="text-xs tracking-wide text-muted-foreground uppercase">
                                         CTA
                                     </span>
                                     <p>{piece.cta}</p>
                                 </div>
                             )}
                             {piece.brief_notes && (
-                                <div className="rounded bg-zinc-800 p-2 text-xs text-zinc-400">
+                                <div className="rounded bg-muted p-2 text-xs text-muted-foreground">
                                     <AlertCircle className="mr-1 inline h-3 w-3" />
                                     {piece.brief_notes}
                                 </div>
@@ -493,29 +493,29 @@ function ReviewCard({ piece }: { piece: ContentPiece }) {
     const deadline = fmtDeadline(piece.deadline);
 
     return (
-        <Card className="border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-600">
+        <Card className="border-border bg-card transition-colors hover:border-ring">
             <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                         <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-semibold tracking-wide text-zinc-400 uppercase">
+                            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 {piece.client?.name}
                             </span>
                             <PriorityBadge priority={piece.priority} />
                             {deadline && (
                                 <span
-                                    className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-zinc-400'}`}
+                                    className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}
                                 >
                                     <Clock className="h-3 w-3" />
                                     {deadline.label}
                                 </span>
                             )}
                         </div>
-                        <p className="truncate font-medium text-zinc-100">
+                        <p className="truncate font-medium text-foreground">
                             {piece.concept ?? piece.product ?? 'Sin concepto'}
                         </p>
                         {piece.editor && (
-                            <p className="mt-0.5 text-xs text-zinc-500">
+                            <p className="mt-0.5 text-xs text-muted-foreground">
                                 por {piece.editor.name}
                             </p>
                         )}
@@ -568,10 +568,10 @@ export default function PmDashboard({
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-100">
+                        <h1 className="text-2xl font-bold text-foreground">
                             Dashboard PM
                         </h1>
-                        <p className="mt-0.5 text-zinc-400">
+                        <p className="mt-0.5 text-muted-foreground">
                             {reviewQueue.length} para revisar ·{' '}
                             {inProgress.length} en proceso
                         </p>
@@ -603,10 +603,10 @@ export default function PmDashboard({
                 {inProgress.length > 0 && (
                     <section className="space-y-3">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold tracking-wider text-zinc-400 uppercase">
+                            <h2 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                                 En proceso
                             </h2>
-                            <Badge className="bg-zinc-700 text-zinc-300">
+                            <Badge className="bg-secondary text-secondary-foreground">
                                 {inProgress.length}
                             </Badge>
                         </div>
@@ -635,10 +635,10 @@ export default function PmDashboard({
 
                 {reviewQueue.length === 0 && briefQueue.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <p className="text-lg font-medium text-zinc-300">
+                        <p className="text-lg font-medium text-foreground">
                             Todo tranquilo por acá
                         </p>
-                        <p className="mt-1 text-sm text-zinc-500">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             No hay piezas activas.
                         </p>
                         <Button

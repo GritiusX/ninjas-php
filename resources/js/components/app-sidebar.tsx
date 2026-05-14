@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+﻿import { Link, usePage } from '@inertiajs/react';
 import { BarChart3, Bell, Film, LayoutGrid, Settings, Shield, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -15,7 +15,7 @@ import {
 import * as adminRoutes from '@/routes/admin';
 import * as adminClientRoutes from '@/routes/admin/clients';
 import * as adminUserRoutes from '@/routes/admin/users';
-import * as adsRoutes from '@/routes/ads';
+import * as metricsRoutes from '@/routes/metrics';
 import * as editorRoutes from '@/routes/editor';
 import * as notifRoutes from '@/routes/notifications';
 import * as pmRoutes from '@/routes/pm';
@@ -41,7 +41,7 @@ function useNavItems(): NavItem[] {
 
     const pmItems: NavItem[] = [
         { title: 'Dashboard PM', href: pmRoutes.dashboard(), icon: LayoutGrid },
-        { title: 'Panel de Ads', href: adsRoutes.index(), icon: BarChart3 },
+        { title: 'Métricas', href: metricsRoutes.index(), icon: BarChart3 },
         notifItem,
     ];
 

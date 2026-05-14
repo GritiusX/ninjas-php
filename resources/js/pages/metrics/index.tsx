@@ -1,11 +1,11 @@
-import { Head, router } from '@inertiajs/react';
+﻿import { Head, router } from '@inertiajs/react';
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import * as adsRoutes from '@/routes/ads';
+import * as metricsRoutes from '@/routes/metrics';
 import type { AdMetricRow } from '@/types';
 
 type Props = {
@@ -52,10 +52,10 @@ function MetricCard({ row }: { row: AdMetricRow }) {
         row.roas_goal > 0 ? Math.round((roas / row.roas_goal) * 100) : 0;
 
     return (
-        <Card className={`border bg-zinc-900 ${s.border}`}>
+        <Card className={`border bg-card ${s.border}`}>
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                    <CardTitle className="text-base text-zinc-100">
+                    <CardTitle className="text-base text-foreground">
                         {row.name}
                     </CardTitle>
                     <span
@@ -70,7 +70,7 @@ function MetricCard({ row }: { row: AdMetricRow }) {
                 {/* ROAS principal */}
                 <div className="flex items-end justify-between">
                     <div>
-                        <p className="mb-0.5 text-xs text-zinc-500">
+                        <p className="mb-0.5 text-xs text-muted-foreground">
                             ROAS del período
                         </p>
                         <p className={`text-3xl font-bold ${s.text}`}>
@@ -78,8 +78,8 @@ function MetricCard({ row }: { row: AdMetricRow }) {
                         </p>
                     </div>
                     <div className="text-right">
-                        <p className="mb-0.5 text-xs text-zinc-500">Objetivo</p>
-                        <p className="text-lg font-semibold text-zinc-400">
+                        <p className="mb-0.5 text-xs text-muted-foreground">Objetivo</p>
+                        <p className="text-lg font-semibold text-muted-foreground">
                             {row.roas_goal.toFixed(2)}
                         </p>
                     </div>
@@ -87,12 +87,12 @@ function MetricCard({ row }: { row: AdMetricRow }) {
 
                 {/* Barra de progreso */}
                 <div>
-                    <div className="mb-1 flex justify-between text-xs text-zinc-500">
+                    <div className="mb-1 flex justify-between text-xs text-muted-foreground">
                         <span>0</span>
                         <span>{pct}% del objetivo</span>
                         <span>{row.roas_goal.toFixed(2)}</span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
                         <div
                             className={`h-full rounded-full transition-all ${
                                 row.semaforo === 'green'
@@ -107,22 +107,22 @@ function MetricCard({ row }: { row: AdMetricRow }) {
                 </div>
 
                 {/* Stats secundarios */}
-                <div className="grid grid-cols-3 gap-2 border-t border-zinc-800 pt-1">
+                <div className="grid grid-cols-3 gap-2 border-t border-border pt-1">
                     <div>
-                        <p className="text-xs text-zinc-500">Inversión</p>
-                        <p className="text-sm font-medium text-zinc-300">
+                        <p className="text-xs text-muted-foreground">Inversión</p>
+                        <p className="text-sm font-medium text-foreground">
                             {fmt(row.total_investment, '$')}
                         </p>
                     </div>
                     <div>
-                        <p className="text-xs text-zinc-500">Ingresos</p>
-                        <p className="text-sm font-medium text-zinc-300">
+                        <p className="text-xs text-muted-foreground">Ingresos</p>
+                        <p className="text-sm font-medium text-foreground">
                             {fmt(row.total_revenue, '$')}
                         </p>
                     </div>
                     <div>
-                        <p className="text-xs text-zinc-500">Ventas</p>
-                        <p className="text-sm font-medium text-zinc-300">
+                        <p className="text-xs text-muted-foreground">Ventas</p>
+                        <p className="text-sm font-medium text-foreground">
                             {fmt(row.total_transactions)}
                         </p>
                     </div>
@@ -138,7 +138,7 @@ export default function AdsIndex({ metrics, filters }: Props) {
 
     function applyFilters(e: React.FormEvent) {
         e.preventDefault();
-        router.get(adsRoutes.index(), { from, to }, { preserveState: true });
+        router.get(metricsRoutes.index(), { from, to }, { preserveState: true });
     }
 
     const green = metrics.filter((m) => m.semaforo === 'green').length;
@@ -153,7 +153,7 @@ export default function AdsIndex({ metrics, filters }: Props) {
                 {/* Header */}
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-100">
+                        <h1 className="text-2xl font-bold text-foreground">
                             Panel de Ads
                         </h1>
                         <div className="mt-1.5 flex items-center gap-3">
@@ -178,7 +178,7 @@ export default function AdsIndex({ metrics, filters }: Props) {
                         className="flex items-end gap-2"
                     >
                         <div className="space-y-1">
-                            <Label className="text-xs text-zinc-400">
+                            <Label className="text-xs text-muted-foreground">
                                 Desde
                             </Label>
                             <Input
@@ -189,7 +189,7 @@ export default function AdsIndex({ metrics, filters }: Props) {
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs text-zinc-400">
+                            <Label className="text-xs text-muted-foreground">
                                 Hasta
                             </Label>
                             <Input
@@ -214,7 +214,7 @@ export default function AdsIndex({ metrics, filters }: Props) {
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <p className="text-zinc-400">
+                        <p className="text-muted-foreground">
                             No hay métricas para el período seleccionado.
                         </p>
                     </div>

@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+﻿import { Head, Link, useForm } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, Clock, ExternalLink, Link2, Send, Target, BookOpen, MessageSquare, Megaphone } from 'lucide-react';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
@@ -68,7 +68,7 @@ export default function EditorTask({ piece }: Props) {
                 <div className="space-y-3">
                     <Link
                         href={editorRoutes.dashboard.url()}
-                        className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Mis tareas
@@ -76,10 +76,10 @@ export default function EditorTask({ piece }: Props) {
 
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                                 {piece.client?.name}
                             </p>
-                            <h1 className="text-xl font-bold text-zinc-100 leading-tight">
+                            <h1 className="text-xl font-bold text-foreground leading-tight">
                                 {piece.concept ?? piece.product ?? 'Sin concepto'}
                             </h1>
                         </div>
@@ -87,7 +87,7 @@ export default function EditorTask({ piece }: Props) {
                             <StatusBadge status={piece.status} />
                             <PriorityBadge priority={piece.priority} />
                             {deadline && (
-                                <span className={`flex items-center gap-1 text-xs font-medium ${deadline.urgent ? 'text-red-400' : 'text-zinc-400'}`}>
+                                <span className={`flex items-center gap-1 text-xs font-medium ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}>
                                     <Clock className="h-3.5 w-3.5" />
                                     {deadline.label}
                                 </span>
@@ -97,9 +97,9 @@ export default function EditorTask({ piece }: Props) {
                 </div>
 
                 {/* Brief */}
-                <section className="space-y-4 rounded-xl bg-zinc-900 border border-zinc-800 p-5">
+                <section className="space-y-4 rounded-xl bg-card border border-border p-5">
                     {(piece.product || piece.category) && (
-                        <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
                             {[piece.product, piece.category].filter(Boolean).join(' · ')}
                         </p>
                     )}
@@ -108,57 +108,57 @@ export default function EditorTask({ piece }: Props) {
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
                                 <Target className="h-4 w-4 text-blue-400" />
-                                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Objetivo</span>
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Objetivo</span>
                             </div>
-                            <p className="text-sm text-zinc-200 leading-relaxed">{piece.objective}</p>
+                            <p className="text-sm text-foreground leading-relaxed">{piece.objective}</p>
                         </div>
                     )}
 
                     {piece.hook && (
-                        <div className="rounded-lg bg-zinc-800 border border-zinc-700 p-4 space-y-1.5">
+                        <div className="rounded-lg bg-muted border border-border p-4 space-y-1.5">
                             <div className="flex items-center gap-2">
                                 <span className="text-base">🎬</span>
-                                <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wide">Hook</span>
+                                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Hook</span>
                             </div>
-                            <p className="text-sm text-zinc-100 leading-relaxed">{piece.hook}</p>
+                            <p className="text-sm text-foreground leading-relaxed">{piece.hook}</p>
                         </div>
                     )}
 
                     {piece.development && (
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
-                                <BookOpen className="h-4 w-4 text-zinc-400" />
-                                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Desarrollo</span>
+                                <BookOpen className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Desarrollo</span>
                             </div>
-                            <p className="text-sm text-zinc-200 leading-relaxed">{piece.development}</p>
+                            <p className="text-sm text-foreground leading-relaxed">{piece.development}</p>
                         </div>
                     )}
 
                     {piece.cta && (
-                        <div className="rounded-lg bg-zinc-800 border border-zinc-700 p-4 space-y-1.5">
+                        <div className="rounded-lg bg-muted border border-border p-4 space-y-1.5">
                             <div className="flex items-center gap-2">
                                 <Megaphone className="h-4 w-4 text-green-400" />
-                                <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wide">CTA</span>
+                                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">CTA</span>
                             </div>
-                            <p className="text-sm text-zinc-100 leading-relaxed">{piece.cta}</p>
+                            <p className="text-sm text-foreground leading-relaxed">{piece.cta}</p>
                         </div>
                     )}
 
                     {piece.brief_notes && (
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
-                                <MessageSquare className="h-4 w-4 text-zinc-400" />
-                                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Notas del PM</span>
+                                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notas del PM</span>
                             </div>
-                            <p className="text-sm text-zinc-300 leading-relaxed">{piece.brief_notes}</p>
+                            <p className="text-sm text-foreground leading-relaxed">{piece.brief_notes}</p>
                         </div>
                     )}
                 </section>
 
                 {/* Material de referencia */}
                 {piece.raw_material_link && (
-                    <section className="rounded-xl bg-zinc-900 border border-zinc-800 p-5">
-                        <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <section className="rounded-xl bg-card border border-border p-5">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
                             <Link2 className="h-4 w-4" />
                             Material de referencia
                         </h2>
@@ -176,19 +176,19 @@ export default function EditorTask({ piece }: Props) {
 
                 {/* Cambios solicitados (solo si REVISION) */}
                 {piece.status === 'REVISION' && piece.internal_comments && (
-                    <section className="rounded-xl bg-orange-950/40 border border-orange-800/50 p-5 space-y-2">
-                        <h2 className="text-xs font-semibold text-orange-400 uppercase tracking-wider flex items-center gap-2">
+                    <section className="rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/50 p-5 space-y-2">
+                        <h2 className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
                             Cambios solicitados
                         </h2>
-                        <p className="text-sm text-orange-200 leading-relaxed">{piece.internal_comments}</p>
+                        <p className="text-sm text-orange-800 dark:text-orange-200 leading-relaxed">{piece.internal_comments}</p>
                     </section>
                 )}
 
                 {/* Subir video */}
                 {canSubmit && (
-                    <section className="rounded-xl bg-zinc-900 border border-zinc-800 p-5 space-y-3">
-                        <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                    <section className="rounded-xl bg-card border border-border p-5 space-y-3">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                             Subir video editado
                         </h2>
                         {piece.final_video_link && (

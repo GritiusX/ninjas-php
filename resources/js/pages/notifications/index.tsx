@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+﻿import { Head, Link, router } from '@inertiajs/react';
 import { Bell, BellOff, Check, CheckCheck, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -40,8 +40,8 @@ export default function NotificationsIndex({ notifications }: Props) {
             <div className="mx-auto max-w-2xl px-4 py-6 space-y-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Bell className="h-5 w-5 text-zinc-400" />
-                        <h1 className="text-xl font-bold text-zinc-100">Notificaciones</h1>
+                        <Bell className="h-5 w-5 text-muted-foreground" />
+                        <h1 className="text-xl font-bold text-foreground">Notificaciones</h1>
                         {unread.length > 0 && (
                             <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5 font-medium">
                                 {unread.length}
@@ -49,7 +49,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                         )}
                     </div>
                     {unread.length > 0 && (
-                        <Button variant="ghost" size="sm" onClick={markAllRead} className="text-zinc-400 hover:text-zinc-200">
+                        <Button variant="ghost" size="sm" onClick={markAllRead} className="text-muted-foreground hover:text-foreground">
                             <CheckCheck className="mr-1.5 h-4 w-4" />
                             Marcar todas como leídas
                         </Button>
@@ -58,8 +58,8 @@ export default function NotificationsIndex({ notifications }: Props) {
 
                 {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <BellOff className="h-10 w-10 text-zinc-600 mb-3" />
-                        <p className="text-zinc-400">No tenés notificaciones todavía.</p>
+                        <BellOff className="h-10 w-10 text-muted-foreground mb-3" />
+                        <p className="text-muted-foreground">No tenés notificaciones todavía.</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
@@ -68,8 +68,8 @@ export default function NotificationsIndex({ notifications }: Props) {
                                 key={n.id}
                                 className={`border transition-colors ${
                                     n.read_at
-                                        ? 'bg-zinc-900 border-zinc-800'
-                                        : 'bg-zinc-800/60 border-zinc-700'
+                                        ? 'bg-card border-border'
+                                        : 'bg-muted/60 border-border'
                                 }`}
                             >
                                 <CardContent className="p-4">
@@ -79,15 +79,15 @@ export default function NotificationsIndex({ notifications }: Props) {
                                         </span>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
-                                                <p className={`text-sm font-medium ${n.read_at ? 'text-zinc-300' : 'text-zinc-100'}`}>
+                                                <p className={`text-sm font-medium ${n.read_at ? 'text-foreground' : 'text-foreground'}`}>
                                                     {n.title}
                                                 </p>
-                                                <span className="text-xs text-zinc-500 shrink-0">
+                                                <span className="text-xs text-muted-foreground shrink-0">
                                                     {timeAgo(n.created_at)}
                                                 </span>
                                             </div>
                                             {n.body && (
-                                                <p className="text-sm text-zinc-400 mt-0.5 line-clamp-2">{n.body}</p>
+                                                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
                                             )}
                                             <div className="flex items-center gap-3 mt-2">
                                                 {n.link && (
@@ -102,7 +102,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                                                 {!n.read_at && (
                                                     <button
                                                         onClick={() => markRead(n.id)}
-                                                        className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300"
+                                                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                                                     >
                                                         <Check className="h-3 w-3" />
                                                         Marcar leída

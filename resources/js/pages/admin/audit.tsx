@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+﻿import { Head, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ type Props = {
 
 const ACTION_COLOR: Record<string, string> = {
     'content.approved': 'text-green-400',
-    'content.changes_requested': 'text-orange-400',
+    'content.changes_requested': 'text-orange-600 dark:text-orange-400',
 };
 
 function fmt(date: string) {
@@ -56,7 +56,7 @@ export default function AuditIndex({ logs, filters }: Props) {
             <Head title="Auditoría" />
             <div className="space-y-5 px-4 py-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-zinc-100">
+                    <h1 className="text-2xl font-bold text-foreground">
                         Auditoría
                     </h1>
                     <form onSubmit={search} className="flex gap-2">
@@ -72,11 +72,11 @@ export default function AuditIndex({ logs, filters }: Props) {
                     </form>
                 </div>
 
-                <Card className="border-zinc-800 bg-zinc-900">
+                <Card className="border-border bg-card">
                     <CardContent className="p-0">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-zinc-800 text-xs tracking-wider text-zinc-400 uppercase">
+                                <tr className="border-b border-border text-xs tracking-wider text-muted-foreground uppercase">
                                     <th className="px-4 py-3 text-left">
                                         Fecha
                                     </th>
@@ -99,27 +99,27 @@ export default function AuditIndex({ logs, filters }: Props) {
                                 {logs.data.map((entry) => (
                                     <tr
                                         key={entry.id}
-                                        className="align-top hover:bg-zinc-800/30"
+                                        className="align-top hover:bg-muted/30"
                                     >
-                                        <td className="px-4 py-3 text-xs whitespace-nowrap text-zinc-400">
+                                        <td className="px-4 py-3 text-xs whitespace-nowrap text-muted-foreground">
                                             {fmt(entry.created_at)}
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-zinc-300">
+                                        <td className="px-4 py-3 text-xs text-foreground">
                                             {entry.user?.name ??
                                                 `#${entry.user_id}`}
                                         </td>
                                         <td className="px-4 py-3">
                                             <span
-                                                className={`font-mono text-xs ${ACTION_COLOR[entry.action] ?? 'text-zinc-400'}`}
+                                                className={`font-mono text-xs ${ACTION_COLOR[entry.action] ?? 'text-muted-foreground'}`}
                                             >
                                                 {entry.action}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-zinc-500">
+                                        <td className="px-4 py-3 text-xs text-muted-foreground">
                                             {entry.entity_type &&
                                                 `${entry.entity_type} #${entry.entity_id}`}
                                         </td>
-                                        <td className="max-w-xs px-4 py-3 text-xs text-zinc-400">
+                                        <td className="max-w-xs px-4 py-3 text-xs text-muted-foreground">
                                             {entry.payload && (
                                                 <span>
                                                     {(entry.payload
@@ -131,7 +131,7 @@ export default function AuditIndex({ logs, filters }: Props) {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 font-mono text-xs text-zinc-600">
+                                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                                             {entry.ip}
                                         </td>
                                     </tr>
@@ -139,7 +139,7 @@ export default function AuditIndex({ logs, filters }: Props) {
                             </tbody>
                         </table>
                         {logs.data.length === 0 && (
-                            <p className="py-10 text-center text-zinc-500">
+                            <p className="py-10 text-center text-muted-foreground">
                                 No hay registros.
                             </p>
                         )}
@@ -160,7 +160,7 @@ export default function AuditIndex({ logs, filters }: Props) {
                         >
                             Anterior
                         </Button>
-                        <span className="flex items-center text-sm text-zinc-400">
+                        <span className="flex items-center text-sm text-muted-foreground">
                             {logs.current_page} / {logs.last_page}
                         </span>
                         <Button

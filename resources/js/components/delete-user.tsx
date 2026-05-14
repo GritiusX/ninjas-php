@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+﻿import { Form } from '@inertiajs/react';
 import { useRef } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import Heading from '@/components/heading';

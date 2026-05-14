@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+﻿import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,11 +19,11 @@ export default function ClientCreate() {
             <div className="mx-auto max-w-xl px-4 py-6 space-y-5">
                 <div className="flex items-center gap-3">
                     <Link href={clientRoutes.index()}>
-                        <Button variant="ghost" size="sm" className="text-zinc-400"><ArrowLeft className="h-4 w-4 mr-1" />Clientes</Button>
+                        <Button variant="ghost" size="sm" className="text-muted-foreground"><ArrowLeft className="h-4 w-4 mr-1" />Clientes</Button>
                     </Link>
-                    <h1 className="text-xl font-bold text-zinc-100">Nuevo cliente</h1>
+                    <h1 className="text-xl font-bold text-foreground">Nuevo cliente</h1>
                 </div>
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card className="bg-card border-border">
                     <CardContent className="pt-5">
                         <form onSubmit={submit} className="space-y-4">
                             <Field label="Nombre *" error={errors.name}>
