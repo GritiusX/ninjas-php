@@ -215,7 +215,7 @@ export default function MetricsShow({ client, period, metrics }: Props) {
         setSyncing(true);
         router.post(
             metricsRoutes.sync.url(client.id),
-            { period: period_ },
+            { period: period_, inline: 1 },
             {
                 preserveScroll: true,
                 onFinish: () => setSyncing(false),
