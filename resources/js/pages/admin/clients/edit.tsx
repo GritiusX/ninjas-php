@@ -13,6 +13,7 @@ export default function ClientEdit({ client }: { client: Client }) {
         whatsapp_number: client.whatsapp_number ?? '',
         roas_goal: String(client.roas_goal),
         meta_ad_account_id: client.meta_ad_account_id ?? '',
+        metricool_blog_id: client.metricool_blog_id ?? '',
     });
 
     function submit(e: React.FormEvent) { e.preventDefault(); put(clientRoutes.update.url(client.id)); }
@@ -41,6 +42,9 @@ export default function ClientEdit({ client }: { client: Client }) {
                             </Field>
                             <Field label="Meta Ad Account ID" error={errors.meta_ad_account_id}>
                                 <Input value={data.meta_ad_account_id} onChange={(e) => setData('meta_ad_account_id', e.target.value)} placeholder="act_123456789" className="font-mono" />
+                            </Field>
+                            <Field label="Metricool blog ID" error={errors.metricool_blog_id}>
+                                <Input value={data.metricool_blog_id} onChange={(e) => setData('metricool_blog_id', e.target.value)} placeholder="3107640" className="font-mono" />
                             </Field>
                             <div className="flex justify-end pt-2">
                                 <Button type="submit" disabled={processing}><Save className="mr-1.5 h-4 w-4" />Guardar cambios</Button>

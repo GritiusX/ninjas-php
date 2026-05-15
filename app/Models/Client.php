@@ -14,6 +14,7 @@ class Client extends Model
         'whatsapp_number',
         'roas_goal',
         'meta_ad_account_id',
+        'metricool_blog_id',
     ];
 
     protected function casts(): array
@@ -31,6 +32,11 @@ class Client extends Model
     public function adMetrics(): HasMany
     {
         return $this->hasMany(AdMetric::class);
+    }
+
+    public function monthlySnapshots(): HasMany
+    {
+        return $this->hasMany(MonthlySnapshot::class);
     }
 
     public function getBrandContext(): string

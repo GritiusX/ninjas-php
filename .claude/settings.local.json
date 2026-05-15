@@ -19,7 +19,13 @@
       "Bash(php *)",
       "Bash(git init *)",
       "Bash(git commit *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "WebFetch(domain:app.metricool.com)",
+      "WebSearch",
+      "WebFetch(domain:static.metricool.com)",
+      "WebFetch(domain:help.metricool.com)",
+      "WebFetch(domain:docs.airbyte.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

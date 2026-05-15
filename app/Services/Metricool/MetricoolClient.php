@@ -1,0 +1,166 @@
+<?php
+
+namespace App\Services\Metricool;
+
+use Carbon\CarbonInterface;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
+
+class MetricoolClient
+{
+    private const FORMAT_DATE     = 'Y-m-d';
+    private const FORMAT_DATETIME = 'Y-m-d\TH:i:s';
+
+    private string $baseUrl;
+    private string $userId;
+    private string $userToken;
+    private int $timeout;
+
+    public function __construct()
+    {
+        $this->baseUrl   = rtrim((string) config('metricool.base_url'), '/');
+        $this->userId    = (string) config('metricool.user_id');
+        $this->userToken = (string) config('metricool.user_token');
+        $this->timeout   = (int) config('metricool.timeout', 30);
+
+        if ($this->userId === '' || $this->userToken === '') {
+            throw new RuntimeException('Metricool credentials not configured. Set METRICOOL_USER_ID and METRICOOL_USER_TOKEN.');
+        }
+    }
+
+    public function listBrands(): array
+    {
+        return $this->get('/admin/simpleProfiles', []);
+    }
+
+    public function instagramPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->statsPosts('instagram', $blogId, $start, $end);
+    }
+
+    public function instagramReels(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->get('/stats/instagram/reels', $this->statsParams($blogId, $start, $end, 200));
+    }
+
+    public function instagramStories(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->get('/stats/instagram/stories', $this->statsParams($blogId, $start, $end, 500));
+    }
+
+    public function facebookPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->statsPosts('facebook', $blogId, $start, $end);
+    }
+
+    public function facebookReels(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->get('/v2/analytics/reels/facebook', $this->v2Params($blogId, $start, $end, 200));
+    }
+
+    public function facebookStories(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->get('/v2/analytics/stories/facebook', $this->v2Params($blogId, $start, $end, 500));
+    }
+
+    public function tiktokPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->get('/v2/analytics/posts/tiktok', $this->v2Params($blogId, $start, $end, 200));
+    }
+
+    public function youtubePosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->get('/v2/analytics/posts/youtube', $this->v2Params($blogId, $start, $end, 200));
+    }
+
+    public function linkedinPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->statsPosts('linkedin', $blogId, $start, $end);
+    }
+
+    public function twitterPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->statsPosts('twitter', $blogId, $start, $end);
+    }
+
+    public function timeline(
+        string $network,
+        string $subject,
+        string $metric,
+        string $blogId,
+        CarbonInterface $start,
+        CarbonInterface $end,
+    ): array {
+        return $this->get('/v2/analytics/timelines', [
+            'network' => $network,
+            'subject' => $subject,
+            'metric'  => $metric,
+            'blogId'  => $blogId,
+            'from'    => $start->format(self::FORMAT_DATETIME),
+            'to'      => $end->format(self::FORMAT_DATETIME),
+        ]);
+    }
+
+    private function statsPosts(string $network, string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->get("/stats/{$network}/posts", $this->statsParams($blogId, $start, $end, 200));
+    }
+
+    private function statsParams(string $blogId, CarbonInterface $start, CarbonInterface $end, int $limit): array
+    {
+        return [
+            'blogId' => $blogId,
+            'start'  => $start->format(self::FORMAT_DATE),
+            'end'    => $end->format(self::FORMAT_DATE),
+            'limit'  => $limit,
+        ];
+    }
+
+    private function v2Params(string $blogId, CarbonInterface $start, CarbonInterface $end, int $limit): array
+    {
+        return [
+            'blogId' => $blogId,
+            'from'   => $start->format(self::FORMAT_DATETIME),
+            'to'     => $end->format(self::FORMAT_DATETIME),
+            'limit'  => $limit,
+        ];
+    }
+
+    private function get(string $path, array $query): array
+    {
+        $url = $this->baseUrl . $path;
+        $params = array_merge($query, [
+            'userId' => $this->userId,
+        ]);
+
+        $response = $this->http()->get($url, $params);
+
+        if ($response->failed()) {
+            $this->logFailure($path, $params, $response);
+            return [];
+        }
+
+        $data = $response->json();
+        return is_array($data) ? $data : [];
+    }
+
+    private function http(): PendingRequest
+    {
+        return Http::timeout($this->timeout)
+            ->acceptJson()
+            ->withHeaders(['X-Mc-Auth' => $this->userToken]);
+    }
+
+    private function logFailure(string $path, array $params, Response $response): void
+    {
+        Log::warning('Metricool API call failed', [
+            'path'   => $path,
+            'params' => $params,
+            'status' => $response->status(),
+            'body'   => mb_substr((string) $response->body(), 0, 300),
+        ]);
+    }
+}

@@ -30,6 +30,7 @@ class ClientAdminController extends Controller
             'whatsapp_number'     => ['nullable', 'string', 'max:30'],
             'roas_goal'           => ['required', 'numeric', 'min:0'],
             'meta_ad_account_id'  => ['nullable', 'string', 'max:50'],
+            'metricool_blog_id'   => ['nullable', 'string', 'max:30'],
         ]);
 
         Client::create($data);
@@ -49,6 +50,7 @@ class ClientAdminController extends Controller
             'whatsapp_number'     => ['nullable', 'string', 'max:30'],
             'roas_goal'           => ['required', 'numeric', 'min:0'],
             'meta_ad_account_id'  => ['nullable', 'string', 'max:50'],
+            'metricool_blog_id'   => ['nullable', 'string', 'max:30'],
         ]);
 
         $client->update($data);
