@@ -19,7 +19,9 @@
       "Bash(php *)",
       "Bash(git init *)",
       "Bash(git commit *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(xargs grep *)",
+      "Bash(git add *)"
     ]
   }
 }

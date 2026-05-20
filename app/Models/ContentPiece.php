@@ -43,6 +43,7 @@ class ContentPiece extends Model
         'client_status',
         'is_scheduled',
         'raw_material_link',
+        'raw_material_links',
         'final_video_link',
         'internal_comments',
         'client_feedback',
@@ -54,7 +55,8 @@ class ContentPiece extends Model
         return [
             'deadline' => 'datetime',
             'is_scheduled' => 'boolean',
-            'generated_copy' => 'array',
+            'generated_copy'     => 'array',
+            'raw_material_links' => 'array',
         ];
     }
 

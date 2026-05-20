@@ -12,6 +12,24 @@ use Inertia\Response;
 
 class PmController extends Controller
 {
+    public function tabla(): Response
+    {
+        $pieces = ContentPiece::with(['client', 'editor'])
+            ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED])
+            ->orderBy('priority')
+            ->orderByRaw('deadline IS NULL, deadline ASC')
+            ->get();
+
+        $clients = Client::orderBy('name')->get(['id', 'name']);
+        $editors = User::where('role', 'editor')->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
+        return Inertia::render('pm/tabla', [
+            'pieces'  => $pieces,
+            'clients' => $clients,
+            'editors' => $editors,
+        ]);
+    }
+
     public function dashboard(Request $request): Response
     {
         $reviewQueue = ContentPiece::with('client')

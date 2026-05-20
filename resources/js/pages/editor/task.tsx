@@ -19,7 +19,9 @@ function formatDeadline(deadline: string | null) {
     if (diffDays < 0) return { label: `Vencido hace ${Math.abs(diffDays)}d`, urgent: true };
     if (diffDays === 0) return { label: 'Hoy', urgent: true };
     if (diffDays === 1) return { label: 'Mañana', urgent: true };
-    return { label: `${diffDays}d`, urgent: false };
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    return { label: `${d}/${m}`, urgent: false };
 }
 
 function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
@@ -156,23 +158,35 @@ export default function EditorTask({ piece }: Props) {
                 </section>
 
                 {/* Material de referencia */}
-                {piece.raw_material_link && (
-                    <section className="rounded-xl bg-card border border-border p-5">
-                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                            <Link2 className="h-4 w-4" />
-                            Material de referencia
-                        </h2>
-                        <a
-                            href={piece.raw_material_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
-                        >
-                            <ExternalLink className="h-4 w-4" />
-                            Abrir material
-                        </a>
-                    </section>
-                )}
+                {(() => {
+                    const links = [
+                        ...(piece.raw_material_links ?? []),
+                        ...(piece.raw_material_link && !piece.raw_material_links?.length ? [piece.raw_material_link] : []),
+                    ].filter(Boolean);
+                    if (!links.length) return null;
+                    return (
+                        <section className="rounded-xl bg-card border border-border p-5">
+                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Link2 className="h-4 w-4" />
+                                Material de referencia
+                            </h2>
+                            <div className="space-y-2">
+                                {links.map((link, i) => (
+                                    <a
+                                        key={i}
+                                        href={link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
+                                    >
+                                        <ExternalLink className="h-4 w-4 shrink-0" />
+                                        {links.length > 1 ? `Material ${i + 1}` : 'Abrir material'}
+                                    </a>
+                                ))}
+                            </div>
+                        </section>
+                    );
+                })()}
 
                 {/* Cambios solicitados (solo si REVISION) */}
                 {piece.status === 'REVISION' && piece.internal_comments && (

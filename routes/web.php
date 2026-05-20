@@ -37,6 +37,7 @@ Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->g
 // --- PM / Admin ---
 Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(function () {
     Route::get('/', [PmController::class, 'dashboard'])->name('dashboard');
+    Route::get('/tabla', [PmController::class, 'tabla'])->name('tabla');
 
     // Briefs
     Route::post('/brief', [BriefController::class, 'store'])->name('brief.store');

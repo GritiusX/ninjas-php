@@ -14,7 +14,7 @@ class BriefController extends Controller
     {
         $data = $request->validate([
             'client_id'     => ['required', 'exists:clients,id'],
-            'concept'       => ['nullable', 'string', 'max:1000'],
+            'concept'       => ['required', 'string', 'max:1000'],
             'product'       => ['nullable', 'string', 'max:500'],
             'category'      => ['nullable', 'string', 'max:80'],
             'objective'     => ['nullable', 'string'],
@@ -23,11 +23,13 @@ class BriefController extends Controller
             'cta'           => ['nullable', 'string', 'max:255'],
             'brief_notes'   => ['nullable', 'string'],
             'client_status' => ['nullable', 'string', 'max:120'],
-            'is_scheduled'      => ['boolean'],
-            'priority'          => ['required', 'integer', 'in:1,2,3'],
-            'deadline'          => ['nullable', 'date'],
-            'raw_material_link' => ['nullable', 'url', 'max:500'],
-            'editor_id'         => ['nullable', 'exists:users,id'],
+            'is_scheduled'          => ['boolean'],
+            'priority'              => ['required', 'integer', 'in:1,2,3'],
+            'deadline'              => ['required', 'date'],
+            'raw_material_link'     => ['nullable', 'url', 'max:500'],
+            'raw_material_links'    => ['nullable', 'array', 'max:10'],
+            'raw_material_links.*'  => ['url', 'max:500'],
+            'editor_id'             => ['nullable', 'exists:users,id'],
         ]);
 
         $status = ContentPiece::STATUS_BRIEF;
@@ -61,10 +63,12 @@ class BriefController extends Controller
             'cta'           => ['nullable', 'string', 'max:255'],
             'brief_notes'   => ['nullable', 'string'],
             'client_status' => ['nullable', 'string', 'max:120'],
-            'is_scheduled'      => ['boolean'],
-            'priority'          => ['required', 'integer', 'in:1,2,3'],
-            'deadline'          => ['nullable', 'date'],
-            'raw_material_link' => ['nullable', 'url', 'max:500'],
+            'is_scheduled'          => ['boolean'],
+            'priority'              => ['required', 'integer', 'in:1,2,3'],
+            'deadline'              => ['nullable', 'date'],
+            'raw_material_link'     => ['nullable', 'url', 'max:500'],
+            'raw_material_links'    => ['nullable', 'array', 'max:10'],
+            'raw_material_links.*'  => ['url', 'max:500'],
         ]);
 
         $piece->update($data);

@@ -41,6 +41,7 @@ export type ContentPiece = {
     client_status: string | null;
     is_scheduled: boolean;
     raw_material_link: string | null;
+    raw_material_links: string[] | null;
     final_video_link: string | null;
     internal_comments: string | null;
     client_feedback: string | null;

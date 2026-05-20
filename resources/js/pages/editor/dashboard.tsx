@@ -1,5 +1,7 @@
 ﻿import { Head, Link, usePage } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, ChevronRight, Clock, ExternalLink } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Clock, ExternalLink, Filter } from 'lucide-react';
+import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -28,7 +30,9 @@ function formatDeadline(deadline: string | null) {
     if (diffDays < 0) return { label: `Vencido hace ${Math.abs(diffDays)}d`, urgent: true };
     if (diffDays === 0) return { label: 'Hoy', urgent: true };
     if (diffDays === 1) return { label: 'Mañana', urgent: true };
-    return { label: `${diffDays}d`, urgent: false };
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    return { label: `${d}/${m}`, urgent: false };
 };
 
 function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolean }) {
@@ -108,10 +112,17 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
 
 export default function EditorDashboard({ pieces, stats }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
+    const [clientFilter, setClientFilter] = useState<string>('all');
 
-    const pending = pieces.filter((p) => ['BRIEF', 'EDITING', 'REVISION'].includes(p.status));
-    const inReview = pieces.filter((p) => p.status === 'INTERNAL_REVIEW');
-    const clientReview = pieces.filter((p) => ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status));
+    const uniqueClients = Array.from(
+        new Map(pieces.filter(p => p.client).map(p => [p.client!.id, p.client!])).values()
+    ).sort((a, b) => a.name.localeCompare(b.name));
+
+    const filtered = clientFilter === 'all' ? pieces : pieces.filter(p => String(p.client?.id) === clientFilter);
+
+    const pending = filtered.filter((p) => ['BRIEF', 'EDITING', 'REVISION'].includes(p.status));
+    const inReview = filtered.filter((p) => p.status === 'INTERNAL_REVIEW');
+    const clientReview = filtered.filter((p) => ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status));
 
     return (
         <>
@@ -125,6 +136,24 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                     </h1>
                     <p className="text-muted-foreground mt-1">Tus tareas activas</p>
                 </div>
+
+                {/* Filtro por cliente */}
+                {uniqueClients.length > 1 && (
+                    <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <Select value={clientFilter} onValueChange={setClientFilter}>
+                            <SelectTrigger className="w-48">
+                                <SelectValue placeholder="Todos los clientes" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos los clientes</SelectItem>
+                                {uniqueClients.map(c => (
+                                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
 
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-4">
