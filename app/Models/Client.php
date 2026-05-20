@@ -15,6 +15,7 @@ class Client extends Model
         'roas_goal',
         'meta_ad_account_id',
         'metricool_blog_id',
+        'google_ads_customer_id',
     ];
 
     protected function casts(): array

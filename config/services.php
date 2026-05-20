@@ -34,4 +34,20 @@ return [
         'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
     ],
 
+    'google_ads' => [
+        'developer_token'    => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
+        'client_id'          => env('GOOGLE_ADS_CLIENT_ID'),
+        'client_secret'      => env('GOOGLE_ADS_CLIENT_SECRET'),
+        'refresh_token'      => env('GOOGLE_ADS_REFRESH_TOKEN'),
+        'login_customer_id'  => env('GOOGLE_ADS_LOGIN_CUSTOMER_ID'), // MCC si aplica
+        'api_version'        => env('GOOGLE_ADS_API_VERSION', 'v18'),
+    ],
+
+    'meta_ads' => [
+        'app_id'       => env('META_ADS_APP_ID'),
+        'app_secret'   => env('META_ADS_APP_SECRET'),
+        'access_token' => env('META_ADS_ACCESS_TOKEN'),
+        'api_version'  => env('META_ADS_API_VERSION', 'v19.0'),
+    ],
+
 ];
