@@ -8,7 +8,7 @@ import * as clientRoutes from '@/routes/admin/clients';
 
 export default function ClientCreate() {
     const { data, setData, post, processing, errors } = useForm({
-        name: '', whatsapp_number: '', roas_goal: '3.00', meta_ad_account_id: '',
+        name: '', whatsapp_number: '', roas_goal: '3.00', meta_ad_account_id: '', metricool_blog_id: '',
     });
 
     function submit(e: React.FormEvent) { e.preventDefault(); post(clientRoutes.store.url()); }
@@ -37,6 +37,9 @@ export default function ClientCreate() {
                             </Field>
                             <Field label="Meta Ad Account ID" error={errors.meta_ad_account_id}>
                                 <Input value={data.meta_ad_account_id} onChange={(e) => setData('meta_ad_account_id', e.target.value)} placeholder="act_123456789" className="font-mono" />
+                            </Field>
+                            <Field label="Metricool blog ID" error={errors.metricool_blog_id}>
+                                <Input value={data.metricool_blog_id} onChange={(e) => setData('metricool_blog_id', e.target.value)} placeholder="3107640" className="font-mono" />
                             </Field>
                             <div className="flex justify-end pt-2">
                                 <Button type="submit" disabled={processing}><Save className="mr-1.5 h-4 w-4" />Crear cliente</Button>

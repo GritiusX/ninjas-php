@@ -16,6 +16,26 @@ export type Client = {
     whatsapp_number: string | null;
     roas_goal: number;
     meta_ad_account_id: string | null;
+    metricool_blog_id: string | null;
+};
+
+export type MetricArea = 'awareness' | 'content' | 'community' | 'ads' | 'system';
+
+export type MonthlyMetricValue = {
+    metric_key: string;
+    value: number | null;
+    previous: number | null;
+    delta_pct: number | null;
+};
+
+export type MonthlySnapshotByArea = Record<MetricArea, MonthlyMetricValue[]>;
+
+export type MetricsClientSummary = {
+    id: number;
+    name: string;
+    metricool_blog_id: string | null;
+    has_data: boolean;
+    last_synced_at: string | null;
 };
 
 export type Editor = {

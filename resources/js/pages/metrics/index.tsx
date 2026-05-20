@@ -1,225 +1,135 @@
-﻿import { Head, router } from '@inertiajs/react';
-import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import * as metricsRoutes from '@/routes/metrics';
-import type { AdMetricRow } from '@/types';
+import type { MetricsClientSummary } from '@/types';
 
 type Props = {
-    metrics: AdMetricRow[];
-    filters: { from: string; to: string };
+    clients: MetricsClientSummary[];
 };
 
-const SEMAFORO = {
-    green: {
-        bg: 'bg-green-500/15',
-        border: 'border-green-500/40',
-        text: 'text-green-400',
-        icon: TrendingUp,
-        label: 'En objetivo',
-    },
-    yellow: {
-        bg: 'bg-yellow-500/15',
-        border: 'border-yellow-500/40',
-        text: 'text-yellow-400',
-        icon: Minus,
-        label: 'Cerca',
-    },
-    red: {
-        bg: 'bg-red-500/15',
-        border: 'border-red-500/40',
-        text: 'text-red-400',
-        icon: TrendingDown,
-        label: 'Bajo objetivo',
-    },
-};
+function formatDate(iso: string | null): string {
+    if (!iso) return '—';
+    return new Intl.DateTimeFormat('es-AR', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+    }).format(new Date(iso));
+}
 
-function fmt(n: number, prefix = '') {
+export default function MetricsIndex({ clients }: Props) {
+    const linked = clients.filter((c) => c.metricool_blog_id);
+    const unlinked = clients.filter((c) => !c.metricool_blog_id);
+
     return (
-        prefix +
-        new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(n)
+        <>
+            <Head title="Métricas" />
+
+            <div className="space-y-6 px-4 py-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-foreground">
+                        Métricas de clientes
+                    </h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Snapshot mensual cerrado con datos de Metricool. El sync corre
+                        automáticamente el día 2 de cada mes.
+                    </p>
+                </div>
+
+                {clients.length === 0 ? (
+                    <Card className="bg-card border-border">
+                        <CardContent className="py-10 text-center text-muted-foreground">
+                            Todavía no hay clientes cargados.
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            {linked.map((c) => (
+                                <ClientCard key={c.id} client={c} />
+                            ))}
+                        </div>
+
+                        {unlinked.length > 0 && (
+                            <div className="space-y-3 pt-4">
+                                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Sin conectar a Metricool
+                                </h2>
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                    {unlinked.map((c) => (
+                                        <Card
+                                            key={c.id}
+                                            className="border-border/60 bg-card/50"
+                                        >
+                                            <CardContent className="flex items-center justify-between gap-3 py-4">
+                                                <div className="flex items-center gap-2 text-foreground">
+                                                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                                                    <span className="font-medium">{c.name}</span>
+                                                </div>
+                                                <span className="text-xs text-muted-foreground">
+                                                    Cargá el blog ID
+                                                </span>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </>
     );
 }
 
-function MetricCard({ row }: { row: AdMetricRow }) {
-    const s = SEMAFORO[row.semaforo];
-    const Icon = s.icon;
-    const roas = row.roas_periodo ?? 0;
-    const pct =
-        row.roas_goal > 0 ? Math.round((roas / row.roas_goal) * 100) : 0;
+function ClientCard({ client }: { client: MetricsClientSummary }) {
+    const ready = client.has_data;
 
     return (
-        <Card className={`border bg-card ${s.border}`}>
+        <Card className="bg-card border-border transition hover:border-primary/40">
             <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-base text-foreground">
-                        {row.name}
+                        {client.name}
                     </CardTitle>
                     <span
-                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${s.bg} ${s.text}`}
+                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${
+                            ready
+                                ? 'bg-green-500/15 text-green-400'
+                                : 'bg-yellow-500/15 text-yellow-400'
+                        }`}
                     >
-                        <Icon className="h-3 w-3" />
-                        {s.label}
+                        {ready ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                            <Clock className="h-3 w-3" />
+                        )}
+                        {ready ? 'Datos listos' : 'Sin sincronizar'}
                     </span>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                {/* ROAS principal */}
-                <div className="flex items-end justify-between">
-                    <div>
-                        <p className="mb-0.5 text-xs text-muted-foreground">
-                            ROAS del período
-                        </p>
-                        <p className={`text-3xl font-bold ${s.text}`}>
-                            {roas > 0 ? roas.toFixed(2) : '—'}
-                        </p>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                        <span>Blog ID</span>
+                        <span className="font-mono text-foreground">
+                            {client.metricool_blog_id ?? '—'}
+                        </span>
                     </div>
-                    <div className="text-right">
-                        <p className="mb-0.5 text-xs text-muted-foreground">Objetivo</p>
-                        <p className="text-lg font-semibold text-muted-foreground">
-                            {row.roas_goal.toFixed(2)}
-                        </p>
+                    <div className="flex justify-between">
+                        <span>Última sync</span>
+                        <span className="text-foreground">
+                            {formatDate(client.last_synced_at)}
+                        </span>
                     </div>
                 </div>
-
-                {/* Barra de progreso */}
-                <div>
-                    <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                        <span>0</span>
-                        <span>{pct}% del objetivo</span>
-                        <span>{row.roas_goal.toFixed(2)}</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                        <div
-                            className={`h-full rounded-full transition-all ${
-                                row.semaforo === 'green'
-                                    ? 'bg-green-500'
-                                    : row.semaforo === 'yellow'
-                                      ? 'bg-yellow-500'
-                                      : 'bg-red-500'
-                            }`}
-                            style={{ width: `${Math.min(pct, 100)}%` }}
-                        />
-                    </div>
-                </div>
-
-                {/* Stats secundarios */}
-                <div className="grid grid-cols-3 gap-2 border-t border-border pt-1">
-                    <div>
-                        <p className="text-xs text-muted-foreground">Inversión</p>
-                        <p className="text-sm font-medium text-foreground">
-                            {fmt(row.total_investment, '$')}
-                        </p>
-                    </div>
-                    <div>
-                        <p className="text-xs text-muted-foreground">Ingresos</p>
-                        <p className="text-sm font-medium text-foreground">
-                            {fmt(row.total_revenue, '$')}
-                        </p>
-                    </div>
-                    <div>
-                        <p className="text-xs text-muted-foreground">Ventas</p>
-                        <p className="text-sm font-medium text-foreground">
-                            {fmt(row.total_transactions)}
-                        </p>
-                    </div>
-                </div>
+                <Link href={metricsRoutes.show.url(client.id)}>
+                    <Button size="sm" variant="outline" className="w-full">
+                        Ver dashboard
+                        <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Button>
+                </Link>
             </CardContent>
         </Card>
-    );
-}
-
-export default function AdsIndex({ metrics, filters }: Props) {
-    const [from, setFrom] = useState(filters.from);
-    const [to, setTo] = useState(filters.to);
-
-    function applyFilters(e: React.FormEvent) {
-        e.preventDefault();
-        router.get(metricsRoutes.index(), { from, to }, { preserveState: true });
-    }
-
-    const green = metrics.filter((m) => m.semaforo === 'green').length;
-    const yellow = metrics.filter((m) => m.semaforo === 'yellow').length;
-    const red = metrics.filter((m) => m.semaforo === 'red').length;
-
-    return (
-        <>
-            <Head title="Panel de Ads" />
-
-            <div className="space-y-6 px-4 py-6">
-                {/* Header */}
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">
-                            Panel de Ads
-                        </h1>
-                        <div className="mt-1.5 flex items-center gap-3">
-                            <span className="flex items-center gap-1.5 text-sm text-green-400">
-                                <span className="h-2 w-2 rounded-full bg-green-500" />
-                                {green} en objetivo
-                            </span>
-                            <span className="flex items-center gap-1.5 text-sm text-yellow-400">
-                                <span className="h-2 w-2 rounded-full bg-yellow-500" />
-                                {yellow} cerca
-                            </span>
-                            <span className="flex items-center gap-1.5 text-sm text-red-400">
-                                <span className="h-2 w-2 rounded-full bg-red-500" />
-                                {red} bajo objetivo
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Filtro de fechas */}
-                    <form
-                        onSubmit={applyFilters}
-                        className="flex items-end gap-2"
-                    >
-                        <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">
-                                Desde
-                            </Label>
-                            <Input
-                                type="date"
-                                value={from}
-                                onChange={(e) => setFrom(e.target.value)}
-                                className="h-8 w-36 text-sm"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">
-                                Hasta
-                            </Label>
-                            <Input
-                                type="date"
-                                value={to}
-                                onChange={(e) => setTo(e.target.value)}
-                                className="h-8 w-36 text-sm"
-                            />
-                        </div>
-                        <Button type="submit" size="sm" variant="outline">
-                            Aplicar
-                        </Button>
-                    </form>
-                </div>
-
-                {/* Grid de métricas */}
-                {metrics.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {metrics.map((row) => (
-                            <MetricCard key={row.id} row={row} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <p className="text-muted-foreground">
-                            No hay métricas para el período seleccionado.
-                        </p>
-                    </div>
-                )}
-            </div>
-        </>
     );
 }

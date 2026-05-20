@@ -4,7 +4,7 @@ use App\Http\Controllers\Admin\AccessController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\ClientAdminController;
 use App\Http\Controllers\Admin\UserAdminController;
-use App\Http\Controllers\AdsController;
+use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\Editor\EditorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PM\BriefController;
@@ -54,7 +54,11 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
 });
 
 // --- Panel de Métricas (PM + Admin) ---
-Route::middleware(['auth', 'role:pm'])->get('/metrics', [AdsController::class, 'index'])->name('metrics.index');
+Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->group(function () {
+    Route::get('/', [MetricsController::class, 'index'])->name('index');
+    Route::get('/{client}', [MetricsController::class, 'show'])->name('show');
+    Route::post('/{client}/sync', [MetricsController::class, 'sync'])->name('sync');
+});
 
 // --- Notificaciones (todos los roles) ---
 Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {
