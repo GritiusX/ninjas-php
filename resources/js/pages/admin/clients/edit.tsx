@@ -14,6 +14,7 @@ export default function ClientEdit({ client }: { client: Client }) {
         roas_goal: String(client.roas_goal),
         meta_ad_account_id: client.meta_ad_account_id ?? '',
         metricool_blog_id: client.metricool_blog_id ?? '',
+        google_ads_customer_id: client.google_ads_customer_id ?? '',
     });
 
     function submit(e: React.FormEvent) { e.preventDefault(); put(clientRoutes.update.url(client.id)); }
@@ -45,6 +46,9 @@ export default function ClientEdit({ client }: { client: Client }) {
                             </Field>
                             <Field label="Metricool blog ID" error={errors.metricool_blog_id}>
                                 <Input value={data.metricool_blog_id} onChange={(e) => setData('metricool_blog_id', e.target.value)} placeholder="3107640" className="font-mono" />
+                            </Field>
+                            <Field label="Google Ads Customer ID" error={errors.google_ads_customer_id}>
+                                <Input value={data.google_ads_customer_id} onChange={(e) => setData('google_ads_customer_id', e.target.value)} placeholder="511-066-6812" className="font-mono" />
                             </Field>
                             <div className="flex justify-end pt-2">
                                 <Button type="submit" disabled={processing}><Save className="mr-1.5 h-4 w-4" />Guardar cambios</Button>

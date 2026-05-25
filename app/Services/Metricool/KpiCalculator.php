@@ -98,15 +98,25 @@ class KpiCalculator
 
     private function ads(MetricoolBundle $b): array
     {
+        $g = $b->ads['google'] ?? [];
+
+        $spend       = isset($g['spend'])       ? (float) $g['spend']       : null;
+        $conversions = isset($g['conversions']) ? (float) $g['conversions'] : null;
+        $convValue   = isset($g['conversions_value']) ? (float) $g['conversions_value'] : null;
+
+        $convRate = ($conversions !== null && isset($g['clicks']) && $g['clicks'] > 0)
+            ? round($conversions / $g['clicks'] * 100, 4)
+            : null;
+
         return [
-            ['area' => self::AREA_ADS, 'metric_key' => 'spend_total',      'value' => null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'roas',             'value' => null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'cpa',              'value' => null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'cpc',              'value' => null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'ctr',              'value' => null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'conversions',      'value' => null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'conversion_value', 'value' => null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'conversion_rate',  'value' => null],
+            ['area' => self::AREA_ADS, 'metric_key' => 'spend_total',      'value' => $spend],
+            ['area' => self::AREA_ADS, 'metric_key' => 'roas',             'value' => $g['roas'] ?? null],
+            ['area' => self::AREA_ADS, 'metric_key' => 'cpa',              'value' => $g['cpa'] ?? null],
+            ['area' => self::AREA_ADS, 'metric_key' => 'cpc',              'value' => $g['cpc'] ?? null],
+            ['area' => self::AREA_ADS, 'metric_key' => 'ctr',              'value' => $g['ctr'] ?? null],
+            ['area' => self::AREA_ADS, 'metric_key' => 'conversions',      'value' => $conversions],
+            ['area' => self::AREA_ADS, 'metric_key' => 'conversion_value', 'value' => $convValue],
+            ['area' => self::AREA_ADS, 'metric_key' => 'conversion_rate',  'value' => $convRate],
             ['area' => self::AREA_ADS, 'metric_key' => 'cac',              'value' => null],
         ];
     }

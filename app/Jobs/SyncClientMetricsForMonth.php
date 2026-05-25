@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Client;
 use App\Models\MonthlySnapshot;
+use App\Services\GoogleAds\GoogleAdsService;
 use App\Services\Metricool\KpiCalculator;
 use App\Services\Metricool\MetricoolBundleBuilder;
 use Illuminate\Bus\Queueable;
@@ -29,7 +30,7 @@ class SyncClientMetricsForMonth implements ShouldQueue
     ) {
     }
 
-    public function handle(MetricoolBundleBuilder $builder, KpiCalculator $calculator): void
+    public function handle(MetricoolBundleBuilder $builder, KpiCalculator $calculator, GoogleAdsService $googleAds): void
     {
         $client = Client::find($this->clientId);
         if (! $client || ! $client->metricool_blog_id) {
@@ -47,6 +48,14 @@ class SyncClientMetricsForMonth implements ShouldQueue
             $start,
             $end,
         );
+
+        if ($client->google_ads_customer_id) {
+            $bundle->ads['google'] = $googleAds->getMonthlyMetrics(
+                $client->google_ads_customer_id,
+                $start,
+                $end,
+            );
+        }
 
         $rows = $calculator->build($bundle);
         $now = now();

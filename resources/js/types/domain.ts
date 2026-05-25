@@ -17,6 +17,7 @@ export type Client = {
     roas_goal: number;
     meta_ad_account_id: string | null;
     metricool_blog_id: string | null;
+    google_ads_customer_id: string | null;
 };
 
 export type MetricArea = 'awareness' | 'content' | 'community' | 'ads' | 'system';
