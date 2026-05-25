@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Http\Controllers\PM;
+
+use App\Http\Controllers\Controller;
+use App\Models\ContentPiece;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class BriefPdfController extends Controller
+{
+    public function download(ContentPiece $piece): StreamedResponse
+    {
+        $piece->load('client', 'editor');
+
+        $pdf = Pdf::loadView('pdf.brief', ['piece' => $piece]);
+
+        $filename = 'brief-' . Str::slug($piece->concept ?? $piece->product ?? (string) $piece->id) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+}

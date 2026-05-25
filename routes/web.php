@@ -3,11 +3,13 @@
 use App\Http\Controllers\Admin\AccessController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\ClientAdminController;
+use App\Http\Controllers\Admin\GoogleAdsAuthController;
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\Editor\EditorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PM\BriefController;
+use App\Http\Controllers\PM\BriefPdfController;
 use App\Http\Controllers\PM\PmController;
 use App\Http\Controllers\PM\ReviewController;
 use App\Http\Controllers\Webhook\WhatsAppWebhookController;
@@ -31,6 +33,7 @@ Route::middleware('auth')->get('/dashboard', function () {
 Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->group(function () {
     Route::get('/', [EditorController::class, 'dashboard'])->name('dashboard');
     Route::get('/task/{piece}', [EditorController::class, 'task'])->name('task');
+    Route::get('/task/{piece}/pdf', [BriefPdfController::class, 'download'])->name('task.pdf');
     Route::post('/submit-video/{piece}', [EditorController::class, 'submitVideo'])->name('submit-video');
 });
 
@@ -44,6 +47,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::put('/brief/{piece}', [BriefController::class, 'update'])->name('brief.update');
     Route::delete('/brief/{piece}', [BriefController::class, 'destroy'])->name('brief.destroy');
     Route::post('/brief/{piece}/assign', [BriefController::class, 'assign'])->name('brief.assign');
+    Route::get('/brief/{piece}/pdf', [BriefPdfController::class, 'download'])->name('brief.pdf');
 
     // Review room
     Route::get('/review/{piece}', [ReviewController::class, 'show'])->name('review.show');
@@ -65,6 +69,12 @@ Route::middleware('auth')->prefix('notifications')->name('notifications.')->grou
     Route::get('/', [NotificationController::class, 'index'])->name('index');
     Route::post('/{notification}/read', [NotificationController::class, 'markRead'])->name('read');
     Route::post('/read-all', [NotificationController::class, 'markAllRead'])->name('read-all');
+});
+
+// --- Google Ads OAuth (solo admin) ---
+Route::middleware(['auth', 'role:admin'])->prefix('google-ads')->name('google-ads.')->group(function () {
+    Route::get('/connect', [GoogleAdsAuthController::class, 'redirect'])->name('connect');
+    Route::get('/callback', [GoogleAdsAuthController::class, 'callback'])->name('callback');
 });
 
 // --- Admin ---

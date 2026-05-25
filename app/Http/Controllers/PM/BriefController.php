@@ -27,9 +27,9 @@ class BriefController extends Controller
             'priority'              => ['required', 'integer', 'in:1,2,3'],
             'deadline'              => ['required', 'date'],
             'raw_material_link'     => ['nullable', 'url', 'max:500'],
-            'raw_material_links'    => ['nullable', 'array', 'max:10'],
-            'raw_material_links.*'  => ['url', 'max:500'],
-            'editor_id'             => ['nullable', 'exists:users,id'],
+            'raw_material_links'    => ['required', 'array', 'min:1', 'max:10'],
+            'raw_material_links.*'  => ['required', 'url', 'max:500'],
+            'editor_id'             => ['required', 'exists:users,id'],
         ]);
 
         $status = ContentPiece::STATUS_BRIEF;

@@ -30,7 +30,11 @@
       "WebFetch(domain:static.metricool.com)",
       "WebFetch(domain:help.metricool.com)",
       "WebFetch(domain:docs.airbyte.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\GuidoPawluk\\\\Desktop\\\\Guido\\\\ninjas-php\" -Recurse -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(composer require *)",
+      "PowerShell(Get-Command *)"
     ]
   }
 }

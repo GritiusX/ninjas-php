@@ -5,6 +5,7 @@ import {
     ChevronDown,
     ChevronRight,
     Clock,
+    Download,
     ExternalLink,
     FilePlus,
     Pencil,
@@ -298,7 +299,13 @@ function NewBriefModal({
         );
     }
 
-    const canSubmit = !processing && !!data.client_id && !!data.concept.trim() && !!data.deadline;
+    const canSubmit =
+        !processing &&
+        !!data.client_id &&
+        !!data.concept.trim() &&
+        !!data.deadline &&
+        data.editor_id !== 'none' &&
+        data.raw_material_links.some((l) => l.trim() !== '');
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -414,7 +421,10 @@ function NewBriefModal({
                             placeholder: 'Ej: Pedí el tuyo en...',
                         })}
                         <div className="space-y-1.5">
-                            <Label>Asignar editor (opcional)</Label>
+                            <Label>
+                                Asignar editor{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
                             <Select
                                 value={data.editor_id}
                                 onValueChange={(v) => setData('editor_id', v)}
@@ -436,7 +446,10 @@ function NewBriefModal({
 
                     {/* Material de referencia - múltiples links */}
                     <div className="space-y-1.5">
-                        <Label>Material de referencia</Label>
+                        <Label>
+                            Material de referencia{' '}
+                            <span className="text-destructive">*</span>
+                        </Label>
                         <MultiLinkInput
                             links={data.raw_material_links}
                             onChange={(links) => setData('raw_material_links', links)}
@@ -687,6 +700,17 @@ function BriefCard({
                                     Asignar
                                 </Button>
                             )}
+                            <a href={`/pm/brief/${piece.id}/pdf`} target="_blank" rel="noopener noreferrer">
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    type="button"
+                                    title="Descargar brief PDF"
+                                >
+                                    <Download className="h-3.5 w-3.5" />
+                                </Button>
+                            </a>
                             <Button
                                 size="icon"
                                 variant="ghost"

@@ -1,5 +1,5 @@
 ﻿import { Head, Link, useForm } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, Clock, ExternalLink, Link2, Send, Target, BookOpen, MessageSquare, Megaphone } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Clock, Download, ExternalLink, Link2, Send, Target, BookOpen, MessageSquare, Megaphone } from 'lucide-react';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -68,13 +68,24 @@ export default function EditorTask({ piece }: Props) {
             <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">
                 {/* Header */}
                 <div className="space-y-3">
-                    <Link
-                        href={editorRoutes.dashboard.url()}
-                        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Mis tareas
-                    </Link>
+                    <div className="flex items-center justify-between">
+                        <Link
+                            href={editorRoutes.dashboard.url()}
+                            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                            Mis tareas
+                        </Link>
+                        <a
+                            href={`/editor/task/${piece.id}/pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <Download className="h-4 w-4" />
+                            Descargar brief
+                        </a>
+                    </div>
 
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
