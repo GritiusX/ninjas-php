@@ -75,6 +75,9 @@ Route::middleware('auth')->prefix('notifications')->name('notifications.')->grou
 Route::middleware(['auth', 'role:admin'])->prefix('google-ads')->name('google-ads.')->group(function () {
     Route::get('/connect', [GoogleAdsAuthController::class, 'redirect'])->name('connect');
     Route::get('/callback', [GoogleAdsAuthController::class, 'callback'])->name('callback');
+    Route::get('/accounts', [GoogleAdsAuthController::class, 'accounts'])->name('accounts');
+    Route::get('/accounts/data', [GoogleAdsAuthController::class, 'accountsData'])->name('accounts.data');
+    Route::post('/accounts/map', [GoogleAdsAuthController::class, 'mapAccounts'])->name('accounts.map');
 });
 
 // --- Admin ---
