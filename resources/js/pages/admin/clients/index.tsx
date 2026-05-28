@@ -3,6 +3,7 @@ import { Link2, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import {
     Dialog,
     DialogContent,
@@ -131,10 +132,12 @@ function GoogleAdsDialog({ clients, onClose }: { clients: Client[]; onClose: () 
 
 export default function ClientsIndex({ clients }: { clients: Client[] }) {
     const [gadsOpen, setGadsOpen] = useState(false);
+    const [pending, setPending] = useState<{ id: number; name: string } | null>(null);
 
-    function destroy(id: number, name: string) {
-        if (!confirm(`¿Eliminar a ${name}? Se eliminarán todas sus piezas y métricas.`)) return;
-        router.delete(clientRoutes.destroy.url(id));
+    function handleConfirmDestroy() {
+        if (!pending) return;
+        router.delete(clientRoutes.destroy.url(pending.id));
+        setPending(null);
     }
 
     return (
@@ -191,7 +194,7 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                                                         <Pencil className="h-3.5 w-3.5" />
                                                     </Button>
                                                 </Link>
-                                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400" onClick={() => destroy(c.id, c.name)}>
+                                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400" onClick={() => setPending({ id: c.id, name: c.name })}>
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>
                                             </div>
@@ -210,6 +213,15 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
             <Dialog open={gadsOpen} onOpenChange={(v) => !v && setGadsOpen(false)}>
                 {gadsOpen && <GoogleAdsDialog clients={clients} onClose={() => setGadsOpen(false)} />}
             </Dialog>
+
+            <ConfirmDialog
+                open={!!pending}
+                title={`¿Eliminar a ${pending?.name}?`}
+                description="Se eliminarán todas sus piezas y métricas. Esta acción no se puede deshacer."
+                confirmLabel="Eliminar"
+                onConfirm={handleConfirmDestroy}
+                onCancel={() => setPending(null)}
+            />
         </>
     );
 }

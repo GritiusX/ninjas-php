@@ -1,7 +1,8 @@
-﻿import { Head, router, useForm } from '@inertiajs/react';
-import { Check, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Head, router } from '@inertiajs/react';
+import { Check } from 'lucide-react';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import * as accessRoutes from '@/routes/admin/access';
 import type { Client, Editor } from '@/types';
 
@@ -19,6 +20,8 @@ type Props = {
 };
 
 export default function MatrixIndex({ editors, clients, accesses }: Props) {
+    const [pending, setPending] = useState<AccessRecord | null>(null);
+
     function hasAccess(userId: number, clientId: number): AccessRecord | undefined {
         return accesses[userId]?.find((a) => a.client_id === clientId);
     }
@@ -26,11 +29,16 @@ export default function MatrixIndex({ editors, clients, accesses }: Props) {
     function toggle(userId: number, clientId: number) {
         const existing = hasAccess(userId, clientId);
         if (existing) {
-            if (!confirm('¿Revocar este acceso?')) return;
-            router.delete(accessRoutes.revoke.url(existing.id), { preserveScroll: true });
+            setPending(existing);
         } else {
             router.post(accessRoutes.grant.url(), { user_id: userId, client_id: clientId }, { preserveScroll: true });
         }
+    }
+
+    function handleConfirmRevoke() {
+        if (!pending) return;
+        router.delete(accessRoutes.revoke.url(pending.id), { preserveScroll: true });
+        setPending(null);
     }
 
     return (
@@ -93,6 +101,15 @@ export default function MatrixIndex({ editors, clients, accesses }: Props) {
                     Los accesos sin fecha de vencimiento son permanentes. Para accesos temporales, usá la sección de Accesos.
                 </p>
             </div>
+
+            <ConfirmDialog
+                open={!!pending}
+                title="¿Revocar este acceso?"
+                description="El editor perderá acceso a este cliente inmediatamente."
+                confirmLabel="Revocar"
+                onConfirm={handleConfirmRevoke}
+                onCancel={() => setPending(null)}
+            />
         </>
     );
 }
