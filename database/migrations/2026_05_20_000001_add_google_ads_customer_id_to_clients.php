@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('clients', 'google_ads_customer_id')) {
+            return;
+        }
+
         Schema::table('clients', function (Blueprint $table) {
             $table->string('google_ads_customer_id')->nullable()->after('meta_ad_account_id');
         });
