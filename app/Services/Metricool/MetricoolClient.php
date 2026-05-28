@@ -129,22 +129,36 @@ class MetricoolClient
         ];
     }
 
-    private function get(string $path, array $query): array
+    private function get(string $path, array $query, int $retries = 2): array
     {
         $url = $this->baseUrl . $path;
         $params = array_merge($query, [
             'userId' => $this->userId,
         ]);
 
-        $response = $this->http()->get($url, $params);
+        $attempt = 0;
+        do {
+            $response = $this->http()->get($url, $params);
 
-        if ($response->failed()) {
-            $this->logFailure($path, $params, $response);
-            return [];
-        }
+            if ($response->successful()) {
+                $data = $response->json();
+                return is_array($data) ? $data : [];
+            }
 
-        $data = $response->json();
-        return is_array($data) ? $data : [];
+            // Only retry on server errors (5xx); client errors (4xx) are final
+            if ($response->clientError()) {
+                $this->logFailure($path, $params, $response);
+                return [];
+            }
+
+            $attempt++;
+            if ($attempt <= $retries) {
+                sleep(2);
+            }
+        } while ($attempt <= $retries);
+
+        $this->logFailure($path, $params, $response);
+        return [];
     }
 
     private function http(): PendingRequest
