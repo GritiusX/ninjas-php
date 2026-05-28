@@ -1,5 +1,6 @@
 ﻿import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,11 +9,13 @@ import * as clientRoutes from '@/routes/admin/clients';
 import type { Client } from '@/types';
 
 export default function ClientEdit({ client }: { client: Client }) {
+    const [showToken, setShowToken] = useState(false);
     const { data, setData, put, processing, errors } = useForm({
         name: client.name,
         whatsapp_number: client.whatsapp_number ?? '',
         roas_goal: String(client.roas_goal),
         meta_ad_account_id: client.meta_ad_account_id ?? '',
+        meta_access_token: '',
         metricool_blog_id: client.metricool_blog_id ?? '',
         google_ads_customer_id: client.google_ads_customer_id ?? '',
     });
@@ -43,6 +46,21 @@ export default function ClientEdit({ client }: { client: Client }) {
                             </Field>
                             <Field label="Meta Ad Account ID" error={errors.meta_ad_account_id}>
                                 <Input value={data.meta_ad_account_id} onChange={(e) => setData('meta_ad_account_id', e.target.value)} placeholder="act_123456789" className="font-mono" />
+                            </Field>
+                            <Field label="Meta Access Token" error={errors.meta_access_token}>
+                                <div className="relative">
+                                    <Input
+                                        type={showToken ? 'text' : 'password'}
+                                        value={data.meta_access_token}
+                                        onChange={(e) => setData('meta_access_token', e.target.value)}
+                                        placeholder={client.meta_access_token ? '••••••••  (dejar vacío para no cambiar)' : 'EAAxxxxx...'}
+                                        className="font-mono pr-10"
+                                    />
+                                    <button type="button" onClick={() => setShowToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                                        {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                                {client.meta_access_token && <p className="text-xs text-muted-foreground mt-1">Token guardado. Dejá vacío para mantenerlo.</p>}
                             </Field>
                             <Field label="Metricool blog ID" error={errors.metricool_blog_id}>
                                 <Input value={data.metricool_blog_id} onChange={(e) => setData('metricool_blog_id', e.target.value)} placeholder="3107640" className="font-mono" />

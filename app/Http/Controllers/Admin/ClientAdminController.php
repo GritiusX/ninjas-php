@@ -26,12 +26,13 @@ class ClientAdminController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'                    => ['required', 'string', 'max:120'],
-            'whatsapp_number'         => ['nullable', 'string', 'max:30'],
-            'roas_goal'               => ['required', 'numeric', 'min:0'],
-            'meta_ad_account_id'      => ['nullable', 'string', 'max:50'],
-            'metricool_blog_id'       => ['nullable', 'string', 'max:30'],
-            'google_ads_customer_id'  => ['nullable', 'string', 'max:30'],
+            'name'                   => ['required', 'string', 'max:120'],
+            'whatsapp_number'        => ['nullable', 'string', 'max:30'],
+            'roas_goal'              => ['required', 'numeric', 'min:0'],
+            'meta_ad_account_id'     => ['nullable', 'string', 'max:50'],
+            'meta_access_token'      => ['nullable', 'string'],
+            'metricool_blog_id'      => ['nullable', 'string', 'max:30'],
+            'google_ads_customer_id' => ['nullable', 'string', 'max:50'],
         ]);
 
         Client::create($data);
@@ -47,13 +48,19 @@ class ClientAdminController extends Controller
     public function update(Request $request, Client $client): RedirectResponse
     {
         $data = $request->validate([
-            'name'                    => ['required', 'string', 'max:120'],
-            'whatsapp_number'         => ['nullable', 'string', 'max:30'],
-            'roas_goal'               => ['required', 'numeric', 'min:0'],
-            'meta_ad_account_id'      => ['nullable', 'string', 'max:50'],
-            'metricool_blog_id'       => ['nullable', 'string', 'max:30'],
-            'google_ads_customer_id'  => ['nullable', 'string', 'max:30'],
+            'name'                   => ['required', 'string', 'max:120'],
+            'whatsapp_number'        => ['nullable', 'string', 'max:30'],
+            'roas_goal'              => ['required', 'numeric', 'min:0'],
+            'meta_ad_account_id'     => ['nullable', 'string', 'max:50'],
+            'meta_access_token'      => ['nullable', 'string'],
+            'metricool_blog_id'      => ['nullable', 'string', 'max:30'],
+            'google_ads_customer_id' => ['nullable', 'string', 'max:50'],
         ]);
+
+        // No sobreescribir el token si viene vacío (el campo se deja en blanco cuando no se quiere cambiar)
+        if (empty($data['meta_access_token'])) {
+            unset($data['meta_access_token']);
+        }
 
         $client->update($data);
 

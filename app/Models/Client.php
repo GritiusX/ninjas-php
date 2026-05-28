@@ -14,6 +14,7 @@ class Client extends Model
         'whatsapp_number',
         'roas_goal',
         'meta_ad_account_id',
+        'meta_access_token',
         'metricool_blog_id',
         'google_ads_customer_id',
     ];
@@ -21,7 +22,8 @@ class Client extends Model
     protected function casts(): array
     {
         return [
-            'roas_goal' => 'decimal:2',
+            'roas_goal'         => 'decimal:2',
+            'meta_access_token' => 'encrypted',
         ];
     }
 
