@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
+    Download,
     Eye,
     Megaphone,
     Minus,
@@ -271,6 +272,16 @@ export default function MetricsShow({ client, period, metrics }: Props) {
                             <RefreshCw className={`mr-1.5 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
                             Sincronizar ahora
                         </Button>
+                        <a
+                            href={`/metrics/${client.id}/pdf?period=${period_}`}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            <Button type="button" variant="secondary" size="sm">
+                                <Download className="mr-1.5 h-4 w-4" />
+                                Descargar reporte
+                            </Button>
+                        </a>
                     </div>
                 </div>
 

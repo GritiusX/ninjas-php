@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ClientAdminController;
 use App\Http\Controllers\Admin\GoogleAdsAuthController;
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\MetricsController;
+use App\Http\Controllers\MetricsPdfController;
 use App\Http\Controllers\Editor\EditorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PM\BriefController;
@@ -61,6 +62,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
 Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->group(function () {
     Route::get('/', [MetricsController::class, 'index'])->name('index');
     Route::get('/{client}', [MetricsController::class, 'show'])->name('show');
+    Route::get('/{client}/pdf', [MetricsPdfController::class, 'download'])->name('pdf');
     Route::post('/{client}/sync', [MetricsController::class, 'sync'])->name('sync');
 });
 
