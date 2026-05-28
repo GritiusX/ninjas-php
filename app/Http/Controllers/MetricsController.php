@@ -93,13 +93,21 @@ class MetricsController extends Controller
 
         $target = $this->resolveMonth($request);
 
-        if ($request->boolean('inline')) {
-            (new SyncClientMetricsForMonth($client->id, $target->year, $target->month))
-                ->handle(app(MetricoolBundleBuilder::class), app(KpiCalculator::class));
-            $message = 'Sincronización completada.';
-        } else {
-            dispatch(new SyncClientMetricsForMonth($client->id, $target->year, $target->month));
-            $message = 'Sincronización encolada. Se actualizará en breve.';
+        try {
+            if ($request->boolean('inline')) {
+                (new SyncClientMetricsForMonth($client->id, $target->year, $target->month))
+                    ->handle(app(MetricoolBundleBuilder::class), app(KpiCalculator::class));
+                $message = 'Sincronización completada.';
+            } else {
+                dispatch(new SyncClientMetricsForMonth($client->id, $target->year, $target->month));
+                $message = 'Sincronización encolada. Se actualizará en breve.';
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[MetricsSync] Error al sincronizar', [
+                'client_id' => $client->id,
+                'error'     => $e->getMessage(),
+            ]);
+            return back()->with('error', 'Error al sincronizar: ' . $e->getMessage());
         }
 
         return back()->with('success', $message);
