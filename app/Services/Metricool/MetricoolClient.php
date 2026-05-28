@@ -156,11 +156,18 @@ class MetricoolClient
 
     private function logFailure(string $path, array $params, Response $response): void
     {
-        Log::warning('Metricool API call failed', [
+        $context = [
             'path'   => $path,
             'params' => $params,
             'status' => $response->status(),
             'body'   => mb_substr((string) $response->body(), 0, 300),
-        ]);
+        ];
+
+        // 5xx = Metricool server error, not our fault — log as info to avoid noise
+        if ($response->serverError()) {
+            Log::info('Metricool endpoint unavailable (5xx) — skipping', $context);
+        } else {
+            Log::warning('Metricool API call failed', $context);
+        }
     }
 }
