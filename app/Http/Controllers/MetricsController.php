@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\SyncClientMetricsForMonth;
 use App\Models\Client;
 use App\Models\MonthlySnapshot;
+use App\Services\GoogleAds\GoogleAdsService;
 use App\Services\Metricool\KpiCalculator;
 use App\Services\Metricool\MetricoolBundleBuilder;
 use Carbon\CarbonInterface;
@@ -96,7 +97,7 @@ class MetricsController extends Controller
         try {
             if ($request->boolean('inline')) {
                 (new SyncClientMetricsForMonth($client->id, $target->year, $target->month))
-                    ->handle(app(MetricoolBundleBuilder::class), app(KpiCalculator::class));
+                    ->handle(app(MetricoolBundleBuilder::class), app(KpiCalculator::class), app(GoogleAdsService::class));
                 $message = 'Sincronización completada.';
             } else {
                 dispatch(new SyncClientMetricsForMonth($client->id, $target->year, $target->month));
