@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\ContentPiece;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\Response;
 
 class BriefPdfController extends Controller
 {
-    public function download(ContentPiece $piece): StreamedResponse
+    public function download(ContentPiece $piece): Response
     {
         $piece->load('client', 'editor');
 
