@@ -9,7 +9,8 @@ class MetricoolBundleBuilder
     private const STATS_TIMELINE_METRICS = [
         // Instagram
         'igStoriesCount',   // replaces /stats/instagram/stories for count
-        'igFollowers',      // total followers (acumulado)
+        'igFollowers',      // total Instagram followers (acumulado)
+        'igFollowing',      // total following
         'igEngagement',     // engagement total
         'igSaved',          // guardados totales
         'igLikes',          // likes totales
@@ -19,6 +20,8 @@ class MetricoolBundleBuilder
         'igStoriesReach',   // alcance de stories
         'igStoriesImpressions', // impresiones de stories
         'igwebsite_clicks', // clicks al bio link
+        // Facebook page
+        'facebookLikes',    // total Facebook followers/likes
         // Facebook Ads
         'spend',
         'clicks',

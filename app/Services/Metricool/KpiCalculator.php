@@ -86,14 +86,19 @@ class KpiCalculator
         $impressions     = $b->timelineSum('impressions');
         $growthEfficiency = $impressions > 0 ? ($netFollowers / $impressions) * 1000 : 0;
 
+        $igFollowersTotal = $b->statsTimelineTotal('igFollowers');
+        $fbFollowersTotal = $b->statsTimelineTotal('facebookLikes');
+
         return [
-            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'followers_gained', 'value' => $followersGained],
-            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'followers_lost',   'value' => $followersLost],
-            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'followers_net',    'value' => $netFollowers],
-            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'follow_ratio',     'value' => $ratio],
-            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'story_replies',    'value' => $storyReplies],
-            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'dms',              'value' => null],
-            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'growth_efficiency','value' => $growthEfficiency],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'ig_followers_total', 'value' => $igFollowersTotal],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'fb_followers_total', 'value' => $fbFollowersTotal],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'followers_gained',   'value' => $followersGained],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'followers_lost',     'value' => $followersLost],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'followers_net',      'value' => $netFollowers],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'follow_ratio',       'value' => $ratio],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'story_replies',      'value' => $storyReplies],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'dms',                'value' => null],
+            ['area' => self::AREA_COMMUNITY, 'metric_key' => 'growth_efficiency',  'value' => $growthEfficiency],
         ];
     }
 

@@ -158,6 +158,8 @@ $metricLabels = [
     'engagement_rate'   => ['label' => 'Engagement rate',       'format' => 'percent' ],
     'reels_pct'         => ['label' => '% reels sobre total',   'format' => 'percent' ],
     'virality_relative' => ['label' => 'Viralidad relativa',    'format' => 'ratio'   ],
+    'ig_followers_total'=> ['label' => 'Seguidores IG (total)', 'format' => 'number'  ],
+    'fb_followers_total'=> ['label' => 'Seguidores FB (total)', 'format' => 'number'  ],
     'followers_gained'  => ['label' => 'Seguidores ganados',    'format' => 'number'  ],
     'followers_lost'    => ['label' => 'Seguidores perdidos',   'format' => 'number'  ],
     'followers_net'     => ['label' => 'Balance neto',          'format' => 'number'  ],
