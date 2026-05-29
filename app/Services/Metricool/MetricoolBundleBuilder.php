@@ -63,7 +63,8 @@ class MetricoolBundleBuilder
 
         $bundle->posts['instagram']   = $this->rows($this->client->instagramPosts($blogId, $start, $end));
         $bundle->reels['instagram']   = $this->rows($this->client->instagramReels($blogId, $start, $end));
-        $bundle->stories['instagram'] = $this->rows($this->client->instagramStories($blogId, $start, $end));
+        // instagramStories() omitted — endpoint returns 500 consistently.
+        // stories_count comes from igStoriesCount via statsTimeline instead.
 
         $bundle->posts['facebook']    = $this->rows($this->client->facebookPosts($blogId, $start, $end));
         $bundle->reels['facebook']    = $this->rows($this->client->facebookReels($blogId, $start, $end));
