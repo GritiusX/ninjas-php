@@ -105,29 +105,29 @@ class KpiCalculator
     private function ads(MetricoolBundle $b): array
     {
         // Primary source: Facebook Ads via Metricool stats/timeline
-        $spend       = $b->statsTimelineTotal('spend');
-        $clicks      = $b->statsTimelineTotal('clicks');
-        $convValue   = $b->statsTimelineTotal('total_action_value');
-        $cpc         = $b->statsTimelineAvg('cpc');
-        $cpm         = $b->statsTimelineAvg('cpm');
-        $ctr         = $b->statsTimelineAvg('ctr');
-        $adsReach    = $b->statsTimelineTotal('reach');
+        $spend     = $b->statsTimelineTotal('spend');
+        $clicks    = $b->statsTimelineTotal('clicks');
+        $convValue = $b->statsTimelineTotal('total_action_value');
+        $cpc       = $b->statsTimelineAvg('cpc');
+        $cpm       = $b->statsTimelineAvg('cpm');
+        $ctr       = $b->statsTimelineAvg('ctr');
 
-        // Fallback: Google Ads (legacy)
+        // Fallback: Google Ads — use for any metric not covered by Metricool FB
         $g = $b->ads['google'] ?? [];
-        if ($spend === null && isset($g['spend'])) {
-            $spend = (float) $g['spend'];
-        }
+        if ($spend     === null) $spend     = isset($g['spend'])             ? (float) $g['spend']             : null;
+        if ($clicks    === null) $clicks    = isset($g['clicks'])            ? (float) $g['clicks']            : null;
+        if ($convValue === null) $convValue = isset($g['conversions_value']) ? (float) $g['conversions_value'] : null;
+        if ($cpc       === null) $cpc       = $g['cpc']  ?? null;
+        if ($cpm       === null) $cpm       = $g['cpm']  ?? null;
+        if ($ctr       === null) $ctr       = $g['ctr']  ?? null;
 
-        $roas = ($spend !== null && $spend > 0 && $convValue !== null)
-            ? round($convValue / $spend, 2)
+        $roas = $g['roas'] ?? (($spend > 0 && $convValue !== null) ? round($convValue / $spend, 2) : null);
+        $cpa  = $g['cpa']  ?? (($spend > 0 && $clicks > 0)        ? round($spend / $clicks, 2)    : null);
+
+        $conversions = isset($g['conversions']) ? (float) $g['conversions'] : $clicks;
+        $convRate    = isset($g['conversions'], $g['clicks']) && $g['clicks'] > 0
+            ? round($g['conversions'] / $g['clicks'] * 100, 4)
             : null;
-
-        $cpa = ($spend !== null && $spend > 0 && $clicks !== null && $clicks > 0)
-            ? round($spend / $clicks, 2)
-            : null;
-
-        $convRate = null;
 
         return [
             ['area' => self::AREA_ADS, 'metric_key' => 'spend_total',      'value' => $spend],
@@ -135,7 +135,7 @@ class KpiCalculator
             ['area' => self::AREA_ADS, 'metric_key' => 'cpa',              'value' => $cpa],
             ['area' => self::AREA_ADS, 'metric_key' => 'cpc',              'value' => $cpc],
             ['area' => self::AREA_ADS, 'metric_key' => 'ctr',              'value' => $ctr],
-            ['area' => self::AREA_ADS, 'metric_key' => 'conversions',      'value' => $clicks],
+            ['area' => self::AREA_ADS, 'metric_key' => 'conversions',      'value' => $conversions],
             ['area' => self::AREA_ADS, 'metric_key' => 'conversion_value', 'value' => $convValue],
             ['area' => self::AREA_ADS, 'metric_key' => 'conversion_rate',  'value' => $convRate],
             ['area' => self::AREA_ADS, 'metric_key' => 'cac',              'value' => null],

@@ -50,11 +50,20 @@ class SyncClientMetricsForMonth implements ShouldQueue
         );
 
         if ($client->google_ads_customer_id) {
-            $bundle->ads['google'] = $googleAds->getMonthlyMetrics(
+            $result = $googleAds->getMonthlyMetrics(
                 $client->google_ads_customer_id,
                 $start,
                 $end,
             );
+            $bundle->ads['google'] = $result;
+            Log::info('GoogleAds sync result', [
+                'client_id'   => $client->id,
+                'customer_id' => $client->google_ads_customer_id,
+                'has_data'    => !empty($result),
+                'spend'       => $result['spend'] ?? null,
+            ]);
+        } else {
+            Log::info('GoogleAds skipped (no customer_id)', ['client_id' => $client->id]);
         }
 
         $rows = $calculator->build($bundle);
