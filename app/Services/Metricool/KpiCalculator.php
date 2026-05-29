@@ -42,7 +42,8 @@ class KpiCalculator
     private function content(MetricoolBundle $b): array
     {
         $reelsCount   = $b->countPosts('reels');
-        $storiesCount = $b->countPosts('stories');
+        // Use igStoriesCount timeline (avoids /stories endpoint that throws 500 intermittently)
+        $storiesCount = $b->statsTimelineTotal('igStoriesCount') ?? (float) $b->countPosts('stories');
         $postsCount   = $b->countPosts('posts');
         $totalPosts   = $reelsCount + $storiesCount + $postsCount;
 
@@ -98,23 +99,38 @@ class KpiCalculator
 
     private function ads(MetricoolBundle $b): array
     {
+        // Primary source: Facebook Ads via Metricool stats/timeline
+        $spend       = $b->statsTimelineTotal('spend');
+        $clicks      = $b->statsTimelineTotal('clicks');
+        $convValue   = $b->statsTimelineTotal('total_action_value');
+        $cpc         = $b->statsTimelineAvg('cpc');
+        $cpm         = $b->statsTimelineAvg('cpm');
+        $ctr         = $b->statsTimelineAvg('ctr');
+        $adsReach    = $b->statsTimelineTotal('reach');
+
+        // Fallback: Google Ads (legacy)
         $g = $b->ads['google'] ?? [];
+        if ($spend === null && isset($g['spend'])) {
+            $spend = (float) $g['spend'];
+        }
 
-        $spend       = isset($g['spend'])       ? (float) $g['spend']       : null;
-        $conversions = isset($g['conversions']) ? (float) $g['conversions'] : null;
-        $convValue   = isset($g['conversions_value']) ? (float) $g['conversions_value'] : null;
-
-        $convRate = ($conversions !== null && isset($g['clicks']) && $g['clicks'] > 0)
-            ? round($conversions / $g['clicks'] * 100, 4)
+        $roas = ($spend !== null && $spend > 0 && $convValue !== null)
+            ? round($convValue / $spend, 2)
             : null;
+
+        $cpa = ($spend !== null && $spend > 0 && $clicks !== null && $clicks > 0)
+            ? round($spend / $clicks, 2)
+            : null;
+
+        $convRate = null;
 
         return [
             ['area' => self::AREA_ADS, 'metric_key' => 'spend_total',      'value' => $spend],
-            ['area' => self::AREA_ADS, 'metric_key' => 'roas',             'value' => $g['roas'] ?? null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'cpa',              'value' => $g['cpa'] ?? null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'cpc',              'value' => $g['cpc'] ?? null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'ctr',              'value' => $g['ctr'] ?? null],
-            ['area' => self::AREA_ADS, 'metric_key' => 'conversions',      'value' => $conversions],
+            ['area' => self::AREA_ADS, 'metric_key' => 'roas',             'value' => $roas],
+            ['area' => self::AREA_ADS, 'metric_key' => 'cpa',              'value' => $cpa],
+            ['area' => self::AREA_ADS, 'metric_key' => 'cpc',              'value' => $cpc],
+            ['area' => self::AREA_ADS, 'metric_key' => 'ctr',              'value' => $ctr],
+            ['area' => self::AREA_ADS, 'metric_key' => 'conversions',      'value' => $clicks],
             ['area' => self::AREA_ADS, 'metric_key' => 'conversion_value', 'value' => $convValue],
             ['area' => self::AREA_ADS, 'metric_key' => 'conversion_rate',  'value' => $convRate],
             ['area' => self::AREA_ADS, 'metric_key' => 'cac',              'value' => null],
@@ -123,11 +139,23 @@ class KpiCalculator
 
     private function system(MetricoolBundle $b): array
     {
+        $organicReach = $b->timelineSum('reach');
+        $adsReach     = $b->statsTimelineTotal('reach');
+        $totalReach   = $organicReach + ($adsReach ?? 0);
+
+        $organicSharePct = $totalReach > 0
+            ? round(($organicReach / $totalReach) * 100, 1)
+            : null;
+
+        $cpm = $b->statsTimelineAvg('cpm');
+        $ctr = $b->statsTimelineAvg('ctr');
+        $cpc = $b->statsTimelineAvg('cpc');
+
         return [
-            ['area' => self::AREA_SYSTEM, 'metric_key' => 'organic_share_pct', 'value' => null],
-            ['area' => self::AREA_SYSTEM, 'metric_key' => 'cpm_avg',           'value' => null],
-            ['area' => self::AREA_SYSTEM, 'metric_key' => 'ctr_avg',           'value' => null],
-            ['area' => self::AREA_SYSTEM, 'metric_key' => 'cpc_avg',           'value' => null],
+            ['area' => self::AREA_SYSTEM, 'metric_key' => 'organic_share_pct', 'value' => $organicSharePct],
+            ['area' => self::AREA_SYSTEM, 'metric_key' => 'cpm_avg',           'value' => $cpm],
+            ['area' => self::AREA_SYSTEM, 'metric_key' => 'ctr_avg',           'value' => $ctr],
+            ['area' => self::AREA_SYSTEM, 'metric_key' => 'cpc_avg',           'value' => $cpc],
             ['area' => self::AREA_SYSTEM, 'metric_key' => 'mer',               'value' => null],
         ];
     }

@@ -51,6 +51,15 @@ class MetricoolClient
         return $this->get('/stats/instagram/stories', $this->statsParams($blogId, $start, $end, 500));
     }
 
+    public function statsTimeline(string $metric, string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->get('/stats/timeline/' . $metric, [
+            'blogId' => $blogId,
+            'start'  => $start->format('Ymd'),
+            'end'    => $end->format('Ymd'),
+        ]);
+    }
+
     public function facebookPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
     {
         return $this->statsPosts('facebook', $blogId, $start, $end);

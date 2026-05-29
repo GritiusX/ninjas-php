@@ -9,6 +9,38 @@ class MetricoolBundle
     public array $reels = [];
     public array $stories = [];
     public array $ads = [];
+    public array $statsTimelines = []; // keyed by metric name, from /stats/timeline/{metric}
+
+    public function statsTimelineTotal(string $metric): ?float
+    {
+        $rows = $this->statsTimelines[$metric] ?? [];
+        if (empty($rows)) {
+            return null;
+        }
+        $total = 0.0;
+        foreach ($rows as $row) {
+            $total += $this->extract($row, ['value', 'count', 'total', $metric]);
+        }
+        return $total;
+    }
+
+    public function statsTimelineAvg(string $metric): ?float
+    {
+        $rows = $this->statsTimelines[$metric] ?? [];
+        if (empty($rows)) {
+            return null;
+        }
+        $sum = 0.0;
+        $count = 0;
+        foreach ($rows as $row) {
+            $val = $this->extract($row, ['value', 'count', 'total', $metric]);
+            if ($val > 0) {
+                $sum += $val;
+                $count++;
+            }
+        }
+        return $count > 0 ? $sum / $count : null;
+    }
 
     public function timelineSum(string $bucket): float
     {

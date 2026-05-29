@@ -6,6 +6,32 @@ use Carbon\CarbonInterface;
 
 class MetricoolBundleBuilder
 {
+    private const STATS_TIMELINE_METRICS = [
+        // Instagram
+        'igStoriesCount',   // replaces /stats/instagram/stories for count
+        'igFollowers',      // total followers (acumulado)
+        'igEngagement',     // engagement total
+        'igSaved',          // guardados totales
+        'igLikes',          // likes totales
+        'igComments',       // comentarios totales
+        'igPostsReach',     // alcance de posts
+        'igPostsImpressions', // impresiones de posts
+        'igStoriesReach',   // alcance de stories
+        'igStoriesImpressions', // impresiones de stories
+        'igwebsite_clicks', // clicks al bio link
+        // Facebook Ads
+        'spend',
+        'clicks',
+        'cpc',
+        'cpm',
+        'ctr',
+        'total_action_value',
+        'reach',
+        'impressions',
+        'unique_clicks',
+        'unique_ctr',
+    ];
+
     private const TIMELINE_METRICS = [
         'instagram' => [
             ['subject' => 'account', 'metric' => 'impressions',     'bucket' => 'impressions'],
@@ -59,6 +85,13 @@ class MetricoolBundleBuilder
                 if ($rows !== []) {
                     $bundle->timelines[$network][$cfg['bucket']] = $rows;
                 }
+            }
+        }
+
+        foreach (self::STATS_TIMELINE_METRICS as $metric) {
+            $rows = $this->rows($this->client->statsTimeline($metric, $blogId, $start, $end));
+            if ($rows !== []) {
+                $bundle->statsTimelines[$metric] = $rows;
             }
         }
 
