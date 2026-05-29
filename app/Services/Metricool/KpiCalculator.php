@@ -112,14 +112,14 @@ class KpiCalculator
         $cpm       = $b->statsTimelineAvg('cpm');
         $ctr       = $b->statsTimelineAvg('ctr');
 
-        // Fallback: Google Ads — use for any metric not covered by Metricool FB
+        // Fallback: Google Ads — use when Metricool returns null or 0
         $g = $b->ads['google'] ?? [];
-        if ($spend     === null) $spend     = isset($g['spend'])             ? (float) $g['spend']             : null;
-        if ($clicks    === null) $clicks    = isset($g['clicks'])            ? (float) $g['clicks']            : null;
-        if ($convValue === null) $convValue = isset($g['conversions_value']) ? (float) $g['conversions_value'] : null;
-        if ($cpc       === null) $cpc       = $g['cpc']  ?? null;
-        if ($cpm       === null) $cpm       = $g['cpm']  ?? null;
-        if ($ctr       === null) $ctr       = $g['ctr']  ?? null;
+        if (!$spend)     $spend     = isset($g['spend'])             ? (float) $g['spend']             : null;
+        if (!$clicks)    $clicks    = isset($g['clicks'])            ? (float) $g['clicks']            : null;
+        if (!$convValue) $convValue = isset($g['conversions_value']) ? (float) $g['conversions_value'] : null;
+        if (!$cpc)       $cpc       = $g['cpc']  ?? null;
+        if (!$cpm)       $cpm       = $g['cpm']  ?? null;
+        if (!$ctr)       $ctr       = $g['ctr']  ?? null;
 
         $roas = $g['roas'] ?? (($spend > 0 && $convValue !== null) ? round($convValue / $spend, 2) : null);
         $cpa  = $g['cpa']  ?? (($spend > 0 && $clicks > 0)        ? round($spend / $clicks, 2)    : null);
