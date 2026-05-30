@@ -38,7 +38,8 @@
       "Bash(grep -r \"socialite\\\\|oauth2\\\\|facebook\\\\|Laravel\\\\\\\\\\\\Socialite\" /c/Users/Compumar/Desktop/proyectos-prog/ninjas-app/composer.json /c/Users/Compumar/Desktop/proyectos-prog/ninjas-app/composer.lock)",
       "Bash(xargs ls *)",
       "Bash(composer show *)",
-      "Bash(composer install *)"
+      "Bash(composer install *)",
+      "Bash(Get-Content *)"
     ]
   }
 }

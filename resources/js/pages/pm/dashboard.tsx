@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     AlertCircle,
     Calendar,
@@ -10,8 +10,10 @@ import {
     FilePlus,
     Pencil,
     Plus,
+    Search,
     Table2,
     Trash2,
+    Upload,
     UserCheck,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -38,7 +40,7 @@ import {
 } from '@/components/ui/select';
 import * as briefRoutes from '@/routes/pm/brief';
 import * as reviewRoutes from '@/routes/pm/review';
-import type { Client, ContentPiece, Editor } from '@/types';
+import type { Client, ContentPiece, Editor, Priority } from '@/types';
 
 type Props = {
     reviewQueue: ContentPiece[];
@@ -202,6 +204,273 @@ function MultiLinkInput({
                 </Button>
             )}
         </div>
+    );
+}
+
+// ─── Bulk import modal ───────────────────────────────────────────────────────
+
+const TEMPLATE_HEADER = 'Cliente\tConcepto\tProducto\tCategoría\tHook\tCTA\tPrioridad\tDeadline (DD/MM/AAAA)\tEditor';
+const TEMPLATE_EXAMPLE = 'Café Gourmet\tLanzamiento Cold Brew\tCold Brew 24hs\tLanzamiento\tBarista vierte el café en slow motion\tPedí el tuyo en...\tAlto\t15/07/2025\tAna';
+
+type BulkRow = {
+    client_id: number | null;
+    clientName: string;
+    concept: string;
+    product: string;
+    category: string;
+    hook: string;
+    cta: string;
+    priority: Priority;
+    deadline: string;
+    editor_id: number | null;
+    editorName: string;
+    error: string | null;
+};
+
+function parsePriority(raw: string): Priority {
+    const v = raw.trim().toLowerCase();
+    if (v === 'crítico' || v === 'critico' || v === '1') return 1;
+    if (v === 'alto' || v === '2') return 2;
+    return 3;
+}
+
+function parseDeadline(raw: string): string {
+    const trimmed = raw.trim();
+    const dmY = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (dmY) {
+        const [, d, m, y] = dmY;
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    return trimmed;
+}
+
+function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[] {
+    const lines = text.trim().split('\n').filter((l) => l.trim() !== '');
+    const rows: BulkRow[] = [];
+
+    for (const line of lines) {
+        const cols = line.split('\t').map((c) => c.trim());
+        const clientName = cols[0] ?? '';
+
+        // skip header row
+        if (clientName.toLowerCase() === 'cliente') continue;
+
+        const concept = cols[1] ?? '';
+        if (!clientName || !concept) continue;
+
+        const matchedClient = clients.find(
+            (c) => c.name.toLowerCase() === clientName.toLowerCase(),
+        ) ?? null;
+
+        const editorName = cols[8] ?? '';
+        const matchedEditor = editorName
+            ? (editors.find((e) => e.name.toLowerCase() === editorName.toLowerCase()) ?? null)
+            : null;
+
+        let error: string | null = null;
+        if (!matchedClient) error = `Cliente "${clientName}" no encontrado`;
+        else if (editorName && !matchedEditor) error = `Editor "${editorName}" no encontrado`;
+
+        rows.push({
+            client_id: matchedClient?.id ?? null,
+            clientName,
+            concept,
+            product: cols[2] ?? '',
+            category: cols[3] ?? '',
+            hook: cols[4] ?? '',
+            cta: cols[5] ?? '',
+            priority: parsePriority(cols[6] ?? ''),
+            deadline: parseDeadline(cols[7] ?? ''),
+            editor_id: matchedEditor?.id ?? null,
+            editorName,
+            error,
+        });
+    }
+
+    return rows;
+}
+
+const PRIORITY_LABEL: Record<Priority, string> = { 1: '🔴 Crítico', 2: '🟠 Alto', 3: '🟡 Medio' };
+
+function BulkImportModal({
+    clients,
+    editors,
+    open,
+    onClose,
+}: {
+    clients: Client[];
+    editors: Editor[];
+    open: boolean;
+    onClose: () => void;
+}) {
+    const [step, setStep] = useState<'paste' | 'preview'>('paste');
+    const [rawText, setRawText] = useState('');
+    const [rows, setRows] = useState<BulkRow[]>([]);
+    const [submitting, setSubmitting] = useState(false);
+    const [search, setSearch] = useState('');
+
+    function handleClose() {
+        setStep('paste');
+        setRawText('');
+        setRows([]);
+        setSearch('');
+        onClose();
+    }
+
+    function handleParse() {
+        const parsed = parseTsv(rawText, clients, editors);
+        setRows(parsed);
+        setStep('preview');
+    }
+
+    function handleImport() {
+        const payload = rows.map((r) => ({
+            client_id: r.client_id,
+            concept: r.concept,
+            product: r.product || null,
+            category: r.category || null,
+            hook: r.hook || null,
+            cta: r.cta || null,
+            priority: r.priority,
+            deadline: r.deadline || null,
+            editor_id: r.editor_id || null,
+        }));
+
+        setSubmitting(true);
+        router.post(briefRoutes.bulkStore.url(), { rows: payload }, {
+            onSuccess: handleClose,
+            onFinish: () => setSubmitting(false),
+        });
+    }
+
+    const hasErrors = rows.some((r) => r.error !== null);
+    const copyTemplate = () => {
+        navigator.clipboard.writeText(TEMPLATE_HEADER + '\n' + TEMPLATE_EXAMPLE);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Upload className="h-5 w-5" />
+                        Carga masiva de briefs
+                    </DialogTitle>
+                </DialogHeader>
+
+                {step === 'paste' && (
+                    <div className="space-y-4">
+                        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm space-y-1.5">
+                            <p className="font-medium text-foreground">Columnas del template (en este orden):</p>
+                            <p className="font-mono text-xs text-muted-foreground break-all">{TEMPLATE_HEADER}</p>
+                            <button
+                                type="button"
+                                onClick={copyTemplate}
+                                className="text-xs text-blue-400 hover:text-blue-300"
+                            >
+                                Copiar template con ejemplo →
+                            </button>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label>Pegá tu tabla acá (copiada desde Excel o Google Sheets)</Label>
+                            <textarea
+                                className="min-h-[180px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                                value={rawText}
+                                onChange={(e) => setRawText(e.target.value)}
+                                placeholder={"Cliente\tConcepto\tProducto\t...\nCafé Gourmet\tLanzamiento Cold Brew\t..."}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {step === 'preview' && (
+                    <div className="space-y-3">
+                        {hasErrors && (
+                            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                Hay filas con errores. Corregí el texto y volvé a parsear.
+                            </div>
+                        )}
+
+                        {/* Buscador + contador */}
+                        <div className="flex items-center gap-3">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Buscar por título..."
+                                    className="h-8 pl-8 text-sm"
+                                />
+                            </div>
+                            <span className="shrink-0 text-sm text-muted-foreground">
+                                {rows.filter(r => !search || r.concept.toLowerCase().includes(search.toLowerCase())).length} de {rows.length}
+                            </span>
+                        </div>
+
+                        {/* Cards grid */}
+                        <div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1">
+                            {rows
+                                .filter((r) => !search || r.concept.toLowerCase().includes(search.toLowerCase()))
+                                .map((row, i) => (
+                                    <div
+                                        key={i}
+                                        className={`rounded-lg border p-3 space-y-2 ${
+                                            row.error
+                                                ? 'border-destructive/50 bg-destructive/10'
+                                                : 'border-border bg-card'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                {row.clientName}
+                                            </span>
+                                            <span className="text-xs shrink-0">{PRIORITY_LABEL[row.priority]}</span>
+                                        </div>
+                                        <p className="text-sm font-medium text-foreground leading-snug">
+                                            {row.concept}
+                                        </p>
+                                        {row.hook && (
+                                            <p className="text-xs text-muted-foreground line-clamp-2">{row.hook}</p>
+                                        )}
+                                        <div className="flex items-center justify-between text-xs pt-1 border-t border-border">
+                                            <span className="text-muted-foreground">
+                                                {row.editorName || <span className="italic">Sin editor</span>}
+                                            </span>
+                                            <span className="text-muted-foreground">{row.deadline || '—'}</span>
+                                        </div>
+                                        {row.error && (
+                                            <p className="text-xs text-destructive font-medium">{row.error}</p>
+                                        )}
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                )}
+
+                <DialogFooter>
+                    {step === 'paste' && (
+                        <>
+                            <Button variant="outline" onClick={handleClose}>Cancelar</Button>
+                            <Button onClick={handleParse} disabled={!rawText.trim()}>
+                                Previsualizar →
+                            </Button>
+                        </>
+                    )}
+                    {step === 'preview' && (
+                        <>
+                            <Button variant="outline" onClick={() => setStep('paste')}>
+                                ← Volver
+                            </Button>
+                            <Button onClick={handleImport} disabled={hasErrors || submitting || rows.length === 0}>
+                                <Upload className="mr-1.5 h-4 w-4" />
+                                {submitting ? 'Creando...' : `Crear ${rows.length} brief(s)`}
+                            </Button>
+                        </>
+                    )}
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -864,6 +1133,7 @@ export default function PmDashboard({
     editors,
 }: Props) {
     const [briefOpen, setBriefOpen] = useState(false);
+    const [bulkOpen, setBulkOpen] = useState(false);
 
     const clientReview = briefQueue.filter((p) =>
         ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status),
@@ -895,6 +1165,10 @@ export default function PmDashboard({
                                 Vista tabla
                             </Button>
                         </Link>
+                        <Button variant="outline" onClick={() => setBulkOpen(true)}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Carga masiva
+                        </Button>
                         <Button onClick={() => setBriefOpen(true)}>
                             <FilePlus className="mr-2 h-4 w-4" />
                             Nuevo brief
@@ -977,6 +1251,13 @@ export default function PmDashboard({
                 editors={editors}
                 open={briefOpen}
                 onClose={() => setBriefOpen(false)}
+            />
+
+            <BulkImportModal
+                clients={clients}
+                editors={editors}
+                open={bulkOpen}
+                onClose={() => setBulkOpen(false)}
             />
         </>
     );

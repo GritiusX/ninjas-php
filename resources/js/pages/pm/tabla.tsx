@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Check, Pencil, UserCheck, X } from 'lucide-react';
+import { ArrowLeft, Check, Download, Pencil, UserCheck, X } from 'lucide-react';
 import { useState } from 'react';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
@@ -163,14 +163,21 @@ function EditableRow({
                     {deadlineDisplay()}
                 </td>
                 <td className="px-3 py-2.5">
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                        onClick={() => setEditing(true)}
-                    >
-                        <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <a href={briefRoutes.pdf.url(piece.id)} target="_blank" rel="noopener noreferrer">
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Descargar brief PDF">
+                                <Download className="h-3.5 w-3.5" />
+                            </Button>
+                        </a>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={() => setEditing(true)}
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
                 </td>
             </tr>
 

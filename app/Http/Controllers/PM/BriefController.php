@@ -51,6 +51,43 @@ class BriefController extends Controller
         return redirect()->route('pm.dashboard')->with('success', 'Brief creado correctamente.');
     }
 
+    public function bulkStore(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'rows'                  => ['required', 'array', 'min:1', 'max:50'],
+            'rows.*.client_id'      => ['required', 'exists:clients,id'],
+            'rows.*.concept'        => ['required', 'string', 'max:1000'],
+            'rows.*.product'        => ['nullable', 'string', 'max:500'],
+            'rows.*.category'       => ['nullable', 'string', 'max:80'],
+            'rows.*.hook'           => ['nullable', 'string'],
+            'rows.*.cta'            => ['nullable', 'string', 'max:255'],
+            'rows.*.priority'       => ['required', 'integer', 'in:1,2,3'],
+            'rows.*.deadline'       => ['nullable', 'date'],
+            'rows.*.editor_id'      => ['nullable', 'exists:users,id'],
+        ]);
+
+        foreach ($data['rows'] as $row) {
+            $editorId = $row['editor_id'] ?? null;
+
+            ContentPiece::create([
+                'client_id'          => $row['client_id'],
+                'concept'            => $row['concept'],
+                'product'            => $row['product'] ?? null,
+                'category'           => $row['category'] ?? null,
+                'hook'               => $row['hook'] ?? null,
+                'cta'                => $row['cta'] ?? null,
+                'priority'           => $row['priority'],
+                'deadline'           => $row['deadline'] ?? null,
+                'assigned_editor_id' => $editorId,
+                'status'             => $editorId ? ContentPiece::STATUS_EDITING : ContentPiece::STATUS_BRIEF,
+            ]);
+        }
+
+        $count = count($data['rows']);
+
+        return redirect()->route('pm.dashboard')->with('success', "{$count} brief(s) creados correctamente.");
+    }
+
     public function update(Request $request, ContentPiece $piece): RedirectResponse
     {
         $data = $request->validate([

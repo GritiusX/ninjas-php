@@ -45,6 +45,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
 
     // Briefs
     Route::post('/brief', [BriefController::class, 'store'])->name('brief.store');
+    Route::post('/brief/bulk', [BriefController::class, 'bulkStore'])->name('brief.bulk-store');
     Route::put('/brief/{piece}', [BriefController::class, 'update'])->name('brief.update');
     Route::delete('/brief/{piece}', [BriefController::class, 'destroy'])->name('brief.destroy');
     Route::post('/brief/{piece}/assign', [BriefController::class, 'assign'])->name('brief.assign');
