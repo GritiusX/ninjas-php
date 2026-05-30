@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Client;
 use App\Models\ContentPiece;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -15,12 +16,14 @@ class ContentPieceSeeder extends Seeder
 
         $drive = 'https://drive.google.com/drive/folders/';
 
+        $c = fn(string $name) => Client::where('name', $name)->value('id');
+
         $pieces = [
 
-            // ── Café Gourmet BA (client_id=1) ─────────────────────────────────
+            // ── Café Gourmet BA ───────────────────────────────────────────────
 
             [
-                'client_id'          => 1,
+                'client_id'          => $c('Café Gourmet BA'),
                 'assigned_editor_id' => $ana->id,
                 'status'             => 'EDITING',
                 'priority'           => 1,
@@ -36,7 +39,7 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'coldbrewraw1', $drive . 'coldbrewraw2'],
             ],
             [
-                'client_id'          => 1,
+                'client_id'          => $c('Café Gourmet BA'),
                 'assigned_editor_id' => $ana->id,
                 'status'             => 'INTERNAL_REVIEW',
                 'priority'           => 2,
@@ -53,7 +56,7 @@ class ContentPieceSeeder extends Seeder
                 'final_video_link'   => 'https://drive.google.com/file/d/demo_final_video/view',
             ],
             [
-                'client_id'          => 1,
+                'client_id'          => $c('Café Gourmet BA'),
                 'assigned_editor_id' => $ana->id,
                 'status'             => 'CLIENT_REVIEW',
                 'priority'           => 2,
@@ -69,7 +72,7 @@ class ContentPieceSeeder extends Seeder
                 'final_video_link'   => 'https://drive.google.com/file/d/demo_invernal/view',
             ],
             [
-                'client_id'          => 1,
+                'client_id'          => $c('Café Gourmet BA'),
                 'assigned_editor_id' => null,
                 'status'             => 'BRIEF',
                 'priority'           => 3,
@@ -84,10 +87,10 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'tutorialraw'],
             ],
 
-            // ── FitStore Argentina (client_id=2) ──────────────────────────────
+            // ── FitStore Argentina ────────────────────────────────────────────
 
             [
-                'client_id'          => 2,
+                'client_id'          => $c('FitStore Argentina'),
                 'assigned_editor_id' => $ana->id,
                 'status'             => 'EDITING',
                 'priority'           => 2,
@@ -103,7 +106,7 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'stackraw'],
             ],
             [
-                'client_id'          => 2,
+                'client_id'          => $c('FitStore Argentina'),
                 'assigned_editor_id' => $ana->id,
                 'status'             => 'REVISION',
                 'priority'           => 1,
@@ -120,7 +123,7 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'fit30raw1', $drive . 'fit30raw2'],
             ],
             [
-                'client_id'          => 2,
+                'client_id'          => $c('FitStore Argentina'),
                 'assigned_editor_id' => null,
                 'status'             => 'BRIEF',
                 'priority'           => 3,
@@ -134,10 +137,10 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'guantesraw'],
             ],
 
-            // ── TechHogar (client_id=3) ───────────────────────────────────────
+            // ── TechHogar ─────────────────────────────────────────────────────
 
             [
-                'client_id'          => 3,
+                'client_id'          => $c('TechHogar'),
                 'assigned_editor_id' => $marco->id,
                 'status'             => 'INTERNAL_REVIEW',
                 'priority'           => 1,
@@ -153,7 +156,7 @@ class ContentPieceSeeder extends Seeder
                 'final_video_link'   => 'https://drive.google.com/file/d/demo_smartvac/view',
             ],
             [
-                'client_id'          => 3,
+                'client_id'          => $c('TechHogar'),
                 'assigned_editor_id' => $marco->id,
                 'status'             => 'EDITING',
                 'priority'           => 2,
@@ -168,7 +171,7 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'airfryraw'],
             ],
             [
-                'client_id'          => 3,
+                'client_id'          => $c('TechHogar'),
                 'assigned_editor_id' => null,
                 'status'             => 'BRIEF',
                 'priority'           => 3,
@@ -182,10 +185,10 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'thermoraw'],
             ],
 
-            // ── Moda Porteña (client_id=4) ────────────────────────────────────
+            // ── Moda Porteña ──────────────────────────────────────────────────
 
             [
-                'client_id'          => 4,
+                'client_id'          => $c('Moda Porteña'),
                 'assigned_editor_id' => $marco->id,
                 'status'             => 'PM_APPROVED',
                 'priority'           => 2,
@@ -201,7 +204,7 @@ class ContentPieceSeeder extends Seeder
                 'final_video_link'   => 'https://drive.google.com/file/d/demo_moda_winter/view',
             ],
             [
-                'client_id'          => 4,
+                'client_id'          => $c('Moda Porteña'),
                 'assigned_editor_id' => $marco->id,
                 'status'             => 'CLIENT_REVISION',
                 'priority'           => 1,
@@ -219,7 +222,7 @@ class ContentPieceSeeder extends Seeder
                 'final_video_link'   => 'https://drive.google.com/file/d/demo_saldo/view',
             ],
             [
-                'client_id'          => 4,
+                'client_id'          => $c('Moda Porteña'),
                 'assigned_editor_id' => null,
                 'status'             => 'BRIEF',
                 'priority'           => 3,
@@ -233,10 +236,10 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'lookbookraw'],
             ],
 
-            // ── Suplementos Pro AR (client_id=5) ──────────────────────────────
+            // ── Suplementos Pro AR ────────────────────────────────────────────
 
             [
-                'client_id'          => 5,
+                'client_id'          => $c('Suplementos Pro AR'),
                 'assigned_editor_id' => $marco->id,
                 'status'             => 'EDITING',
                 'priority'           => 2,
@@ -251,7 +254,7 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'creatinaraw'],
             ],
             [
-                'client_id'          => 5,
+                'client_id'          => $c('Suplementos Pro AR'),
                 'assigned_editor_id' => null,
                 'status'             => 'BRIEF',
                 'priority'           => 3,
@@ -265,10 +268,10 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'veganaraw'],
             ],
 
-            // ── BellezaNatural AR (client_id=9) ───────────────────────────────
+            // ── BellezaNatural AR ─────────────────────────────────────────────
 
             [
-                'client_id'          => 9,
+                'client_id'          => $c('BellezaNatural AR'),
                 'assigned_editor_id' => $ana->id,
                 'status'             => 'EDITING',
                 'priority'           => 2,
@@ -283,7 +286,7 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'serumraw1', $drive . 'serumraw2'],
             ],
             [
-                'client_id'          => 9,
+                'client_id'          => $c('BellezaNatural AR'),
                 'assigned_editor_id' => null,
                 'status'             => 'BRIEF',
                 'priority'           => 3,
