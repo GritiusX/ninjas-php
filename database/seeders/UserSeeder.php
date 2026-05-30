@@ -33,5 +33,13 @@ class UserSeeder extends Seeder
             'is_active' => true,
             'email_verified_at' => now(),
         ]);
+
+        User::firstOrCreate(['email' => 'marco@littleninjas.com.ar'], [
+            'name' => 'Marco Editor',
+            'password' => Hash::make('ninja123'),
+            'role' => 'editor',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
     }
 }
