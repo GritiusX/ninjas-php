@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Client;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -14,18 +15,20 @@ class TemporaryAccessSeeder extends Seeder
         $marco = User::where('email', 'marco@littleninjas.com.ar')->first();
         $admin = User::where('email', 'admin@littleninjas.com.ar')->first();
 
+        $clientId = fn(string $name) => Client::where('name', $name)->value('id');
+
         $accesses = [
             // Ana — Café Gourmet BA, FitStore, BellezaNatural
-            [$ana->id, 1],
-            [$ana->id, 2],
-            [$ana->id, 9],
+            [$ana->id, $clientId('Café Gourmet BA')],
+            [$ana->id, $clientId('FitStore Argentina')],
+            [$ana->id, $clientId('BellezaNatural AR')],
             // Marco — TechHogar, Moda Porteña, Suplementos Pro AR
-            [$marco->id, 3],
-            [$marco->id, 4],
-            [$marco->id, 5],
+            [$marco->id, $clientId('TechHogar')],
+            [$marco->id, $clientId('Moda Porteña')],
+            [$marco->id, $clientId('Suplementos Pro AR')],
         ];
 
-        foreach ($accesses as [$userId, $clientId]) {
+        foreach (array_filter($accesses, fn($a) => $a[0] && $a[1]) as [$userId, $clientId]) {
             $exists = DB::table('temporary_access')
                 ->where('user_id', $userId)
                 ->where('client_id', $clientId)

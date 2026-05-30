@@ -74,11 +74,6 @@
     .link-label { color: #6b7280; font-size: 10px; }
     .link-url { color: #2563eb; word-break: break-all; }
 
-    /* Two-column grid */
-    .grid-2 { width: 100%; }
-    .grid-2 td { width: 50%; vertical-align: top; padding-right: 16px; }
-    .grid-2 td:last-child { padding-right: 0; }
-
     /* Footer */
     .footer {
         margin-top: 36px;
@@ -89,7 +84,7 @@
         display: flex;
         justify-content: space-between;
     }
-    .editor-info { font-size: 10px; color: #374151; }
+
 </style>
 </head>
 <body>
@@ -121,27 +116,13 @@
     </div>
 </div>
 
-{{-- Two-column: Objetivo + Editor --}}
-<table class="grid-2" style="margin-bottom:18px;">
-    <tr>
-        <td>
-            @if($piece->objective)
-            <div class="section">
-                <div class="section-title">Objetivo</div>
-                <div class="section-body">{{ $piece->objective }}</div>
-            </div>
-            @endif
-        </td>
-        <td>
-            @if($piece->editor)
-            <div class="section">
-                <div class="section-title">Editor asignado</div>
-                <div class="editor-info">{{ $piece->editor->name }}</div>
-            </div>
-            @endif
-        </td>
-    </tr>
-</table>
+{{-- Objetivo --}}
+@if($piece->objective)
+<div class="section">
+    <div class="section-title">Objetivo</div>
+    <div class="section-body">{{ $piece->objective }}</div>
+</div>
+@endif
 
 {{-- Hook --}}
 @if($piece->hook)
