@@ -65,51 +65,51 @@ const AREA_META: Record<
     },
 };
 
-const METRIC_LABELS: Record<string, { label: string; format: 'number' | 'currency' | 'percent' | 'ratio' }> = {
-    impressions_total:    { label: 'Impresiones',           format: 'number'   },
-    reach_total:          { label: 'Alcance total',         format: 'number'   },
-    reach_organic:        { label: 'Alcance orgánico',      format: 'number'   },
-    reach_paid:           { label: 'Alcance pago',          format: 'number'   },
-    reel_views:           { label: 'Reproducciones reels',  format: 'number'   },
-    frequency_avg:        { label: 'Frecuencia promedio',   format: 'ratio'    },
-    cost_per_reach:       { label: 'Costo por alcance',     format: 'currency' },
+const METRIC_LABELS: Record<string, { label: string; format: 'number' | 'currency' | 'percent' | 'ratio'; hint?: string }> = {
+    impressions_total:    { label: 'Impresiones',           format: 'number',   hint: 'IG + FB'        },
+    reach_total:          { label: 'Alcance total',         format: 'number',   hint: 'IG + FB'        },
+    reach_organic:        { label: 'Alcance orgánico',      format: 'number',   hint: 'IG + FB'        },
+    reach_paid:           { label: 'Alcance pago',          format: 'number',   hint: 'Google Ads'     },
+    reel_views:           { label: 'Reproducciones reels',  format: 'number',   hint: 'Instagram'      },
+    frequency_avg:        { label: 'Frecuencia promedio',   format: 'ratio',    hint: 'Meta Ads'       },
+    cost_per_reach:       { label: 'Costo por alcance',     format: 'currency', hint: 'Meta Ads'       },
 
-    reels_count:          { label: 'Cantidad de reels',     format: 'number'   },
-    stories_count:        { label: 'Cantidad de stories',   format: 'number'   },
-    posts_count:          { label: 'Cantidad de posts',     format: 'number'   },
-    reach_per_reel:       { label: 'Alcance por reel',      format: 'number'   },
-    shares_avg:           { label: 'Shares promedio',       format: 'number'   },
-    saves_avg:            { label: 'Guardados promedio',    format: 'number'   },
-    comments_avg:         { label: 'Comentarios promedio',  format: 'number'   },
-    engagement_rate:      { label: 'Engagement rate',       format: 'percent'  },
-    reels_pct:            { label: '% reels sobre total',   format: 'percent'  },
-    virality_relative:    { label: 'Viralidad relativa',    format: 'ratio'    },
+    reels_count:          { label: 'Cantidad de reels',     format: 'number',   hint: 'Instagram'      },
+    stories_count:        { label: 'Cantidad de stories',   format: 'number',   hint: 'Instagram'      },
+    posts_count:          { label: 'Cantidad de posts',     format: 'number',   hint: 'IG + FB'        },
+    reach_per_reel:       { label: 'Alcance por reel',      format: 'number',   hint: 'Instagram'      },
+    shares_avg:           { label: 'Shares promedio',       format: 'number',   hint: 'IG + FB'        },
+    saves_avg:            { label: 'Guardados promedio',    format: 'number',   hint: 'Instagram'      },
+    comments_avg:         { label: 'Comentarios promedio',  format: 'number',   hint: 'IG + FB'        },
+    engagement_rate:      { label: 'Engagement rate',       format: 'percent',  hint: 'Instagram'      },
+    reels_pct:            { label: '% reels sobre total',   format: 'percent',  hint: 'Instagram'      },
+    virality_relative:    { label: 'Viralidad relativa',    format: 'ratio',    hint: 'Instagram'      },
 
-    ig_followers_total:   { label: 'Seguidores IG (total)', format: 'number'   },
-    fb_followers_total:   { label: 'Seguidores FB (total)', format: 'number'   },
-    followers_gained:     { label: 'Seguidores ganados',    format: 'number'   },
-    followers_lost:       { label: 'Seguidores perdidos',   format: 'number'   },
-    followers_net:        { label: 'Balance neto',          format: 'number'   },
-    follow_ratio:         { label: 'Ratio follow/unfollow', format: 'ratio'    },
-    story_replies:        { label: 'Respuestas a stories',  format: 'number'   },
-    dms:                  { label: 'DMs generados',         format: 'number'   },
-    growth_efficiency:    { label: 'Growth efficiency',     format: 'ratio'    },
+    ig_followers_total:   { label: 'Seguidores',            format: 'number',   hint: 'Instagram'      },
+    fb_followers_total:   { label: 'Seguidores / Me gusta', format: 'number',   hint: 'Facebook'       },
+    followers_gained:     { label: 'Seguidores ganados',    format: 'number',   hint: 'Facebook'       },
+    followers_lost:       { label: 'Seguidores perdidos',   format: 'number',   hint: 'Facebook'       },
+    followers_net:        { label: 'Balance neto',          format: 'number',   hint: 'Facebook'       },
+    follow_ratio:         { label: 'Ratio follow/unfollow', format: 'ratio',    hint: 'Facebook'       },
+    story_replies:        { label: 'Respuestas a stories',  format: 'number',   hint: 'Instagram'      },
+    dms:                  { label: 'DMs generados',         format: 'number',   hint: 'Instagram'      },
+    growth_efficiency:    { label: 'Growth efficiency',     format: 'ratio',    hint: 'IG + FB'        },
 
-    spend_total:          { label: 'Gasto total',           format: 'currency' },
-    roas:                 { label: 'ROAS',                  format: 'ratio'    },
-    cpa:                  { label: 'CPA',                   format: 'currency' },
-    cpc:                  { label: 'CPC',                   format: 'currency' },
-    ctr:                  { label: 'CTR',                   format: 'percent'  },
-    conversions:          { label: 'Conversiones',          format: 'number'   },
-    conversion_value:     { label: 'Valor conversiones',    format: 'currency' },
-    conversion_rate:      { label: 'Tasa de conversión',    format: 'percent'  },
-    cac:                  { label: 'CAC',                   format: 'currency' },
+    spend_total:          { label: 'Gasto total',           format: 'currency', hint: 'Google Ads'     },
+    roas:                 { label: 'ROAS',                  format: 'ratio',    hint: 'Google Ads'     },
+    cpa:                  { label: 'CPA',                   format: 'currency', hint: 'Google Ads'     },
+    cpc:                  { label: 'CPC',                   format: 'currency', hint: 'Google Ads'     },
+    ctr:                  { label: 'CTR',                   format: 'percent',  hint: 'Google Ads'     },
+    conversions:          { label: 'Conversiones',          format: 'number',   hint: 'Google Ads'     },
+    conversion_value:     { label: 'Valor conversiones',    format: 'currency', hint: 'Google Ads'     },
+    conversion_rate:      { label: 'Tasa de conversión',    format: 'percent',  hint: 'Google Ads'     },
+    cac:                  { label: 'CAC',                   format: 'currency', hint: 'Google Ads'     },
 
-    organic_share_pct:    { label: '% alcance orgánico',    format: 'percent'  },
-    cpm_avg:              { label: 'CPM promedio',          format: 'currency' },
-    ctr_avg:              { label: 'CTR promedio',          format: 'percent'  },
-    cpc_avg:              { label: 'CPC promedio',          format: 'currency' },
-    mer:                  { label: 'MER (Fase 2)',          format: 'ratio'    },
+    organic_share_pct:    { label: '% alcance orgánico',    format: 'percent',  hint: 'IG + FB'        },
+    cpm_avg:              { label: 'CPM promedio',          format: 'currency', hint: 'Google Ads'     },
+    ctr_avg:              { label: 'CTR promedio',          format: 'percent',  hint: 'Google Ads'     },
+    cpc_avg:              { label: 'CPC promedio',          format: 'currency', hint: 'Google Ads'     },
+    mer:                  { label: 'MER (Fase 2)',          format: 'ratio'                            },
 };
 
 function fmt(value: number | null, kind: 'number' | 'currency' | 'percent' | 'ratio'): string {
@@ -147,7 +147,14 @@ function MetricCard({ metric }: { metric: MonthlyMetricValue }) {
 
     return (
         <div className="rounded-lg border border-border bg-card/40 p-3">
-            <p className="text-xs text-muted-foreground">{def.label}</p>
+            <div className="flex items-start justify-between gap-1">
+                <p className="text-xs text-muted-foreground">{def.label}</p>
+                {def.hint && (
+                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                        {def.hint}
+                    </span>
+                )}
+            </div>
             <p className="mt-1 text-xl font-semibold text-foreground">
                 {fmt(metric.value, def.format)}
             </p>
