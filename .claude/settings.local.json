@@ -39,7 +39,12 @@
       "Bash(xargs ls *)",
       "Bash(composer show *)",
       "Bash(composer install *)",
-      "Bash(Get-Content *)"
+      "Bash(Get-Content *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(Get-ChildItem -Path \"app/Notifications\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(php.exe artisan *)"
     ]
   }
 }

@@ -1134,6 +1134,7 @@ export default function PmDashboard({
 }: Props) {
     const [briefOpen, setBriefOpen] = useState(false);
     const [bulkOpen, setBulkOpen] = useState(false);
+    const [briefClientId, setBriefClientId] = useState('');
 
     const clientReview = briefQueue.filter((p) =>
         ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status),
@@ -1165,6 +1166,37 @@ export default function PmDashboard({
                                 Vista tabla
                             </Button>
                         </Link>
+                        <div className="flex items-center gap-1">
+                            <Select value={briefClientId} onValueChange={setBriefClientId}>
+                                <SelectTrigger className="h-9 w-44 text-xs">
+                                    <SelectValue placeholder="Brief por cliente..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {clients.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <a
+                                href={briefClientId ? `/pm/client/${briefClientId}/brief-pdf` : '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => { if (!briefClientId) e.preventDefault(); }}
+                            >
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9"
+                                    disabled={!briefClientId}
+                                    title="Descargar brief del cliente"
+                                    type="button"
+                                >
+                                    <Download className="h-4 w-4" />
+                                </Button>
+                            </a>
+                        </div>
                         <Button variant="outline" onClick={() => setBulkOpen(true)}>
                             <Upload className="mr-2 h-4 w-4" />
                             Carga masiva

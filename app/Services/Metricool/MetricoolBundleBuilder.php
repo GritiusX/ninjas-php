@@ -47,10 +47,6 @@ class MetricoolBundleBuilder
             ['subject' => 'account', 'metric' => 'Follows',         'bucket' => 'followers_gained'],
             ['subject' => 'account', 'metric' => 'Unfollows',       'bucket' => 'followers_lost'],
         ],
-        'tiktok' => [
-            ['subject' => 'account', 'metric' => 'daily_new_followers',  'bucket' => 'followers_gained'],
-            ['subject' => 'account', 'metric' => 'daily_lost_followers', 'bucket' => 'followers_lost'],
-        ],
     ];
 
     public function __construct(private MetricoolClient $client)
@@ -61,19 +57,13 @@ class MetricoolBundleBuilder
     {
         $bundle = new MetricoolBundle();
 
-        $bundle->posts['instagram']   = $this->rows($this->client->instagramPosts($blogId, $start, $end));
-        $bundle->reels['instagram']   = $this->rows($this->client->instagramReels($blogId, $start, $end));
-        // instagramStories() omitted — endpoint returns 500 consistently.
-        // stories_count comes from igStoriesCount via statsTimeline instead.
+        $bundle->posts['instagram']    = $this->rows($this->client->instagramPosts($blogId, $start, $end));
+        $bundle->reels['instagram']    = $this->rows($this->client->instagramReels($blogId, $start, $end));
+        $bundle->stories['instagram']  = $this->rows($this->client->instagramStories($blogId, $start, $end));
 
         $bundle->posts['facebook']    = $this->rows($this->client->facebookPosts($blogId, $start, $end));
         $bundle->reels['facebook']    = $this->rows($this->client->facebookReels($blogId, $start, $end));
         $bundle->stories['facebook']  = $this->rows($this->client->facebookStories($blogId, $start, $end));
-
-        $bundle->posts['tiktok']      = $this->rows($this->client->tiktokPosts($blogId, $start, $end));
-        $bundle->posts['youtube']     = $this->rows($this->client->youtubePosts($blogId, $start, $end));
-        $bundle->posts['linkedin']    = $this->rows($this->client->linkedinPosts($blogId, $start, $end));
-        $bundle->posts['twitter']     = $this->rows($this->client->twitterPosts($blogId, $start, $end));
 
         foreach (self::TIMELINE_METRICS as $network => $configs) {
             foreach ($configs as $cfg) {

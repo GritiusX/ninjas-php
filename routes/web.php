@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccessController;
+use App\Http\Controllers\Admin\AlertConfigController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\ClientAdminController;
 use App\Http\Controllers\Admin\GoogleAdsAuthController;
@@ -50,6 +51,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::delete('/brief/{piece}', [BriefController::class, 'destroy'])->name('brief.destroy');
     Route::post('/brief/{piece}/assign', [BriefController::class, 'assign'])->name('brief.assign');
     Route::get('/brief/{piece}/pdf', [BriefPdfController::class, 'download'])->name('brief.pdf');
+    Route::get('/client/{client}/brief-pdf', [BriefPdfController::class, 'downloadClient'])->name('client.brief-pdf');
 
     // Review room
     Route::get('/review/{piece}', [ReviewController::class, 'show'])->name('review.show');
@@ -91,6 +93,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/access', [AccessController::class, 'grant'])->name('access.grant');
     Route::delete('/access/{access}', [AccessController::class, 'revoke'])->name('access.revoke');
     Route::get('/audit', [AuditController::class, 'index'])->name('audit');
+    Route::get('/alerts', [AlertConfigController::class, 'index'])->name('alerts.index');
+    Route::put('/alerts/{alertConfig}', [AlertConfigController::class, 'update'])->name('alerts.update');
 });
 
 // --- Webhook WhatsApp (público) ---
