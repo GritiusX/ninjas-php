@@ -214,6 +214,9 @@ function AreaSection({ area, items }: { area: MetricArea; items: MonthlyMetricVa
 export default function MetricsShow({ client, period, metrics }: Props) {
     const [period_, setPeriod] = useState(`${period.year}-${String(period.month).padStart(2, '0')}`);
     const [syncing, setSyncing] = useState(false);
+    const defaultStart = `${period.year}-${String(period.month).padStart(2, '0')}`;
+    const [syncStart, setSyncStart] = useState(defaultStart);
+    const [syncEnd, setSyncEnd]     = useState(defaultStart);
 
     function changePeriod(value: string) {
         setPeriod(value);
@@ -225,7 +228,7 @@ export default function MetricsShow({ client, period, metrics }: Props) {
         setSyncing(true);
         router.post(
             metricsRoutes.sync.url(client.id),
-            { period: period_, inline: 1 },
+            { start_date: syncStart, end_date: syncEnd, inline: 1 },
             {
                 preserveScroll: true,
                 onFinish: () => setSyncing(false),
@@ -258,9 +261,9 @@ export default function MetricsShow({ client, period, metrics }: Props) {
                         </p>
                     </div>
 
-                    <div className="flex items-end gap-2">
+                    <div className="flex flex-wrap items-end gap-2">
                         <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Período</label>
+                            <label className="text-xs text-muted-foreground">Ver período</label>
                             <select
                                 value={period_}
                                 onChange={(e) => changePeriod(e.target.value)}
@@ -271,6 +274,28 @@ export default function MetricsShow({ client, period, metrics }: Props) {
                                 ))}
                             </select>
                         </div>
+
+                        <div className="h-9 w-px bg-border self-end mb-0.5" />
+
+                        <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">Sincronizar desde</label>
+                            <input
+                                type="month"
+                                value={syncStart}
+                                onChange={(e) => setSyncStart(e.target.value)}
+                                className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">hasta</label>
+                            <input
+                                type="month"
+                                value={syncEnd}
+                                min={syncStart}
+                                onChange={(e) => setSyncEnd(e.target.value)}
+                                className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+                            />
+                        </div>
                         <Button
                             type="button"
                             variant="outline"
@@ -279,7 +304,7 @@ export default function MetricsShow({ client, period, metrics }: Props) {
                             onClick={syncNow}
                         >
                             <RefreshCw className={`mr-1.5 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                            Sincronizar ahora
+                            {syncing ? 'Sincronizando...' : 'Sincronizar'}
                         </Button>
                         <a
                             href={`/metrics/${client.id}/pdf?period=${period_}`}

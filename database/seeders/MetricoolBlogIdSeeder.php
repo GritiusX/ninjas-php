@@ -9,31 +9,36 @@ class MetricoolBlogIdSeeder extends Seeder
 {
     public function run(): void
     {
-        $map = [
-            'Aura Natural'          => '5580785',
-            'Aura Natural Estetica' => '5580799',
-            'Casa Mandinga'         => '6039361',
-            'Cubiertos Nicols'      => '4636603',
-            'Espacio Sommelier'     => '4732419',
-            'Eventos Parrilleros'   => '5953869',
-            'Flat Oficial'          => '6279695',
-            'Grill West AR'         => '3107640',
-            'Grill West Paraguay'   => '4636597',
-            'GWStoreOK'             => '3261078',
-            'LevelWoodArt'          => '5488795',
-            'Ñuke USA'              => '6245005',
-            'ObraSur SA'            => '5953623',
-            'Rosso Osteria'         => '6039346',
-            'Sanatorios Anchorena'  => '6089405',
+        $clients = [
+            ['name' => 'Aura Natural',          'metricool_blog_id' => '5580785'],
+            ['name' => 'Aura Natural Estetica', 'metricool_blog_id' => '5580799'],
+            ['name' => 'Casa Mandinga',          'metricool_blog_id' => '6039361'],
+            ['name' => 'Cubiertos Nicols',       'metricool_blog_id' => '4636603'],
+            ['name' => 'Espacio Sommelier',      'metricool_blog_id' => '4732419'],
+            ['name' => 'Eventos Parrilleros',    'metricool_blog_id' => '5953869'],
+            ['name' => 'Flat Oficial',           'metricool_blog_id' => '6279695'],
+            ['name' => 'Grill West AR',          'metricool_blog_id' => '3107640'],
+            ['name' => 'Grill West Paraguay',    'metricool_blog_id' => '4636597'],
+            ['name' => 'GWStoreOK',              'metricool_blog_id' => '3261078'],
+            ['name' => 'LevelWoodArt',           'metricool_blog_id' => '5488795'],
+            ['name' => 'Ñuke USA',               'metricool_blog_id' => '6245005'],
+            ['name' => 'ObraSur SA',             'metricool_blog_id' => '5953623'],
+            ['name' => 'Rosso Osteria',          'metricool_blog_id' => '6039346'],
+            ['name' => 'Sanatorios Anchorena',   'metricool_blog_id' => '6089405'],
         ];
 
-        foreach ($map as $name => $blogId) {
-            $updated = Client::where('name', $name)->update(['metricool_blog_id' => $blogId]);
-            if ($updated === 0) {
-                $this->command->warn("Cliente no encontrado: {$name}");
-            } else {
-                $this->command->info("OK: {$name} → {$blogId}");
+        foreach ($clients as $data) {
+            $client = Client::firstOrCreate(
+                ['name' => $data['name']],
+                ['metricool_blog_id' => $data['metricool_blog_id']],
+            );
+
+            if (! $client->wasRecentlyCreated && $client->metricool_blog_id !== $data['metricool_blog_id']) {
+                $client->update(['metricool_blog_id' => $data['metricool_blog_id']]);
             }
+
+            $status = $client->wasRecentlyCreated ? 'Creado' : 'Actualizado';
+            $this->command->info("{$status}: {$data['name']} → {$data['metricool_blog_id']}");
         }
     }
 }

@@ -92,15 +92,27 @@ class MetricsController extends Controller
             return back()->with('error', 'El cliente no tiene blog ID de Metricool configurado.');
         }
 
-        $target = $this->resolveMonth($request);
+        $months = $this->resolveMonthRange($request);
 
         try {
             if ($request->boolean('inline')) {
-                (new SyncClientMetricsForMonth($client->id, $target->year, $target->month))
-                    ->handle(app(MetricoolBundleBuilder::class), app(KpiCalculator::class), app(GoogleAdsService::class));
-                $message = 'Sincronización completada.';
+                $builder   = app(MetricoolBundleBuilder::class);
+                $calculator = app(KpiCalculator::class);
+                $googleAds  = app(GoogleAdsService::class);
+
+                foreach ($months as $target) {
+                    (new SyncClientMetricsForMonth($client->id, $target->year, $target->month))
+                        ->handle($builder, $calculator, $googleAds);
+                }
+
+                $count = count($months);
+                $message = $count === 1
+                    ? 'Sincronización completada.'
+                    : "Sincronización completada ({$count} meses).";
             } else {
-                dispatch(new SyncClientMetricsForMonth($client->id, $target->year, $target->month));
+                foreach ($months as $target) {
+                    dispatch(new SyncClientMetricsForMonth($client->id, $target->year, $target->month));
+                }
                 $message = 'Sincronización encolada. Se actualizará en breve.';
             }
         } catch (\Throwable $e) {
@@ -114,15 +126,39 @@ class MetricsController extends Controller
         return back()->with('success', $message);
     }
 
-    private function resolveMonth(Request $request): CarbonInterface
+    /** @return CarbonInterface[] */
+    private function resolveMonthRange(Request $request): array
     {
-        $period = $request->string('period')->trim()->value();
+        $start = $this->parseMonth($request->string('start_date')->trim()->value())
+            ?? now()->subMonthNoOverflow()->startOfMonth();
+        $end   = $this->parseMonth($request->string('end_date')->trim()->value()) ?? $start;
 
-        if ($period && preg_match('/^(\d{4})-(\d{1,2})$/', $period, $m)) {
-            return Carbon::create((int) $m[1], (int) $m[2], 1);
+        if ($end->lt($start)) {
+            $end = $start;
         }
 
-        return now()->subMonthNoOverflow()->startOfMonth();
+        $months = [];
+        $cursor = $start->copy()->startOfMonth();
+        while ($cursor->lte($end)) {
+            $months[] = $cursor->copy();
+            $cursor->addMonthNoOverflow();
+        }
+
+        return $months;
+    }
+
+    private function resolveMonth(Request $request): CarbonInterface
+    {
+        return $this->parseMonth($request->string('period')->trim()->value())
+            ?? now()->subMonthNoOverflow()->startOfMonth();
+    }
+
+    private function parseMonth(string $value): ?CarbonInterface
+    {
+        if ($value && preg_match('/^(\d{4})-(\d{1,2})$/', $value, $m)) {
+            return Carbon::create((int) $m[1], (int) $m[2], 1);
+        }
+        return null;
     }
 
     private function snapshotsByArea(int $clientId, int $year, int $month): array
