@@ -36,6 +36,16 @@ class MetricoolClient
         return $this->get('/admin/simpleProfiles', []);
     }
 
+    public function listReports(string $blogId): array
+    {
+        return $this->get("/v2/brands/{$blogId}/reports", []);
+    }
+
+    public function getReportStatus(string $blogId, string $jobId): array
+    {
+        return $this->get("/v2/brands/{$blogId}/reports/{$jobId}", []);
+    }
+
     public function instagramPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
     {
         return $this->statsPosts('instagram', $blogId, $start, $end);

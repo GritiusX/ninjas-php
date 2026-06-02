@@ -8,7 +8,9 @@ use App\Models\MonthlySnapshot;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Services\Metricool\KpiCalculator;
 use App\Services\Metricool\MetricoolBundleBuilder;
+use App\Services\Metricool\MetricoolClient;
 use Carbon\CarbonInterface;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -124,6 +126,57 @@ class MetricsController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    public function metricoolReports(Client $client): JsonResponse
+    {
+        if (! $client->metricool_blog_id) {
+            return response()->json(['error' => 'Sin blog ID configurado.'], 422);
+        }
+
+        $raw = app(MetricoolClient::class)->listReports($client->metricool_blog_id);
+        $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
+
+        $reports = collect($items)
+            ->filter(fn ($r) => ($r['status'] ?? '') === 'FINISHED' && isset($r['reportFile']))
+            ->map(fn ($r) => [
+                'jobId'        => $r['reportFile'],
+                'from'         => $r['from'] ?? null,
+                'to'           => $r['to']   ?? null,
+                'reportType'   => $r['reportType'] ?? null,
+                'creationDate' => $r['creationDate'] ?? null,
+            ])
+            ->sortByDesc('creationDate')
+            ->values();
+
+        return response()->json($reports);
+    }
+
+    public function metricoolReportDownload(Request $request, Client $client): \Symfony\Component\HttpFoundation\Response
+    {
+        if (! $client->metricool_blog_id) {
+            abort(422, 'Sin blog ID configurado.');
+        }
+
+        $jobId = $request->string('jobId')->trim()->value();
+        if (! $jobId) {
+            abort(400, 'Falta jobId.');
+        }
+
+        $raw = app(MetricoolClient::class)->getReportStatus($client->metricool_blog_id, $jobId);
+        $info = $raw['data'] ?? $raw;
+
+        $path = $info['reportPath'] ?? null;
+        if (! $path) {
+            // fallback: maybe jobId itself is a full URL (some API versions return it directly)
+            $path = filter_var($jobId, FILTER_VALIDATE_URL) ? $jobId : null;
+        }
+
+        if (! $path) {
+            abort(404, 'Reporte no disponible.');
+        }
+
+        return redirect()->away($path);
     }
 
     /** @return CarbonInterface[] */
