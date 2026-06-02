@@ -11,7 +11,7 @@ use RuntimeException;
 
 class MetricoolClient
 {
-    private const FORMAT_DATE     = 'Y-m-d';
+    private const FORMAT_DATE     = 'Ymd'; // swagger specifies YYYYMMDD (no dashes)
     private const FORMAT_DATETIME = 'Y-m-d\TH:i:s';
 
     private string $baseUrl;
