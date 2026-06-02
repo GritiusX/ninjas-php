@@ -10,6 +10,13 @@ class MetricoolBundle
     public array $stories = [];
     public array $ads = [];
     public array $statsTimelines = []; // keyed by metric name, from /stats/timeline/{metric}
+    public array $dailyValues = [];    // keyed by category => {metric: value}, from /stats/values/{category}
+
+    public function dailyValue(string $category, string $metric): ?float
+    {
+        $val = $this->dailyValues[$category][$metric] ?? null;
+        return ($val !== null && is_numeric($val)) ? (float) $val : null;
+    }
 
     public function statsTimelineTotal(string $metric): ?float
     {

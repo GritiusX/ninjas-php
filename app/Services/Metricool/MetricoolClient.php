@@ -36,6 +36,17 @@ class MetricoolClient
         return $this->get('/admin/simpleProfiles', []);
     }
 
+    // Returns all metric values for a category on a single day — useful for cumulative
+    // totals (followers, page likes) where you want the month-end snapshot.
+    // Categories: instagram, Facebook, fbAdsPerformance, adwordsPerformance, Audience, Contents, Linkedin
+    public function statsValues(string $category, string $blogId, CarbonInterface $date): array
+    {
+        return $this->get('/stats/values/' . $category, [
+            'blogId' => $blogId,
+            'date'   => $date->format('Ymd'),
+        ]);
+    }
+
     public function listReports(string $blogId): array
     {
         return $this->get("/v2/brands/{$blogId}/reports", []);

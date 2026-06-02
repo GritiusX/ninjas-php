@@ -99,6 +99,15 @@ class MetricoolBundleBuilder
             }
         }
 
+        // Daily snapshot for the last day of the period — best source for cumulative totals
+        // (followers, page likes) since timeline values can be 0 for some accounts.
+        foreach (['instagram', 'Facebook', 'fbAdsPerformance', 'Contents'] as $category) {
+            $vals = $this->client->statsValues($category, $blogId, $end);
+            if (!empty($vals)) {
+                $bundle->dailyValues[$category] = $vals;
+            }
+        }
+
         return $bundle;
     }
 

@@ -27,7 +27,9 @@ class KpiCalculator
         // Use ?: not ?? so that a 0 result also falls through to the fallback
         $igImpressions = $b->statsTimelineTotal('igimpressions')
             ?: (($b->statsTimelineTotal('igPostsImpressions') ?? 0.0) + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0));
-        $fbImpressions = $b->statsTimelineTotal('pageImpressions') ?? 0.0;
+        // Daily snapshot as fallback for pageImpressions (timeline returns null for some accounts)
+        $fbImpressions = $b->statsTimelineTotal('pageImpressions')
+            ?: ($b->dailyValue('Facebook', 'pageImpressions') ?? 0.0);
         $impressions   = $igImpressions + $fbImpressions;
 
         $organicReach = $b->statsTimelineTotal('igreach')
@@ -92,9 +94,12 @@ class KpiCalculator
 
     private function community(MetricoolBundle $b): array
     {
-        // ig/fb totals are cumulative — use the last daily snapshot value, not the sum
-        $igFollowersTotal = $b->statsTimelineLast('igFollowers');
-        $fbFollowersTotal = $b->statsTimelineLast('facebookLikes');
+        // Daily snapshot (last day of month) is the most reliable source for cumulative totals.
+        // statsTimelineLast as fallback for accounts where daily values aren't available.
+        $igFollowersTotal = $b->dailyValue('instagram', 'igFollowers')
+            ?? $b->statsTimelineLast('igFollowers');
+        $fbFollowersTotal = $b->dailyValue('Facebook', 'facebookLikes')
+            ?? $b->statsTimelineLast('facebookLikes');
 
         // IG daily delta series: positive = gained, |negative| = lost
         $igGained = $b->statsTimelineGains('igDeltaFollowers');
