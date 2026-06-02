@@ -90,12 +90,12 @@ class MetricoolClient
 
     public function listReports(string $blogId): array
     {
-        return $this->get("/v2/brands/{$blogId}/reports", []);
+        return $this->get("/v2/brands/{$blogId}/reports", [], appendUserId: false);
     }
 
     public function getReportStatus(string $blogId, string $jobId): array
     {
-        return $this->get("/v2/brands/{$blogId}/reports/{$jobId}", []);
+        return $this->get("/v2/brands/{$blogId}/reports/{$jobId}", [], appendUserId: false);
     }
 
     public function instagramPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
@@ -221,12 +221,12 @@ class MetricoolClient
         return [];
     }
 
-    private function get(string $path, array $query, int $retries = 2): array
+    private function get(string $path, array $query, int $retries = 2, bool $appendUserId = true): array
     {
         $url = $this->baseUrl . $path;
-        $params = array_merge($query, [
-            'userId' => $this->userId,
-        ]);
+        $params = $appendUserId
+            ? array_merge($query, ['userId' => $this->userId])
+            : $query;
 
         $attempt = 0;
         do {

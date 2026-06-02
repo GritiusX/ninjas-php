@@ -33,25 +33,47 @@ export default function MetricsIndex({ clients }: Props) {
 
     const [dlState, setDlState] = useState<DownloadState>('idle');
     const [dlError, setDlError] = useState<string | null>(null);
+    const [dlProgress, setDlProgress] = useState<{ ready: number; total: number } | null>(null);
 
     async function handleDownloadAll() {
         setDlState('generating');
         setDlError(null);
+        setDlProgress(null);
 
         try {
-            const response = await fetch('/metrics/reports-zip');
+            // Step 1: fire generation (returns immediately)
+            const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+            const genRes = await fetch('/metrics/reports-generate', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken },
+            });
+            if (!genRes.ok) throw new Error(`Error al generar (${genRes.status})`);
+            const { total } = await genRes.json() as { total: number };
 
-            if (!response.ok) {
-                throw new Error(`Error del servidor (${response.status})`);
+            // Step 2: poll until all (or most) are ready
+            let ready = 0;
+            for (let attempt = 0; attempt < 12; attempt++) {
+                await new Promise((r) => setTimeout(r, 15_000));
+                const statusRes = await fetch('/metrics/reports-status');
+                if (statusRes.ok) {
+                    const data = await statusRes.json() as { total: number; ready: number };
+                    ready = data.ready;
+                    setDlProgress({ ready: data.ready, total: data.total });
+                    if (data.ready >= data.total) break;
+                }
             }
 
-            setDlState('downloading');
+            if (ready === 0) throw new Error('Ningún reporte estuvo listo a tiempo.');
 
-            const blob = await response.blob();
+            // Step 3: download ZIP (fast, no waiting server-side)
+            setDlState('downloading');
+            const zipRes = await fetch('/metrics/reports-zip');
+            if (!zipRes.ok) throw new Error(`Error al descargar (${zipRes.status})`);
+
+            const blob = await zipRes.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const month = new Date();
-            month.setDate(0); // last day of previous month
+            const month = new Date(); month.setDate(0);
             a.href = url;
             a.download = `reportes-metricool-${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}.zip`;
             document.body.appendChild(a);
@@ -81,7 +103,7 @@ export default function MetricsIndex({ clients }: Props) {
                             Reportes Metricool
                         </DialogTitle>
                         <DialogDescription>
-                            {dlState === 'generating' && 'Solicitando generación de reportes a Metricool...'}
+                            {dlState === 'generating' && 'Generando reportes en Metricool y esperando que estén listos...'}
                             {dlState === 'downloading' && 'Empaquetando y descargando el ZIP...'}
                             {dlState === 'done' && 'Descarga completada.'}
                             {dlState === 'error' && 'No se pudo completar la descarga.'}
@@ -95,11 +117,17 @@ export default function MetricsIndex({ clients }: Props) {
                                 <div className="text-center text-sm text-muted-foreground">
                                     {dlState === 'generating' ? (
                                         <>
-                                            <p>Metricool está generando los PDFs de todos los clientes.</p>
-                                            <p className="mt-1 font-medium">Esto puede tardar entre 1 y 2 minutos.</p>
+                                            <p>Metricool está generando los PDFs.</p>
+                                            {dlProgress ? (
+                                                <p className="mt-2 text-base font-semibold text-foreground">
+                                                    {dlProgress.ready} / {dlProgress.total} listos
+                                                </p>
+                                            ) : (
+                                                <p className="mt-1 font-medium">Esperando respuesta...</p>
+                                            )}
                                         </>
                                     ) : (
-                                        <p>Preparando el archivo ZIP, ya casi...</p>
+                                        <p>Empaquetando el ZIP, ya casi...</p>
                                     )}
                                 </div>
                             </>
