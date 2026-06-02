@@ -57,6 +57,37 @@ class MetricoolClient
         ]);
     }
 
+    public function createReport(string $blogId, CarbonInterface $start, CarbonInterface $end): array
+    {
+        return $this->post('/report/create', [
+            'userId'                        => $this->userId,
+            'blogId'                        => $blogId,
+            'brandsummaryCheckbox'          => 'on',
+            'brandsummaryPostsCount'        => 5,
+            'brandsummaryPostsRankingField' => 'impressions',
+            'fbCheckbox'                    => 'on',
+            'fbPostsCount'                  => 5,
+            'fbRankingField'                => 'impressions',
+            'igCheckbox'                    => 'on',
+            'igPostsCount'                  => 5,
+            'igRankingField'                => 'likes',
+            'fbAdsCheckbox'                 => 'on',
+            'fbAdsPostsCount'               => 10,
+            'fbAdsRankingField'             => 'allConversionsValue',
+            'adwordsCheckbox'               => 'on',
+            'adwordsPostsCount'             => 10,
+            'adwordsRankingField'           => 'allConversionsValue',
+            'language'                      => 'es',
+            'reportName'                    => 'monthly',
+            'offlineMode'                   => true,
+            'month'                         => $start->format('Ymd'),
+            'from'                          => $start->format('Ymd'),
+            'to'                            => $end->format('Ymd'),
+            'reportFormat'                  => 'pdf',
+            'engineVersion'                 => 'v2',
+        ]);
+    }
+
     public function listReports(string $blogId): array
     {
         return $this->get("/v2/brands/{$blogId}/reports", []);
@@ -172,6 +203,22 @@ class MetricoolClient
             'to'     => $end->format(self::FORMAT_DATETIME),
             'limit'  => $limit,
         ];
+    }
+
+    private function post(string $path, array $data): array
+    {
+        $url = $this->baseUrl . $path;
+        $data['userId'] = $this->userId;
+
+        $response = $this->http()->asForm()->post($url, $data);
+
+        if ($response->successful()) {
+            $body = $response->json();
+            return is_array($body) ? $body : [];
+        }
+
+        $this->logFailure($path, $data, $response);
+        return [];
     }
 
     private function get(string $path, array $query, int $retries = 2): array

@@ -131,18 +131,71 @@ class MetricsController extends Controller
         return back()->with('success', $message);
     }
 
-    public function metricoolReportsZipAll(): StreamedResponse
+    public function metricoolReportsDiagnose(): JsonResponse
     {
-        set_time_limit(180);
-
         $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();
         $mc      = app(MetricoolClient::class);
+        $result  = [];
+
+        foreach ($clients as $client) {
+            $raw   = $mc->listReports($client->metricool_blog_id);
+            $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
+
+            $statuses = collect($items)->map(fn($r) => [
+                'status'       => $r['status'] ?? null,
+                'reportFile'   => isset($r['reportFile']) ? substr($r['reportFile'], 0, 80) : null,
+                'creationDate' => $r['creationDate'] ?? null,
+            ])->values();
+
+            $result[] = [
+                'client'       => $client->name,
+                'blog_id'      => $client->metricool_blog_id,
+                'total_reports'=> count($items),
+                'reports'      => $statuses,
+            ];
+        }
+
+        return response()->json($result);
+    }
+
+    public function metricoolReportsZipAll(): StreamedResponse
+    {
+        set_time_limit(300);
+
+        $start   = now()->subMonthNoOverflow()->startOfMonth();
+        $end     = now()->subMonthNoOverflow()->endOfMonth();
+        $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();
+        $mc      = app(MetricoolClient::class);
+
+        // Fire report generation for every client
+        foreach ($clients as $client) {
+            $mc->createReport($client->metricool_blog_id, $start, $end);
+        }
+
+        // Wait for Metricool to generate the PDFs (poll up to ~2 min)
+        $pending = $clients->keyBy('id');
+        $ready   = collect(); // id => client
+
+        for ($attempt = 0; $attempt < 4 && $pending->isNotEmpty(); $attempt++) {
+            sleep(25);
+            foreach ($pending as $id => $client) {
+                $raw   = $mc->listReports($client->metricool_blog_id);
+                $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
+                $hasFinished = collect($items)
+                    ->filter(fn ($r) => ($r['status'] ?? '') === 'FINISHED' && isset($r['reportFile']))
+                    ->isNotEmpty();
+                if ($hasFinished) {
+                    $ready->put($id, $client);
+                    $pending->forget($id);
+                }
+            }
+        }
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'mc_reports_');
         $zip     = new ZipArchive();
         $zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
-        foreach ($clients as $client) {
+        foreach ($ready as $client) {
             $raw   = $mc->listReports($client->metricool_blog_id);
             $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
 
@@ -181,7 +234,7 @@ class MetricsController extends Controller
 
         $zip->close();
 
-        $zipName = 'reportes-metricool-' . now()->format('Y-m') . '.zip';
+        $zipName = 'reportes-metricool-' . $start->format('Y-m') . '.zip';
 
         return response()->streamDownload(function () use ($tmpFile) {
             readfile($tmpFile);
