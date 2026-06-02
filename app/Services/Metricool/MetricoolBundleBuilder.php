@@ -99,12 +99,19 @@ class MetricoolBundleBuilder
             }
         }
 
-        // Daily snapshot for the last day of the period — best source for cumulative totals
-        // (followers, page likes) since timeline values can be 0 for some accounts.
+        // Daily snapshot (last day) — for cumulative totals like followers
         foreach (['instagram', 'Facebook', 'fbAdsPerformance', 'Contents'] as $category) {
             $vals = $this->client->statsValues($category, $blogId, $end);
             if (!empty($vals)) {
                 $bundle->dailyValues[$category] = $vals;
+            }
+        }
+
+        // Period aggregations — primary source for monthly totals (replaces most timeline calls)
+        foreach (['instagram', 'Facebook', 'fbAdsPerformance', 'Contents'] as $category) {
+            $vals = $this->client->statsAggregations($category, $blogId, $start, $end);
+            if (!empty($vals)) {
+                $bundle->aggregations[$category] = $vals;
             }
         }
 

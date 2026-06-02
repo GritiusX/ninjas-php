@@ -23,59 +23,67 @@ class KpiCalculator
 
     private function awareness(MetricoolBundle $b): array
     {
-        // igimpressions/igreach = account-level totals including reels (more complete than posts+stories only)
-        // Use ?: not ?? so that a 0 result also falls through to the fallback
-        $igImpressions = $b->statsTimelineTotal('igimpressions')
-            ?: (($b->statsTimelineTotal('igPostsImpressions') ?? 0.0) + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0));
-        // Daily snapshot as fallback for pageImpressions (timeline returns null for some accounts)
-        $fbImpressions = $b->statsTimelineTotal('pageImpressions')
-            ?: ($b->dailyValue('Facebook', 'pageImpressions') ?? 0.0);
-        $impressions   = $igImpressions + $fbImpressions;
+        // Aggregations = pre-summed monthly totals from Metricool, most reliable source.
+        // Timeline totals as fallback (sum of daily values).
+        $igImpressions = $b->agg('instagram', 'igimpressions')
+            ?: ($b->statsTimelineTotal('igimpressions')
+                ?: (($b->statsTimelineTotal('igPostsImpressions') ?? 0.0)
+                  + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0)));
 
-        $organicReach = $b->statsTimelineTotal('igreach')
-            ?: (($b->statsTimelineTotal('igPostsReach') ?? 0.0) + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0));
-        $fbPageViews  = $b->statsTimelineTotal('pageViews') ?? 0.0;
-        $totalReach   = $organicReach + $fbPageViews;
+        $fbImpressions = $b->agg('Facebook', 'pageImpressions')
+            ?: ($b->statsTimelineTotal('pageImpressions')
+                ?: ($b->dailyValue('Facebook', 'pageImpressions') ?? 0.0));
 
-        $reelViews    = $b->sumPosts('reels', ['views', 'plays', 'video_views']);
+        $impressions = $igImpressions + $fbImpressions;
+
+        $organicReach = $b->agg('instagram', 'igreach')
+            ?: ($b->statsTimelineTotal('igreach')
+                ?: (($b->statsTimelineTotal('igPostsReach') ?? 0.0)
+                  + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0)));
+
+        $fbPageViews = $b->agg('Facebook', 'pageViews')
+            ?: ($b->statsTimelineTotal('pageViews') ?? 0.0);
+
+        $totalReach  = $organicReach + $fbPageViews;
+        $reelViews   = $b->sumPosts('reels', ['views', 'plays', 'video_views']);
 
         return [
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'impressions_total',    'value' => $impressions],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'fb_page_impressions',  'value' => $fbImpressions ?: null],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'fb_page_views',        'value' => $fbPageViews ?: null],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_total',          'value' => $totalReach],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_organic',        'value' => $organicReach],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_paid',           'value' => null],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reel_views',           'value' => $reelViews],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'frequency_avg',        'value' => null],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'cost_per_reach',       'value' => null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'impressions_total',   'value' => $impressions],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'fb_page_impressions', 'value' => $fbImpressions ?: null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'fb_page_views',       'value' => $fbPageViews ?: null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_total',         'value' => $totalReach],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_organic',       'value' => $organicReach],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_paid',          'value' => null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reel_views',          'value' => $reelViews],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'frequency_avg',       'value' => null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'cost_per_reach',      'value' => null],
         ];
     }
 
     private function content(MetricoolBundle $b): array
     {
         $reelsCount   = $b->countPosts('reels');
-        $storiesCount = $b->statsTimelineTotal('igStoriesCount') ?? (float) $b->countPosts('stories');
-        // countPosts('posts') covers FB v2 + IG static posts; stats timeline as fallback
-        $postsCount   = $b->countPosts('posts');
+        $storiesCount = $b->agg('instagram', 'igStoriesCount')
+            ?: ($b->statsTimelineTotal('igStoriesCount') ?? (float) $b->countPosts('stories'));
+
+        $postsCount = $b->countPosts('posts');
         if ($postsCount === 0) {
-            $postsCount = (int) (($b->statsTimelineTotal('fbPosts') ?? 0.0)
-                               + ($b->statsTimelineTotal('igPosts') ?? 0.0));
+            $postsCount = (int) (($b->agg('Facebook', 'fbPosts') ?? $b->statsTimelineTotal('fbPosts') ?? 0.0)
+                               + ($b->agg('instagram', 'igPosts') ?? $b->statsTimelineTotal('igPosts') ?? 0.0));
         }
-        $totalPosts   = $reelsCount + $storiesCount + $postsCount;
+        $totalPosts = $reelsCount + $storiesCount + $postsCount;
 
         $reelReach    = $b->sumPosts('reels', ['reach', 'impressions', 'views', 'plays']);
         $reachAvgReel = $reelsCount > 0 ? $reelReach / $reelsCount : 0;
 
-        $sharesAvg     = $b->avgPosts(['posts', 'reels'], ['shares']);
-        $savesAvg      = $b->avgPosts(['posts', 'reels'], ['saved', 'saves']);
-        $commentsAvg   = $b->avgPosts(['posts', 'reels'], ['comments']);
+        $sharesAvg      = $b->avgPosts(['posts', 'reels'], ['shares']);
+        $savesAvg       = $b->avgPosts(['posts', 'reels'], ['saved', 'saves']);
+        $commentsAvg    = $b->avgPosts(['posts', 'reels'], ['comments']);
         $engagementRate = $b->avgPosts(['posts', 'reels'], ['engagement_rate', 'engagement']);
 
         $shares   = $b->sumPosts(['posts', 'reels'], ['shares']);
         $saves    = $b->sumPosts(['posts', 'reels'], ['saved', 'saves']);
         $virality = $reelReach > 0 ? ($shares + $saves) / $reelReach : 0;
-
         $reelsPct = $totalPosts > 0 ? ($reelsCount / $totalPosts) * 100 : 0;
 
         return [
@@ -94,37 +102,36 @@ class KpiCalculator
 
     private function community(MetricoolBundle $b): array
     {
-        // Daily snapshot (last day of month) is the most reliable source for cumulative totals.
-        // statsTimelineLast as fallback for accounts where daily values aren't available.
+        // Cumulative totals: daily snapshot (last day of month) > aggregation > timeline last
         $igFollowersTotal = $b->dailyValue('instagram', 'igFollowers')
+            ?? $b->agg('instagram', 'igFollowers')
             ?? $b->statsTimelineLast('igFollowers');
         $fbFollowersTotal = $b->dailyValue('Facebook', 'facebookLikes')
+            ?? $b->agg('Facebook', 'facebookLikes')
             ?? $b->statsTimelineLast('facebookLikes');
 
-        // IG daily delta series: positive = gained, |negative| = lost
+        // IG follower deltas from stats timeline (aggregation sums daily deltas = net)
         $igGained = $b->statsTimelineGains('igDeltaFollowers');
         $igLost   = $b->statsTimelineLosses('igDeltaFollowers');
 
-        // FB via /v2/analytics/timelines (Follows / Unfollows buckets)
-        $fbGained = $b->timelineSum('followers_gained');
-        $fbLost   = $b->timelineSum('followers_lost');
+        // FB follows/unfollows: aggregation > timeline sum > stats timeline
+        $fbGained = $b->agg('Facebook', 'fbFollows')
+            ?: ($b->timelineSum('followers_gained')
+                ?: ($b->statsTimelineTotal('fbFollows') ?? 0.0));
+        $fbLost   = $b->agg('Facebook', 'fbUnfollows')
+            ?: ($b->timelineSum('followers_lost')
+                ?: ($b->statsTimelineTotal('fbUnfollows') ?? 0.0));
 
-        // Fallback to fbFollows / fbUnfollows stats timeline if timeline buckets are empty
-        if ($fbGained == 0) {
-            $fbGained = $b->statsTimelineTotal('fbFollows') ?? 0.0;
-        }
-        if ($fbLost == 0) {
-            $fbLost = $b->statsTimelineTotal('fbUnfollows') ?? 0.0;
-        }
+        $followersGained  = $igGained + $fbGained;
+        $followersLost    = $igLost   + $fbLost;
+        $netFollowers     = $followersGained - $followersLost;
+        $ratio            = $followersLost > 0 ? $followersGained / $followersLost : null;
+        $storyReplies     = $b->sumPosts('stories', ['replies']);
 
-        $followersGained = $igGained + $fbGained;
-        $followersLost   = $igLost  + $fbLost;
-        $netFollowers    = $followersGained - $followersLost;
-        $ratio           = $followersLost > 0 ? $followersGained / $followersLost : null;
-        $storyReplies    = $b->sumPosts('stories', ['replies']);
-
-        $impressions = ($b->statsTimelineTotal('igPostsImpressions')  ?? 0.0)
-                     + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0);
+        $impressions = $b->agg('instagram', 'igimpressions')
+            ?: ($b->statsTimelineTotal('igimpressions')
+                ?: (($b->statsTimelineTotal('igPostsImpressions') ?? 0.0)
+                  + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0)));
         $growthEfficiency = $impressions > 0 ? ($netFollowers / $impressions) * 1000 : 0;
 
         return [
@@ -142,15 +149,15 @@ class KpiCalculator
 
     private function ads(MetricoolBundle $b): array
     {
-        // Primary source: Facebook Ads via Metricool stats/timeline
-        $spend     = $b->statsTimelineTotal('spend');
-        $clicks    = $b->statsTimelineTotal('clicks');
-        $convValue = $b->statsTimelineTotal('total_action_value');
-        $cpc       = $b->statsTimelineAvg('cpc');
-        $cpm       = $b->statsTimelineAvg('cpm');
-        $ctr       = $b->statsTimelineAvg('ctr');
+        // FB Ads: aggregation > stats timeline total
+        $spend     = $b->agg('fbAdsPerformance', 'spend')     ?: $b->statsTimelineTotal('spend');
+        $clicks    = $b->agg('fbAdsPerformance', 'clicks')    ?: $b->statsTimelineTotal('clicks');
+        $convValue = $b->agg('fbAdsPerformance', 'total_action_value') ?: $b->statsTimelineTotal('total_action_value');
+        $cpc       = $b->agg('fbAdsPerformance', 'cpc')       ?: $b->statsTimelineAvg('cpc');
+        $cpm       = $b->agg('fbAdsPerformance', 'cpm')       ?: $b->statsTimelineAvg('cpm');
+        $ctr       = $b->agg('fbAdsPerformance', 'ctr')       ?: $b->statsTimelineAvg('ctr');
 
-        // Fallback: Google Ads — use when Metricool returns null or 0
+        // Fallback: Google Ads
         $g = $b->ads['google'] ?? [];
         if (!$spend)     $spend     = isset($g['spend'])             ? (float) $g['spend']             : null;
         if (!$clicks)    $clicks    = isset($g['clicks'])            ? (float) $g['clicks']            : null;
@@ -182,18 +189,20 @@ class KpiCalculator
 
     private function system(MetricoolBundle $b): array
     {
-        $organicReach = $b->statsTimelineTotal('igreach')
-            ?: (($b->statsTimelineTotal('igPostsReach') ?? 0.0) + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0));
-        $adsReach = $b->statsTimelineTotal('reach') ?? 0.0; // Facebook Ads reach
-        $totalReach = $organicReach + $adsReach;
+        $organicReach = $b->agg('instagram', 'igreach')
+            ?: ($b->statsTimelineTotal('igreach')
+                ?: (($b->statsTimelineTotal('igPostsReach') ?? 0.0)
+                  + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0)));
 
-        $organicSharePct = $totalReach > 0
-            ? round(($organicReach / $totalReach) * 100, 1)
-            : null;
+        $adsReach = $b->agg('fbAdsPerformance', 'reach')
+            ?: ($b->statsTimelineTotal('reach') ?? 0.0);
 
-        $cpm = $b->statsTimelineAvg('cpm');
-        $ctr = $b->statsTimelineAvg('ctr');
-        $cpc = $b->statsTimelineAvg('cpc');
+        $totalReach      = $organicReach + $adsReach;
+        $organicSharePct = $totalReach > 0 ? round(($organicReach / $totalReach) * 100, 1) : null;
+
+        $cpm = $b->agg('fbAdsPerformance', 'cpm') ?: $b->statsTimelineAvg('cpm');
+        $ctr = $b->agg('fbAdsPerformance', 'ctr') ?: $b->statsTimelineAvg('ctr');
+        $cpc = $b->agg('fbAdsPerformance', 'cpc') ?: $b->statsTimelineAvg('cpc');
 
         return [
             ['area' => self::AREA_SYSTEM, 'metric_key' => 'organic_share_pct', 'value' => $organicSharePct],

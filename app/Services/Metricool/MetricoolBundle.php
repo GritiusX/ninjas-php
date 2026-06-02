@@ -11,10 +11,17 @@ class MetricoolBundle
     public array $ads = [];
     public array $statsTimelines = []; // keyed by metric name, from /stats/timeline/{metric}
     public array $dailyValues = [];    // keyed by category => {metric: value}, from /stats/values/{category}
+    public array $aggregations = [];   // keyed by category => {metric: value}, from /stats/aggregations/{category}
 
     public function dailyValue(string $category, string $metric): ?float
     {
         $val = $this->dailyValues[$category][$metric] ?? null;
+        return ($val !== null && is_numeric($val)) ? (float) $val : null;
+    }
+
+    public function agg(string $category, string $metric): ?float
+    {
+        $val = $this->aggregations[$category][$metric] ?? null;
         return ($val !== null && is_numeric($val)) ? (float) $val : null;
     }
 
