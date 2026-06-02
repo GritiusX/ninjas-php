@@ -7,22 +7,27 @@ use Carbon\CarbonInterface;
 class MetricoolBundleBuilder
 {
     private const STATS_TIMELINE_METRICS = [
-        // Instagram
-        'igStoriesCount',   // replaces /stats/instagram/stories for count
-        'igFollowers',      // total Instagram followers (acumulado)
-        'igFollowing',      // total following
-        'igEngagement',     // engagement total
-        'igSaved',          // guardados totales
-        'igLikes',          // likes totales
-        'igComments',       // comentarios totales
-        'igPostsReach',     // alcance de posts
-        'igPostsImpressions', // impresiones de posts
-        'igStoriesReach',   // alcance de stories
+        // Instagram account totals (cumulative — use statsTimelineLast, not sum)
+        'igFollowers',         // total Instagram followers
+        'igFollowing',         // total following
+        // Instagram daily aggregates (use statsTimelineTotal / sum)
+        'igStoriesCount',      // daily stories count (avoids /stories 500 error)
+        'igDeltaFollowers',    // daily follower change (positive = gain, negative = loss)
+        'igEngagement',        // engagement total
+        'igSaved',             // guardados totales
+        'igLikes',             // likes totales
+        'igComments',          // comentarios totales
+        'igPostsReach',        // alcance de posts
+        'igPostsImpressions',  // impresiones de posts
+        'igStoriesReach',      // alcance de stories
         'igStoriesImpressions', // impresiones de stories
-        'igwebsite_clicks', // clicks al bio link
-        // Facebook page
-        'facebookLikes',    // total Facebook followers/likes
-        // Facebook Ads
+        'igwebsite_clicks',    // clicks al bio link
+        // Facebook page (cumulative)
+        'facebookLikes',       // total Facebook followers/likes
+        // Facebook daily
+        'fbFollows',           // daily Facebook follows
+        'fbUnfollows',         // daily Facebook unfollows
+        // Facebook Ads via Metricool stats
         'spend',
         'clicks',
         'cpc',
@@ -35,13 +40,9 @@ class MetricoolBundleBuilder
         'unique_ctr',
     ];
 
+    // Only metrics confirmed valid for /v2/analytics/timelines per Metricool docs.
+    // Instagram account-level impressions/reach are NOT available on this endpoint.
     private const TIMELINE_METRICS = [
-        'instagram' => [
-            ['subject' => 'account', 'metric' => 'impressions',     'bucket' => 'impressions'],
-            ['subject' => 'account', 'metric' => 'reach',           'bucket' => 'reach'],
-            ['subject' => 'account', 'metric' => 'delta_followers', 'bucket' => 'followers_net'],
-            ['subject' => 'account', 'metric' => 'profile_views',   'bucket' => 'profile_views'],
-        ],
         'facebook' => [
             ['subject' => 'account', 'metric' => 'pageImpressions', 'bucket' => 'impressions'],
             ['subject' => 'account', 'metric' => 'Follows',         'bucket' => 'followers_gained'],

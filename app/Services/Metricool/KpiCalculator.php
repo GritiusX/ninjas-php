@@ -23,8 +23,11 @@ class KpiCalculator
 
     private function awareness(MetricoolBundle $b): array
     {
-        $impressions = $b->timelineSum('impressions');
-        $organicReach = $b->timelineSum('reach');
+        // Stats timeline parses correctly; the /v2/analytics/timelines IG account metrics don't exist
+        $impressions  = ($b->statsTimelineTotal('igPostsImpressions')  ?? 0.0)
+                      + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0);
+        $organicReach = ($b->statsTimelineTotal('igPostsReach')  ?? 0.0)
+                      + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0);
         $totalReach   = $organicReach;
         $reelViews    = $b->sumPosts('reels', ['views', 'plays', 'video_views']);
 
@@ -77,17 +80,35 @@ class KpiCalculator
 
     private function community(MetricoolBundle $b): array
     {
-        $followersGained = $b->timelineSum('followers_gained');
-        $followersLost   = $b->timelineSum('followers_lost');
-        $netDelta        = $b->timelineSum('followers_net');
-        $netFollowers    = ($followersGained - $followersLost) + $netDelta;
+        // ig/fb totals are cumulative — use the last daily snapshot value, not the sum
+        $igFollowersTotal = $b->statsTimelineLast('igFollowers');
+        $fbFollowersTotal = $b->statsTimelineLast('facebookLikes');
+
+        // IG daily delta series: positive = gained, |negative| = lost
+        $igGained = $b->statsTimelineGains('igDeltaFollowers');
+        $igLost   = $b->statsTimelineLosses('igDeltaFollowers');
+
+        // FB via /v2/analytics/timelines (Follows / Unfollows buckets)
+        $fbGained = $b->timelineSum('followers_gained');
+        $fbLost   = $b->timelineSum('followers_lost');
+
+        // Fallback to fbFollows / fbUnfollows stats timeline if timeline buckets are empty
+        if ($fbGained == 0) {
+            $fbGained = $b->statsTimelineTotal('fbFollows') ?? 0.0;
+        }
+        if ($fbLost == 0) {
+            $fbLost = $b->statsTimelineTotal('fbUnfollows') ?? 0.0;
+        }
+
+        $followersGained = $igGained + $fbGained;
+        $followersLost   = $igLost  + $fbLost;
+        $netFollowers    = $followersGained - $followersLost;
         $ratio           = $followersLost > 0 ? $followersGained / $followersLost : null;
         $storyReplies    = $b->sumPosts('stories', ['replies']);
-        $impressions     = $b->timelineSum('impressions');
-        $growthEfficiency = $impressions > 0 ? ($netFollowers / $impressions) * 1000 : 0;
 
-        $igFollowersTotal = $b->statsTimelineTotal('igFollowers');
-        $fbFollowersTotal = $b->statsTimelineTotal('facebookLikes');
+        $impressions = ($b->statsTimelineTotal('igPostsImpressions')  ?? 0.0)
+                     + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0);
+        $growthEfficiency = $impressions > 0 ? ($netFollowers / $impressions) * 1000 : 0;
 
         return [
             ['area' => self::AREA_COMMUNITY, 'metric_key' => 'ig_followers_total', 'value' => $igFollowersTotal],
@@ -144,9 +165,10 @@ class KpiCalculator
 
     private function system(MetricoolBundle $b): array
     {
-        $organicReach = $b->timelineSum('reach');
-        $adsReach     = $b->statsTimelineTotal('reach');
-        $totalReach   = $organicReach + ($adsReach ?? 0);
+        $organicReach = ($b->statsTimelineTotal('igPostsReach')  ?? 0.0)
+                      + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0);
+        $adsReach     = $b->statsTimelineTotal('reach') ?? 0.0; // Facebook Ads reach
+        $totalReach   = $organicReach + $adsReach;
 
         $organicSharePct = $totalReach > 0
             ? round(($organicReach / $totalReach) * 100, 1)
