@@ -45,7 +45,7 @@ class MetricsController extends Controller
     public function show(Request $request, Client $client): Response
     {
         $target = $this->resolveMonth($request);
-        $previous = $target->subMonthNoOverflow();
+        $previous = $target->copy()->subMonthNoOverflow();
 
         $current = $this->snapshotsByArea($client->id, $target->year, $target->month);
         $prev    = $this->snapshotsByArea($client->id, $previous->year, $previous->month);
