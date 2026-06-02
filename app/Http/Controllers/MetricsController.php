@@ -13,6 +13,9 @@ use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use ZipArchive;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -126,6 +129,64 @@ class MetricsController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    public function metricoolReportsZipAll(): StreamedResponse
+    {
+        set_time_limit(180);
+
+        $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();
+        $mc      = app(MetricoolClient::class);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'mc_reports_');
+        $zip     = new ZipArchive();
+        $zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+        foreach ($clients as $client) {
+            $raw   = $mc->listReports($client->metricool_blog_id);
+            $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
+
+            $report = collect($items)
+                ->filter(fn ($r) => ($r['status'] ?? '') === 'FINISHED' && isset($r['reportFile']))
+                ->sortByDesc('creationDate')
+                ->first();
+
+            if (! $report) {
+                continue;
+            }
+
+            $statusRaw = $mc->getReportStatus($client->metricool_blog_id, $report['reportFile']);
+            $info      = $statusRaw['data'] ?? $statusRaw;
+            $path      = $info['reportPath'] ?? null;
+
+            if (! $path) {
+                $path = filter_var($report['reportFile'], FILTER_VALIDATE_URL)
+                    ? $report['reportFile']
+                    : null;
+            }
+
+            if (! $path) {
+                continue;
+            }
+
+            $file = Http::timeout(30)->get($path);
+            if (! $file->successful()) {
+                continue;
+            }
+
+            $ext      = pathinfo(parse_url($path, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'pdf';
+            $filename = str($client->name)->slug() . '.' . $ext;
+            $zip->addFromString($filename, $file->body());
+        }
+
+        $zip->close();
+
+        $zipName = 'reportes-metricool-' . now()->format('Y-m') . '.zip';
+
+        return response()->streamDownload(function () use ($tmpFile) {
+            readfile($tmpFile);
+            @unlink($tmpFile);
+        }, $zipName, ['Content-Type' => 'application/zip']);
     }
 
     public function metricoolReports(Client $client): JsonResponse

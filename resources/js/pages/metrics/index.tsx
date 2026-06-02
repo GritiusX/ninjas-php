@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Download, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as metricsRoutes from '@/routes/metrics';
@@ -26,14 +26,22 @@ export default function MetricsIndex({ clients }: Props) {
             <Head title="Métricas" />
 
             <div className="space-y-6 px-4 py-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">
-                        Métricas de clientes
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Snapshot mensual cerrado con datos de Metricool. El sync corre
-                        automáticamente el día 2 de cada mes.
-                    </p>
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">
+                            Métricas de clientes
+                        </h1>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Snapshot mensual cerrado con datos de Metricool. El sync corre
+                            automáticamente el día 2 de cada mes.
+                        </p>
+                    </div>
+                    <a href="/metrics/reports-zip" target="_blank" rel="noreferrer">
+                        <Button variant="outline" size="sm" className="shrink-0">
+                            <Download className="mr-1.5 h-4 w-4" />
+                            Reportes Metricool
+                        </Button>
+                    </a>
                 </div>
 
                 {clients.length === 0 ? (
