@@ -24,13 +24,14 @@ class KpiCalculator
     private function awareness(MetricoolBundle $b): array
     {
         // igimpressions/igreach = account-level totals including reels (more complete than posts+stories only)
+        // Use ?: not ?? so that a 0 result also falls through to the fallback
         $igImpressions = $b->statsTimelineTotal('igimpressions')
-            ?? (($b->statsTimelineTotal('igPostsImpressions') ?? 0.0) + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0));
+            ?: (($b->statsTimelineTotal('igPostsImpressions') ?? 0.0) + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0));
         $fbImpressions = $b->statsTimelineTotal('pageImpressions') ?? 0.0;
         $impressions   = $igImpressions + $fbImpressions;
 
         $organicReach = $b->statsTimelineTotal('igreach')
-            ?? (($b->statsTimelineTotal('igPostsReach') ?? 0.0) + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0));
+            ?: (($b->statsTimelineTotal('igPostsReach') ?? 0.0) + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0));
         $fbPageViews  = $b->statsTimelineTotal('pageViews') ?? 0.0;
         $totalReach   = $organicReach + $fbPageViews;
 
@@ -177,7 +178,7 @@ class KpiCalculator
     private function system(MetricoolBundle $b): array
     {
         $organicReach = $b->statsTimelineTotal('igreach')
-            ?? (($b->statsTimelineTotal('igPostsReach') ?? 0.0) + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0));
+            ?: (($b->statsTimelineTotal('igPostsReach') ?? 0.0) + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0));
         $adsReach = $b->statsTimelineTotal('reach') ?? 0.0; // Facebook Ads reach
         $totalReach = $organicReach + $adsReach;
 
