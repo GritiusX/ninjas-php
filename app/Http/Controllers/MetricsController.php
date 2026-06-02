@@ -165,12 +165,16 @@ class MetricsController extends Controller
         $end     = now()->subMonthNoOverflow()->endOfMonth();
         $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();
         $mc      = app(MetricoolClient::class);
+        $results = [];
 
         foreach ($clients as $client) {
-            $mc->createReport($client->metricool_blog_id, $start, $end);
+            $res = $mc->createReport($client->metricool_blog_id, $start, $end);
+            $results[] = ['client' => $client->name, 'blog_id' => $client->metricool_blog_id, 'response' => $res];
         }
 
-        return response()->json(['total' => $clients->count()]);
+        \Illuminate\Support\Facades\Log::info('[ReportsGenerate] Results', $results);
+
+        return response()->json(['total' => $clients->count(), 'results' => $results]);
     }
 
     /** Step 2 — poll how many clients have a FINISHED report */

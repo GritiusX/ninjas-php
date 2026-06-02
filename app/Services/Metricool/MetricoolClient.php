@@ -59,7 +59,13 @@ class MetricoolClient
 
     public function createReport(string $blogId, CarbonInterface $start, CarbonInterface $end): array
     {
-        return $this->post('/report/create', [
+        // userId and blogId must be in the URL query string (as seen in network capture)
+        $url = $this->baseUrl . '/report/create?' . http_build_query([
+            'userId' => $this->userId,
+            'blogId' => $blogId,
+        ]);
+
+        $data = [
             'userId'                        => $this->userId,
             'blogId'                        => $blogId,
             'brandsummaryCheckbox'          => 'on',
@@ -85,7 +91,22 @@ class MetricoolClient
             'to'                            => $end->format('Ymd'),
             'reportFormat'                  => 'pdf',
             'engineVersion'                 => 'v2',
+        ];
+
+        $response = $this->http()->asForm()->post($url, $data);
+
+        if ($response->successful()) {
+            $body = $response->json();
+            return is_array($body) ? $body : [];
+        }
+
+        Log::warning('Metricool createReport failed', [
+            'blogId' => $blogId,
+            'status' => $response->status(),
+            'body'   => mb_substr((string) $response->body(), 0, 300),
         ]);
+
+        return [];
     }
 
     public function listReports(string $blogId): array
