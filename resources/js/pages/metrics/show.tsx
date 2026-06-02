@@ -67,9 +67,11 @@ const AREA_META: Record<
 };
 
 const METRIC_LABELS: Record<string, { label: string; format: 'number' | 'currency' | 'percent' | 'ratio'; hint?: string }> = {
-    impressions_total:    { label: 'Impresiones',           format: 'number',   hint: 'IG + FB'        },
+    impressions_total:    { label: 'Impresiones',            format: 'number',   hint: 'IG + FB'        },
+    fb_page_impressions:  { label: 'Visualizaciones FB',    format: 'number',   hint: 'Facebook'       },
+    fb_page_views:        { label: 'Visitas a página FB',   format: 'number',   hint: 'Facebook'       },
     reach_total:          { label: 'Alcance total',         format: 'number',   hint: 'IG + FB'        },
-    reach_organic:        { label: 'Alcance orgánico',      format: 'number',   hint: 'IG + FB'        },
+    reach_organic:        { label: 'Alcance orgánico',      format: 'number',   hint: 'Instagram'      },
     reach_paid:           { label: 'Alcance pago',          format: 'number',   hint: 'Google Ads'     },
     reel_views:           { label: 'Reproducciones reels',  format: 'number',   hint: 'Instagram'      },
     frequency_avg:        { label: 'Frecuencia promedio',   format: 'ratio',    hint: 'Meta Ads'       },

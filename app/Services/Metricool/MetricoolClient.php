@@ -72,6 +72,11 @@ class MetricoolClient
 
     public function facebookPosts(string $blogId, CarbonInterface $start, CarbonInterface $end): array
     {
+        // v1 /stats/facebook/posts returns empty for many accounts; v2 is more reliable
+        $result = $this->get('/v2/analytics/posts/facebook', $this->v2Params($blogId, $start, $end, 200));
+        if (!empty($result['data'] ?? $result)) {
+            return $result;
+        }
         return $this->statsPosts('facebook', $blogId, $start, $end);
     }
 

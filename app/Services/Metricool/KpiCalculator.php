@@ -23,31 +23,42 @@ class KpiCalculator
 
     private function awareness(MetricoolBundle $b): array
     {
-        // Stats timeline parses correctly; the /v2/analytics/timelines IG account metrics don't exist
-        $impressions  = ($b->statsTimelineTotal('igPostsImpressions')  ?? 0.0)
-                      + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0);
-        $organicReach = ($b->statsTimelineTotal('igPostsReach')  ?? 0.0)
-                      + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0);
-        $totalReach   = $organicReach;
+        // igimpressions/igreach = account-level totals including reels (more complete than posts+stories only)
+        $igImpressions = $b->statsTimelineTotal('igimpressions')
+            ?? (($b->statsTimelineTotal('igPostsImpressions') ?? 0.0) + ($b->statsTimelineTotal('igStoriesImpressions') ?? 0.0));
+        $fbImpressions = $b->statsTimelineTotal('pageImpressions') ?? 0.0;
+        $impressions   = $igImpressions + $fbImpressions;
+
+        $organicReach = $b->statsTimelineTotal('igreach')
+            ?? (($b->statsTimelineTotal('igPostsReach') ?? 0.0) + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0));
+        $fbPageViews  = $b->statsTimelineTotal('pageViews') ?? 0.0;
+        $totalReach   = $organicReach + $fbPageViews;
+
         $reelViews    = $b->sumPosts('reels', ['views', 'plays', 'video_views']);
 
         return [
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'impressions_total', 'value' => $impressions],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_total',       'value' => $totalReach],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_organic',     'value' => $organicReach],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_paid',        'value' => null],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reel_views',        'value' => $reelViews],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'frequency_avg',     'value' => null],
-            ['area' => self::AREA_AWARENESS, 'metric_key' => 'cost_per_reach',    'value' => null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'impressions_total',    'value' => $impressions],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'fb_page_impressions',  'value' => $fbImpressions ?: null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'fb_page_views',        'value' => $fbPageViews ?: null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_total',          'value' => $totalReach],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_organic',        'value' => $organicReach],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reach_paid',           'value' => null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'reel_views',           'value' => $reelViews],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'frequency_avg',        'value' => null],
+            ['area' => self::AREA_AWARENESS, 'metric_key' => 'cost_per_reach',       'value' => null],
         ];
     }
 
     private function content(MetricoolBundle $b): array
     {
         $reelsCount   = $b->countPosts('reels');
-        // Use igStoriesCount timeline (avoids /stories endpoint that throws 500 intermittently)
         $storiesCount = $b->statsTimelineTotal('igStoriesCount') ?? (float) $b->countPosts('stories');
+        // countPosts('posts') covers FB v2 + IG static posts; stats timeline as fallback
         $postsCount   = $b->countPosts('posts');
+        if ($postsCount === 0) {
+            $postsCount = (int) (($b->statsTimelineTotal('fbPosts') ?? 0.0)
+                               + ($b->statsTimelineTotal('igPosts') ?? 0.0));
+        }
         $totalPosts   = $reelsCount + $storiesCount + $postsCount;
 
         $reelReach    = $b->sumPosts('reels', ['reach', 'impressions', 'views', 'plays']);
@@ -165,10 +176,10 @@ class KpiCalculator
 
     private function system(MetricoolBundle $b): array
     {
-        $organicReach = ($b->statsTimelineTotal('igPostsReach')  ?? 0.0)
-                      + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0);
-        $adsReach     = $b->statsTimelineTotal('reach') ?? 0.0; // Facebook Ads reach
-        $totalReach   = $organicReach + $adsReach;
+        $organicReach = $b->statsTimelineTotal('igreach')
+            ?? (($b->statsTimelineTotal('igPostsReach') ?? 0.0) + ($b->statsTimelineTotal('igStoriesReach') ?? 0.0));
+        $adsReach = $b->statsTimelineTotal('reach') ?? 0.0; // Facebook Ads reach
+        $totalReach = $organicReach + $adsReach;
 
         $organicSharePct = $totalReach > 0
             ? round(($organicReach / $totalReach) * 100, 1)

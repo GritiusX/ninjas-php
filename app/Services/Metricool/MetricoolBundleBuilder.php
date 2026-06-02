@@ -6,28 +6,37 @@ use Carbon\CarbonInterface;
 
 class MetricoolBundleBuilder
 {
+    // Full confirmed list from /stats/timeline/{metric} swagger docs.
     private const STATS_TIMELINE_METRICS = [
-        // Instagram account totals (cumulative — use statsTimelineLast, not sum)
-        'igFollowers',         // total Instagram followers
-        'igFollowing',         // total following
-        // Instagram daily aggregates (use statsTimelineTotal / sum)
-        'igStoriesCount',      // daily stories count (avoids /stories 500 error)
-        'igDeltaFollowers',    // daily follower change (positive = gain, negative = loss)
-        'igEngagement',        // engagement total
-        'igSaved',             // guardados totales
-        'igLikes',             // likes totales
-        'igComments',          // comentarios totales
-        'igPostsReach',        // alcance de posts
-        'igPostsImpressions',  // impresiones de posts
-        'igStoriesReach',      // alcance de stories
-        'igStoriesImpressions', // impresiones de stories
-        'igwebsite_clicks',    // clicks al bio link
-        // Facebook page (cumulative)
-        'facebookLikes',       // total Facebook followers/likes
-        // Facebook daily
-        'fbFollows',           // daily Facebook follows
-        'fbUnfollows',         // daily Facebook unfollows
-        // Facebook Ads via Metricool stats
+        // Instagram — cumulative totals (use statsTimelineLast)
+        'igFollowers',          // total followers
+        'igFollowing',          // total following
+        // Instagram — daily sums (use statsTimelineTotal)
+        'igimpressions',        // all-content impressions (posts + stories + reels)
+        'igreach',              // all-content reach
+        'igDeltaFollowers',     // daily follower delta (+gain / -loss)
+        'igStoriesCount',       // daily stories published
+        'igPosts',              // daily posts published (static)
+        'igEngagement',
+        'igSaved',
+        'igLikes',
+        'igComments',
+        'igPostsReach',
+        'igPostsImpressions',
+        'igStoriesReach',
+        'igStoriesImpressions',
+        'igwebsite_clicks',
+        'igprofile_views',
+        // Facebook page — cumulative total (use statsTimelineLast)
+        'facebookLikes',        // total page followers/likes
+        // Facebook page — daily sums
+        'fbPosts',              // daily posts published
+        'pageImpressions',      // total page impressions (= "Visualizaciones" in Metricool)
+        'pageViews',            // page visits (= "Visitas a página" in Metricool)
+        'dailyImpressions',     // daily organic impressions
+        'fbFollows',            // daily page follows
+        'fbUnfollows',          // daily page unfollows
+        // Facebook Ads
         'spend',
         'clicks',
         'cpc',
@@ -40,13 +49,13 @@ class MetricoolBundleBuilder
         'unique_ctr',
     ];
 
-    // Only metrics confirmed valid for /v2/analytics/timelines per Metricool docs.
-    // Instagram account-level impressions/reach are NOT available on this endpoint.
+    // /v2/analytics/timelines is only used where stats/timeline has no equivalent.
+    // FB followers gained/lost: fbFollows/fbUnfollows via stats timeline as primary,
+    // timeline endpoint as secondary (kept for accounts that have it).
     private const TIMELINE_METRICS = [
         'facebook' => [
-            ['subject' => 'account', 'metric' => 'pageImpressions', 'bucket' => 'impressions'],
-            ['subject' => 'account', 'metric' => 'Follows',         'bucket' => 'followers_gained'],
-            ['subject' => 'account', 'metric' => 'Unfollows',       'bucket' => 'followers_lost'],
+            ['subject' => 'account', 'metric' => 'Follows',   'bucket' => 'followers_gained'],
+            ['subject' => 'account', 'metric' => 'Unfollows', 'bucket' => 'followers_lost'],
         ],
     ];
 
