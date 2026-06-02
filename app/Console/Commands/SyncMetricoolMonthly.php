@@ -47,7 +47,7 @@ class SyncMetricoolMonthly extends Command
                 $job->handle(
                     app(\App\Services\Metricool\MetricoolBundleBuilder::class),
                     app(\App\Services\Metricool\KpiCalculator::class),
-                    app(\App\Services\GoogleAdsService::class),
+                    app(\App\Services\GoogleAds\GoogleAdsService::class),
                 );
             } else {
                 dispatch($job);
