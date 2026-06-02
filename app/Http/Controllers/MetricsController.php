@@ -180,13 +180,20 @@ class MetricsController extends Controller
     /** Step 2 — poll how many clients have a FINISHED report */
     public function metricoolReportsStatus(): JsonResponse
     {
-        $clients = Client::whereNotNull('metricool_blog_id')->get();
-        $mc      = app(MetricoolClient::class);
-        $total   = $clients->count();
-        $ready   = 0;
+        $clients     = Client::whereNotNull('metricool_blog_id')->get();
+        $mc          = app(MetricoolClient::class);
+        $total       = $clients->count();
+        $ready       = 0;
+        $unsupported = 0; // clients where the reports API returns 400 (feature not available)
 
         foreach ($clients as $client) {
-            $raw   = $mc->listReports($client->metricool_blog_id);
+            $raw = $mc->listReportsRaw($client->metricool_blog_id);
+
+            if ($raw['_status'] === 400) {
+                $unsupported++;
+                continue;
+            }
+
             $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
             $has   = collect($items)
                 ->filter(fn ($r) => ($r['status'] ?? '') === 'FINISHED' && isset($r['reportFile']))
@@ -196,7 +203,12 @@ class MetricsController extends Controller
             }
         }
 
-        return response()->json(['total' => $total, 'ready' => $ready]);
+        return response()->json([
+            'total'       => $total,
+            'ready'       => $ready,
+            'unsupported' => $unsupported,
+            'done'        => ($ready + $unsupported) >= $total,
+        ]);
     }
 
     /** Step 3 — download ZIP of all FINISHED reports (fast, no waiting) */

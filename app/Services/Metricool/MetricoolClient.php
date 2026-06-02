@@ -68,9 +68,11 @@ class MetricoolClient
         $data = [
             'userId'                        => $this->userId,
             'blogId'                        => $blogId,
+            // Brand summary is universal — always included
             'brandsummaryCheckbox'          => 'on',
             'brandsummaryPostsCount'        => 5,
             'brandsummaryPostsRankingField' => 'impressions',
+            // Network sections: include all and let Metricool skip unconnected ones
             'fbCheckbox'                    => 'on',
             'fbPostsCount'                  => 5,
             'fbRankingField'                => 'impressions',
@@ -85,7 +87,7 @@ class MetricoolClient
             'adwordsRankingField'           => 'allConversionsValue',
             'language'                      => 'es',
             'reportName'                    => 'monthly',
-            'offlineMode'                   => true,
+            'offlineMode'                   => false,
             'month'                         => $start->format('Ymd'),
             'from'                          => $start->format('Ymd'),
             'to'                            => $end->format('Ymd'),
@@ -111,7 +113,26 @@ class MetricoolClient
 
     public function listReports(string $blogId): array
     {
-        return $this->get("/v2/brands/{$blogId}/reports", [], appendUserId: false);
+        $raw = $this->listReportsRaw($blogId);
+        unset($raw['_status']);
+        return $raw;
+    }
+
+    /** Returns the raw response including '_status' HTTP code for callers that need to distinguish 400 from empty. */
+    public function listReportsRaw(string $blogId): array
+    {
+        $url      = $this->baseUrl . "/v2/brands/{$blogId}/reports";
+        $response = $this->http()->get($url);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            $result = is_array($data) ? $data : [];
+            $result['_status'] = 200;
+            return $result;
+        }
+
+        $this->logFailure("/v2/brands/{$blogId}/reports", [], $response);
+        return ['_status' => $response->status()];
     }
 
     public function getReportStatus(string $blogId, string $jobId): array

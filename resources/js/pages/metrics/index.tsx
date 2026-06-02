@@ -50,20 +50,21 @@ export default function MetricsIndex({ clients }: Props) {
             if (!genRes.ok) throw new Error(`Error al generar (${genRes.status})`);
             const { total } = await genRes.json() as { total: number };
 
-            // Step 2: poll until all (or most) are ready
+            // Step 2: poll until all clients are resolved (ready or unsupported)
             let ready = 0;
             for (let attempt = 0; attempt < 12; attempt++) {
                 await new Promise((r) => setTimeout(r, 15_000));
                 const statusRes = await fetch('/metrics/reports-status');
                 if (statusRes.ok) {
-                    const data = await statusRes.json() as { total: number; ready: number };
+                    const data = await statusRes.json() as { total: number; ready: number; unsupported: number; done: boolean };
                     ready = data.ready;
-                    setDlProgress({ ready: data.ready, total: data.total });
-                    if (data.ready >= data.total) break;
+                    const supported = data.total - data.unsupported;
+                    setDlProgress({ ready: data.ready, total: supported });
+                    if (data.done) break;
                 }
             }
 
-            if (ready === 0) throw new Error('Ningún reporte estuvo listo a tiempo.');
+            if (ready === 0) throw new Error('No hay reportes disponibles. Es posible que esta función requiera un plan Metricool específico.');
 
             // Step 3: download ZIP (fast, no waiting server-side)
             setDlState('downloading');
