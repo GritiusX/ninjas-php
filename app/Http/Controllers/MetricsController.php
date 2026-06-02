@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateMetricoolReport;
 use App\Jobs\SyncClientMetricsForMonth;
 use App\Models\Client;
 use App\Models\MonthlySnapshot;
@@ -158,23 +159,22 @@ class MetricsController extends Controller
         return response()->json($result);
     }
 
-    /** Step 1 — fire generation for all clients, return immediately */
+    /** Step 1 — dispatch one background job per client and return immediately */
     public function metricoolReportsGenerate(): JsonResponse
     {
         $start   = now()->subMonthNoOverflow()->startOfMonth();
         $end     = now()->subMonthNoOverflow()->endOfMonth();
         $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();
-        $mc      = app(MetricoolClient::class);
-        $results = [];
 
         foreach ($clients as $client) {
-            $res = $mc->createReport($client->metricool_blog_id, $start, $end);
-            $results[] = ['client' => $client->name, 'blog_id' => $client->metricool_blog_id, 'response' => $res];
+            dispatch(new GenerateMetricoolReport(
+                blogId:    $client->metricool_blog_id,
+                startDate: $start->format('Ymd'),
+                endDate:   $end->format('Ymd'),
+            ));
         }
 
-        \Illuminate\Support\Facades\Log::info('[ReportsGenerate] Results', $results);
-
-        return response()->json(['total' => $clients->count(), 'results' => $results]);
+        return response()->json(['total' => $clients->count()]);
     }
 
     /** Step 2 — poll how many clients have a FINISHED report */

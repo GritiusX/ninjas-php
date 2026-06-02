@@ -95,7 +95,8 @@ class MetricoolClient
             'engineVersion'                 => 'v2',
         ];
 
-        $response = $this->http()->asForm()->post($url, $data);
+        // report/create is synchronous — Metricool generates the PDF during the request (can take 60-120s)
+        $response = $this->http()->timeout(120)->asForm()->post($url, $data);
 
         if ($response->successful()) {
             $body = $response->json();
