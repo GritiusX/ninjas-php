@@ -31,6 +31,7 @@ function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
         final_video_link: piece.final_video_link ?? '',
     });
     const [submitted, setSubmitted] = useState(false);
+    const isUpdate = piece.status === 'INTERNAL_REVIEW';
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -57,7 +58,7 @@ function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
                 </div>
                 <Button type="submit" disabled={processing} className="w-full sm:w-auto">
                     <Send className="mr-2 h-4 w-4" />
-                    {processing ? 'Enviando...' : 'Enviar para revisión'}
+                    {processing ? 'Enviando...' : isUpdate ? 'Actualizar y re-enviar' : 'Enviar para revisión'}
                 </Button>
             </form>
 
@@ -66,11 +67,13 @@ function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <CheckCircle2 className="h-5 w-5 text-green-400" />
-                            ¡Enviado para revisión!
+                            {isUpdate ? '¡Video actualizado!' : '¡Enviado para revisión!'}
                         </DialogTitle>
                     </DialogHeader>
                     <p className="text-sm text-muted-foreground">
-                        El video fue enviado al PM. Te avisamos cuando haya feedback.
+                        {isUpdate
+                            ? 'El nuevo link fue enviado al PM para revisión.'
+                            : 'El video fue enviado al PM. Te avisamos cuando haya feedback.'}
                     </p>
                     <DialogFooter>
                         <Button onClick={() => router.visit(editorRoutes.dashboard.url())}>
@@ -85,7 +88,7 @@ function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
 
 export default function EditorTask({ piece }: Props) {
     const deadline = formatDeadline(piece.deadline);
-    const canSubmit = piece.status === 'EDITING' || piece.status === 'REVISION';
+    const canSubmit = ['EDITING', 'REVISION', 'INTERNAL_REVIEW'].includes(piece.status);
 
     return (
         <>
@@ -231,7 +234,7 @@ export default function EditorTask({ piece }: Props) {
                 {canSubmit && (
                     <section className="rounded-xl bg-card border border-border p-5 space-y-3">
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Subir video editado
+                            {piece.status === 'INTERNAL_REVIEW' ? 'Actualizar video' : 'Subir video editado'}
                         </h2>
                         {piece.final_video_link && (
                             <a

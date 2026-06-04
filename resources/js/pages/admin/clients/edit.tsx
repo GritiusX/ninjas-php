@@ -1,6 +1,6 @@
 ﻿import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,15 @@ import type { Client } from '@/types';
 
 export default function ClientEdit({ client }: { client: Client }) {
     const [showToken, setShowToken] = useState(false);
+    const whatsappRef = useRef<HTMLDivElement>(null);
+    const highlightWhatsapp = typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).get('highlight') === 'whatsapp';
+
+    useEffect(() => {
+        if (highlightWhatsapp && whatsappRef.current) {
+            whatsappRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, []);
     const { data, setData, put, processing, errors } = useForm({
         name: client.name,
         contact_name: client.contact_name ?? '',
@@ -50,9 +59,20 @@ export default function ClientEdit({ client }: { client: Client }) {
                             <Field label="Email del responsable" error={errors.contact_email}>
                                 <Input type="email" value={data.contact_email} onChange={(e) => setData('contact_email', e.target.value)} placeholder="juan@empresa.com" />
                             </Field>
-                            <Field label="WhatsApp del responsable" error={errors.whatsapp_number}>
-                                <Input value={data.whatsapp_number} onChange={(e) => setData('whatsapp_number', e.target.value)} placeholder="+54 9 11..." />
-                            </Field>
+                            <div ref={whatsappRef} className={highlightWhatsapp ? 'rounded-lg ring-2 ring-green-500 ring-offset-2 ring-offset-background p-3 -mx-3 bg-green-500/5' : ''}>
+                                <Field
+                                    label="WhatsApp del responsable"
+                                    error={errors.whatsapp_number}
+                                    highlight={highlightWhatsapp}
+                                >
+                                    <Input value={data.whatsapp_number} onChange={(e) => setData('whatsapp_number', e.target.value)} placeholder="+54 9 11..." className={highlightWhatsapp ? 'border-green-500 focus-visible:ring-green-500' : ''} />
+                                </Field>
+                                {highlightWhatsapp && (
+                                    <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                                        ↑ Agregá el número de WhatsApp del cliente acá
+                                    </p>
+                                )}
+                            </div>
                             <Field label="ROAS objetivo *" error={errors.roas_goal}>
                                 <Input type="number" step="0.01" min="0" value={data.roas_goal} onChange={(e) => setData('roas_goal', e.target.value)} />
                             </Field>
@@ -91,10 +111,10 @@ export default function ClientEdit({ client }: { client: Client }) {
     );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({ label, error, highlight, children }: { label: string; error?: string; highlight?: boolean; children: React.ReactNode }) {
     return (
         <div className="space-y-1.5">
-            <Label>{label}</Label>
+            <Label className={highlight ? 'text-green-600 dark:text-green-400 font-semibold' : ''}>{label}</Label>
             {children}
             {error && <p className="text-xs text-destructive">{error}</p>}
         </div>

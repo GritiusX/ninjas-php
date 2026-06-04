@@ -5,6 +5,7 @@ import {
     CheckCircle2,
     ExternalLink,
     Loader2,
+    MessageCircle,
     MessageSquare,
     Sparkles,
     ThumbsUp,
@@ -15,12 +16,23 @@ import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import * as pmRoutes from '@/routes/pm';
 import * as reviewRoutes from '@/routes/pm/review';
 import type { ContentPiece } from '@/types';
 
 type Props = { piece: ContentPiece };
+
+// ─── WhatsApp ────────────────────────────────────────────────────────────────
+
+function buildWhatsAppUrl(piece: ContentPiece): string {
+    const number = piece.client!.whatsapp_number!.replace(/\D/g, '');
+    const title = piece.concept ?? piece.product ?? 'tu contenido';
+    const client = piece.client!.name;
+    const message = `¡Hola! 👋 Les escribimos desde Little Ninjas.\n\nYa está listo el contenido de *${client}*: _"${title}"_.\n\nQuedamos atentos a tu feedback. 🎬`;
+    return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+}
 
 // ─── Copy panel ──────────────────────────────────────────────────────────────
 
@@ -147,6 +159,7 @@ function RequestChangesModal({
 
 export default function ReviewRoom({ piece }: Props) {
     const [changesOpen, setChangesOpen] = useState(false);
+    const [noNumberOpen, setNoNumberOpen] = useState(false);
 
     function approve() {
         router.post(reviewRoutes.approve.url(piece.id));
@@ -170,14 +183,35 @@ export default function ReviewRoom({ piece }: Props) {
                     </Link>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 mb-6">
-                    <h1 className="text-xl font-bold text-foreground">
-                        {piece.client?.name}
-                    </h1>
-                    <StatusBadge status={piece.status} />
-                    <PriorityBadge priority={piece.priority} />
-                    {piece.editor && (
-                        <span className="text-sm text-muted-foreground">por {piece.editor.name}</span>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h1 className="text-xl font-bold text-foreground">
+                            {piece.client?.name}
+                        </h1>
+                        <StatusBadge status={piece.status} />
+                        <PriorityBadge priority={piece.priority} />
+                        {piece.editor && (
+                            <span className="text-sm text-muted-foreground">por {piece.editor.name}</span>
+                        )}
+                    </div>
+
+                    {piece.client && (
+                        piece.client.whatsapp_number ? (
+                            <a href={buildWhatsAppUrl(piece)} target="_blank" rel="noopener noreferrer">
+                                <Button className="bg-green-600 hover:bg-green-500 text-white gap-2">
+                                    <MessageCircle className="h-4 w-4" />
+                                    Contactar cliente
+                                </Button>
+                            </a>
+                        ) : (
+                            <Button
+                                className="bg-green-600 hover:bg-green-500 text-white gap-2"
+                                onClick={() => setNoNumberOpen(true)}
+                            >
+                                <MessageCircle className="h-4 w-4" />
+                                Contactar cliente
+                            </Button>
+                        )
                     )}
                 </div>
 
@@ -332,6 +366,30 @@ export default function ReviewRoom({ piece }: Props) {
                 open={changesOpen}
                 onClose={() => setChangesOpen(false)}
             />
+
+            <Dialog open={noNumberOpen} onOpenChange={setNoNumberOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <MessageCircle className="h-5 w-5 text-green-500" />
+                            Número de WhatsApp no configurado
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        El cliente <strong className="text-foreground">{piece.client?.name}</strong> no tiene un número de WhatsApp cargado. Agregalo en la configuración del cliente.
+                    </p>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setNoNumberOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Link href={`/admin/clients/${piece.client?.id}/edit?highlight=whatsapp`}>
+                            <Button className="bg-green-600 hover:bg-green-500 text-white">
+                                Cargar número
+                            </Button>
+                        </Link>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
