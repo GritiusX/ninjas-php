@@ -13,7 +13,7 @@ class EnsureRole
         $user = $request->user();
 
         if (! $user || ! $user->is_active) {
-            abort(403);
+            return redirect()->route('login');
         }
 
         // admin tiene acceso a todo
@@ -22,7 +22,7 @@ class EnsureRole
         }
 
         if (! in_array($user->role, $roles)) {
-            abort(403);
+            return redirect()->route('dashboard');
         }
 
         return $next($request);

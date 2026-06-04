@@ -59,7 +59,7 @@ class NotificationService
     public function notifyTaskPaused(ContentPiece $piece, User $editor, string $reason): void
     {
         $title = "⏸ [{$piece->client->name}] {$editor->name} pausó una tarea";
-        $body  = ""{$reason}" — Tarea: " . ($piece->concept ?? $piece->product ?? "#{$piece->id}");
+        $body  = "\"{$reason}\" — Tarea: " . ($piece->concept ?? $piece->product ?? "#{$piece->id}");
         $link  = "/pm/review/{$piece->id}";
 
         $recipients = User::whereIn('role', ['pm', 'admin'])->where('is_active', true)->get();
