@@ -87,7 +87,7 @@ class MetricoolClient
             'adwordsRankingField'           => 'allConversionsValue',
             'language'                      => 'es',
             'reportName'                    => 'monthly',
-            'offlineMode'                   => false,
+            'offlineMode'                   => true,
             'month'                         => $start->format('Ymd'),
             'from'                          => $start->format('Ymd'),
             'to'                            => $end->format('Ymd'),
@@ -95,8 +95,7 @@ class MetricoolClient
             'engineVersion'                 => 'v2',
         ];
 
-        // report/create is synchronous — Metricool generates the PDF during the request (can take 60-120s)
-        $response = $this->http()->timeout(120)->asForm()->post($url, $data);
+        $response = $this->http()->timeout(30)->asForm()->post($url, $data);
 
         if ($response->successful()) {
             $body = $response->json();

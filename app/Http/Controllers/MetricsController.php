@@ -295,6 +295,25 @@ class MetricsController extends Controller
         return response()->json($reports);
     }
 
+    public function metricoolReportCreate(Request $request, Client $client): JsonResponse
+    {
+        if (! $client->metricool_blog_id) {
+            return response()->json(['error' => 'Sin blog ID configurado.'], 422);
+        }
+
+        $target = $this->resolveMonth($request);
+        $start  = $target->copy()->startOfMonth();
+        $end    = $target->copy()->endOfMonth();
+
+        dispatch(new GenerateMetricoolReport(
+            blogId:    $client->metricool_blog_id,
+            startDate: $start->format('Ymd'),
+            endDate:   $end->format('Ymd'),
+        ));
+
+        return response()->json(['queued' => true, 'period' => $target->format('Y-m')]);
+    }
+
     public function metricoolReportDownload(Request $request, Client $client): \Symfony\Component\HttpFoundation\Response
     {
         if (! $client->metricool_blog_id) {

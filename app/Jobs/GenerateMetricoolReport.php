@@ -14,8 +14,7 @@ class GenerateMetricoolReport implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    // report/create is synchronous and can take up to 2 min per client
-    public int $timeout = 180;
+    public int $timeout = 30;
     public int $tries   = 1;
 
     public function __construct(

@@ -71,6 +71,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->gro
     Route::get('/{client}', [MetricsController::class, 'show'])->name('show');
     Route::get('/{client}/pdf', [MetricsPdfController::class, 'download'])->name('pdf');
     Route::get('/{client}/metricool-reports', [MetricsController::class, 'metricoolReports'])->name('metricoolReports');
+    Route::post('/{client}/metricool-report-create', [MetricsController::class, 'metricoolReportCreate'])->name('metricoolReportCreate');
     Route::get('/{client}/metricool-report-download', [MetricsController::class, 'metricoolReportDownload'])->name('metricoolReportDownload');
     Route::post('/{client}/sync', [MetricsController::class, 'sync'])->name('sync');
 });

@@ -4,6 +4,7 @@ import {
     ChevronDown,
     Download,
     Eye,
+    FilePlus,
     Megaphone,
     Minus,
     RefreshCw,
@@ -222,11 +223,13 @@ type MetricoolReport = {
     creationDate: string | null;
 };
 
-function MetricoolReportsButton({ clientId }: { clientId: number }) {
-    const [open, setOpen]         = useState(false);
-    const [loading, setLoading]   = useState(false);
-    const [reports, setReports]   = useState<MetricoolReport[] | null>(null);
-    const [error, setError]       = useState<string | null>(null);
+function MetricoolReportsButton({ clientId, period }: { clientId: number; period: string }) {
+    const [open, setOpen]           = useState(false);
+    const [loading, setLoading]     = useState(false);
+    const [reports, setReports]     = useState<MetricoolReport[] | null>(null);
+    const [error, setError]         = useState<string | null>(null);
+    const [creating, setCreating]   = useState(false);
+    const [createMsg, setCreateMsg] = useState<string | null>(null);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -257,6 +260,60 @@ function MetricoolReportsButton({ clientId }: { clientId: number }) {
         setOpen((v) => !v);
     }
 
+    function createReport() {
+        setCreating(true);
+        setCreateMsg('Iniciando generación...');
+        const csrf = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+
+        fetch(`/metrics/${clientId}/metricool-report-create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ period }),
+        })
+            .then((r) => r.json())
+            .then(() => {
+                setCreateMsg('Generando PDF... (puede tardar ~1 min)');
+                pollForNewReport();
+            })
+            .catch(() => {
+                setCreateMsg('Error al iniciar la generación.');
+                setCreating(false);
+            });
+    }
+
+    function pollForNewReport() {
+        const started   = Date.now();
+        const maxMs     = 3 * 60 * 1000; // 3 min máximo
+        const intervalMs = 6_000;
+
+        // snapshot del jobId más reciente antes de crear
+        const prevLatest = reports?.[0]?.jobId ?? null;
+
+        const timer = setInterval(() => {
+            if (Date.now() - started > maxMs) {
+                clearInterval(timer);
+                setCreateMsg('El reporte tardó más de lo esperado. Revisá la lista manualmente.');
+                setCreating(false);
+                setReports(null);
+                return;
+            }
+
+            fetch(`/metrics/${clientId}/metricool-reports`)
+                .then((r) => r.json())
+                .then((data: MetricoolReport[]) => {
+                    const list = Array.isArray(data) ? data : [];
+                    const newLatest = list[0]?.jobId ?? null;
+                    if (newLatest && newLatest !== prevLatest) {
+                        clearInterval(timer);
+                        setReports(list);
+                        setCreateMsg(`Reporte ${period} listo. Ya podés descargarlo.`);
+                        setCreating(false);
+                    }
+                })
+                .catch(() => { /* silencioso, sigue intentando */ });
+        }, intervalMs);
+    }
+
     function formatPeriod(r: MetricoolReport) {
         if (r.from && r.to) return `${r.from} → ${r.to}`;
         if (r.creationDate) return r.creationDate.slice(0, 10);
@@ -277,6 +334,25 @@ function MetricoolReportsButton({ clientId }: { clientId: number }) {
 
             {open && (
                 <div className="absolute right-0 top-10 z-50 w-72 rounded-md border border-border bg-popover shadow-md">
+                    {/* Generar nuevo reporte */}
+                    <div className="border-b border-border px-3 py-2.5">
+                        <button
+                            type="button"
+                            disabled={creating}
+                            onClick={createReport}
+                            className="flex w-full items-center gap-2 rounded px-1 py-1 text-sm text-foreground hover:bg-muted disabled:opacity-50"
+                        >
+                            <FilePlus className={`h-3.5 w-3.5 shrink-0 text-primary ${creating ? 'animate-pulse' : ''}`} />
+                            <span>{creating ? 'Generando...' : `Generar reporte ${period}`}</span>
+                        </button>
+                        {createMsg && (
+                            <p className={`mt-1.5 px-1 text-xs ${createMsg.startsWith('Error') ? 'text-red-400' : 'text-green-400'}`}>
+                                {createMsg}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Lista de reportes existentes */}
                     {loading && (
                         <p className="px-4 py-3 text-sm text-muted-foreground">Cargando...</p>
                     )}
@@ -420,7 +496,7 @@ export default function MetricsShow({ client, period, metrics }: Props) {
                                 PDF Ninjas
                             </Button>
                         </a>
-                        <MetricoolReportsButton clientId={client.id} />
+                        <MetricoolReportsButton clientId={client.id} period={period_} />
                     </div>
                 </div>
 
