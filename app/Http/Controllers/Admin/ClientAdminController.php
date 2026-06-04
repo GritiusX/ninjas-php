@@ -27,6 +27,8 @@ class ClientAdminController extends Controller
     {
         $data = $request->validate([
             'name'                   => ['required', 'string', 'max:120'],
+            'contact_name'           => ['nullable', 'string', 'max:120'],
+            'contact_email'          => ['nullable', 'email', 'max:255'],
             'whatsapp_number'        => ['nullable', 'string', 'max:30'],
             'roas_goal'              => ['required', 'numeric', 'min:0'],
             'meta_ad_account_id'     => ['nullable', 'string', 'max:50'],
@@ -49,6 +51,8 @@ class ClientAdminController extends Controller
     {
         $data = $request->validate([
             'name'                   => ['required', 'string', 'max:120'],
+            'contact_name'           => ['nullable', 'string', 'max:120'],
+            'contact_email'          => ['nullable', 'email', 'max:255'],
             'whatsapp_number'        => ['nullable', 'string', 'max:30'],
             'roas_goal'              => ['required', 'numeric', 'min:0'],
             'meta_ad_account_id'     => ['nullable', 'string', 'max:50'],

@@ -13,6 +13,8 @@ export type Priority = 1 | 2 | 3;
 export type Client = {
     id: number;
     name: string;
+    contact_name: string | null;
+    contact_email: string | null;
     whatsapp_number: string | null;
     roas_goal: number;
     meta_ad_account_id: string | null;
@@ -68,6 +70,8 @@ export type ContentPiece = {
     internal_comments: string | null;
     client_feedback: string | null;
     generated_copy: GeneratedCopy | null;
+    paused_until: string | null;
+    pause_reason: string | null;
     created_at: string;
     updated_at: string;
     client?: Client;

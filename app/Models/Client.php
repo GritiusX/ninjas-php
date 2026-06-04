@@ -10,6 +10,8 @@ class Client extends Model
 {
     protected $fillable = [
         'name',
+        'contact_name',
+        'contact_email',
         'context_path',
         'whatsapp_number',
         'roas_goal',

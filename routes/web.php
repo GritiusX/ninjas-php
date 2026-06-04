@@ -36,6 +36,7 @@ Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->g
     Route::get('/', [EditorController::class, 'dashboard'])->name('dashboard');
     Route::get('/task/{piece}', [EditorController::class, 'task'])->name('task');
     Route::get('/task/{piece}/pdf', [BriefPdfController::class, 'download'])->name('task.pdf');
+    Route::post('/task/{piece}/pause', [EditorController::class, 'pause'])->name('task.pause');
     Route::post('/submit-video/{piece}', [EditorController::class, 'submitVideo'])->name('submit-video');
 });
 

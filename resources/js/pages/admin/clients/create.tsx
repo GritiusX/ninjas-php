@@ -8,7 +8,7 @@ import * as clientRoutes from '@/routes/admin/clients';
 
 export default function ClientCreate() {
     const { data, setData, post, processing, errors } = useForm({
-        name: '', whatsapp_number: '', roas_goal: '3.00', meta_ad_account_id: '', metricool_blog_id: '', google_ads_customer_id: '',
+        name: '', contact_name: '', contact_email: '', whatsapp_number: '', roas_goal: '3.00', meta_ad_account_id: '', metricool_blog_id: '', google_ads_customer_id: '',
     });
 
     function submit(e: React.FormEvent) { e.preventDefault(); post(clientRoutes.store.url()); }
@@ -29,7 +29,16 @@ export default function ClientCreate() {
                             <Field label="Nombre *" error={errors.name}>
                                 <Input value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Café Gourmet BA" autoFocus />
                             </Field>
-                            <Field label="WhatsApp del cliente" error={errors.whatsapp_number}>
+                            <div className="pt-1 pb-0.5">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contacto del responsable</p>
+                            </div>
+                            <Field label="Nombre del responsable" error={errors.contact_name}>
+                                <Input value={data.contact_name} onChange={(e) => setData('contact_name', e.target.value)} placeholder="Juan Pérez" />
+                            </Field>
+                            <Field label="Email del responsable" error={errors.contact_email}>
+                                <Input type="email" value={data.contact_email} onChange={(e) => setData('contact_email', e.target.value)} placeholder="juan@empresa.com" />
+                            </Field>
+                            <Field label="WhatsApp del responsable" error={errors.whatsapp_number}>
                                 <Input value={data.whatsapp_number} onChange={(e) => setData('whatsapp_number', e.target.value)} placeholder="+54 9 11..." />
                             </Field>
                             <Field label="ROAS objetivo *" error={errors.roas_goal}>

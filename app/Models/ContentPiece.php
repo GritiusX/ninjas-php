@@ -42,6 +42,8 @@ class ContentPiece extends Model
         'brief_notes',
         'client_status',
         'is_scheduled',
+        'paused_until',
+        'pause_reason',
         'raw_material_link',
         'raw_material_links',
         'final_video_link',
@@ -53,11 +55,17 @@ class ContentPiece extends Model
     protected function casts(): array
     {
         return [
-            'deadline' => 'datetime',
+            'deadline'     => 'datetime',
+            'paused_until' => 'datetime',
             'is_scheduled' => 'boolean',
             'generated_copy'     => 'array',
             'raw_material_links' => 'array',
         ];
+    }
+
+    public function isPaused(): bool
+    {
+        return $this->paused_until !== null && $this->paused_until->isFuture();
     }
 
     public function client(): BelongsTo

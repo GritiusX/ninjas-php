@@ -12,6 +12,8 @@ export default function ClientEdit({ client }: { client: Client }) {
     const [showToken, setShowToken] = useState(false);
     const { data, setData, put, processing, errors } = useForm({
         name: client.name,
+        contact_name: client.contact_name ?? '',
+        contact_email: client.contact_email ?? '',
         whatsapp_number: client.whatsapp_number ?? '',
         roas_goal: String(client.roas_goal),
         meta_ad_account_id: client.meta_ad_account_id ?? '',
@@ -38,7 +40,17 @@ export default function ClientEdit({ client }: { client: Client }) {
                             <Field label="Nombre *" error={errors.name}>
                                 <Input value={data.name} onChange={(e) => setData('name', e.target.value)} />
                             </Field>
-                            <Field label="WhatsApp del cliente" error={errors.whatsapp_number}>
+
+                            <div className="pt-1 pb-0.5">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contacto del responsable</p>
+                            </div>
+                            <Field label="Nombre del responsable" error={errors.contact_name}>
+                                <Input value={data.contact_name} onChange={(e) => setData('contact_name', e.target.value)} placeholder="Juan Pérez" />
+                            </Field>
+                            <Field label="Email del responsable" error={errors.contact_email}>
+                                <Input type="email" value={data.contact_email} onChange={(e) => setData('contact_email', e.target.value)} placeholder="juan@empresa.com" />
+                            </Field>
+                            <Field label="WhatsApp del responsable" error={errors.whatsapp_number}>
                                 <Input value={data.whatsapp_number} onChange={(e) => setData('whatsapp_number', e.target.value)} placeholder="+54 9 11..." />
                             </Field>
                             <Field label="ROAS objetivo *" error={errors.roas_goal}>

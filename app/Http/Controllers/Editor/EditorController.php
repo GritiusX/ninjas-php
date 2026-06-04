@@ -60,6 +60,30 @@ class EditorController extends Controller
         ]);
     }
 
+    public function pause(Request $request, ContentPiece $piece): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($piece->assigned_editor_id !== $user->id) {
+            abort(403);
+        }
+
+        $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $piece->load('client');
+
+        $piece->update([
+            'paused_until' => now()->addHours(4),
+            'pause_reason' => $request->reason,
+        ]);
+
+        $this->notifications->notifyTaskPaused($piece, $user, $request->reason);
+
+        return back()->with('success', 'Tarea pausada por 4 horas.');
+    }
+
     public function submitVideo(Request $request, ContentPiece $piece): RedirectResponse
     {
         $this->authorize('access-client', $piece->client_id);
