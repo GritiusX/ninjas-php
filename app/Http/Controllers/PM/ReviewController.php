@@ -23,6 +23,17 @@ class ReviewController extends Controller
         private NotificationService $notifications,
     ) {}
 
+    public function index(): Response
+    {
+        $pieces = ContentPiece::with('client', 'editor')
+            ->where('status', ContentPiece::STATUS_INTERNAL_REVIEW)
+            ->orderBy('priority')
+            ->orderBy('updated_at')
+            ->get();
+
+        return Inertia::render('pm/review-list', ['pieces' => $pieces]);
+    }
+
     public function show(ContentPiece $piece): Response
     {
         $piece->load('client', 'editor');

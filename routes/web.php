@@ -55,6 +55,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::get('/client/{client}/brief-pdf', [BriefPdfController::class, 'downloadClient'])->name('client.brief-pdf');
 
     // Review room
+    Route::get('/review', [ReviewController::class, 'index'])->name('review.index');
     Route::get('/review/{piece}', [ReviewController::class, 'show'])->name('review.show');
     Route::post('/review/{piece}/generate-copy', [ReviewController::class, 'generateCopy'])->name('review.generate-copy');
     Route::post('/review/{piece}/approve', [ReviewController::class, 'approve'])->name('review.approve');
