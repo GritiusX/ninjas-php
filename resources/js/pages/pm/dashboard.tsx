@@ -209,15 +209,15 @@ function MultiLinkInput({
 
 // ─── Bulk import modal ───────────────────────────────────────────────────────
 
-const TEMPLATE_HEADER = 'Cliente\tConcepto\tProducto\tCategoría\tHook\tCTA\tPrioridad\tDeadline (DD/MM/AAAA)\tEditor';
-const TEMPLATE_EXAMPLE = 'Café Gourmet\tLanzamiento Cold Brew\tCold Brew 24hs\tLanzamiento\tBarista vierte el café en slow motion\tPedí el tuyo en...\tAlto\t15/07/2025\tAna';
+const TEMPLATE_HEADER = 'Cliente\tConcepto\tProducto\tHook\tDesarrollo\tCTA\tPrioridad\tDeadline (DD/MM/AAAA)\tEditor';
+const TEMPLATE_EXAMPLE = 'Café Gourmet\tLanzamiento Cold Brew\tCold Brew 24hs\tBarista vierte el café en slow motion\tMostrar proceso, producto final, persona disfrutándolo\tPedí el tuyo en...\tAlto\t15/07/2025\tAna';
 
 type BulkRow = {
     client_id: number | null;
     clientName: string;
     concept: string;
     product: string;
-    category: string;
+    development: string;
     hook: string;
     cta: string;
     priority: Priority;
@@ -276,8 +276,8 @@ function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[]
             clientName,
             concept,
             product: cols[2] ?? '',
-            category: cols[3] ?? '',
-            hook: cols[4] ?? '',
+            hook: cols[3] ?? '',
+            development: cols[4] ?? '',
             cta: cols[5] ?? '',
             priority: parsePriority(cols[6] ?? ''),
             deadline: parseDeadline(cols[7] ?? ''),
@@ -328,8 +328,8 @@ function BulkImportModal({
             client_id: r.client_id,
             concept: r.concept,
             product: r.product || null,
-            category: r.category || null,
             hook: r.hook || null,
+            development: r.development || null,
             cta: r.cta || null,
             priority: r.priority,
             deadline: r.deadline || null,
