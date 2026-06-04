@@ -86,7 +86,9 @@ class EditorController extends Controller
 
     public function submitVideo(Request $request, ContentPiece $piece): RedirectResponse
     {
-        $this->authorize('access-client', $piece->client_id);
+        if ($piece->assigned_editor_id !== $request->user()->id) {
+            abort(403);
+        }
 
         $request->validate([
             'final_video_link' => ['required', 'url', 'max:500'],

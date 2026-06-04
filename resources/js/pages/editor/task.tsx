@@ -1,8 +1,10 @@
-﻿import { Head, Link, useForm } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, Clock, ExternalLink, Link2, Send, Target, BookOpen, MessageSquare, Megaphone } from 'lucide-react';
+﻿import { Head, Link, router, useForm } from '@inertiajs/react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ExternalLink, Link2, Send, Target, BookOpen, MessageSquare, Megaphone } from 'lucide-react';
+import { useState } from 'react';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import * as editorRoutes from '@/routes/editor';
@@ -28,32 +30,56 @@ function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
     const { data, setData, post, processing, errors } = useForm({
         final_video_link: piece.final_video_link ?? '',
     });
+    const [submitted, setSubmitted] = useState(false);
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
-        post(editorRoutes.submitVideo.url(piece.id));
+        post(editorRoutes.submitVideo.url(piece.id), {
+            onSuccess: () => setSubmitted(true),
+        });
     }
 
     return (
-        <form onSubmit={submit} className="space-y-3">
-            <div className="space-y-1.5">
-                <Label htmlFor="video-link">URL del video en Drive</Label>
-                <Input
-                    id="video-link"
-                    type="url"
-                    placeholder="https://drive.google.com/file/d/..."
-                    value={data.final_video_link}
-                    onChange={(e) => setData('final_video_link', e.target.value)}
-                />
-                {errors.final_video_link && (
-                    <p className="text-sm text-destructive">{errors.final_video_link}</p>
-                )}
-            </div>
-            <Button type="submit" disabled={processing} className="w-full sm:w-auto">
-                <Send className="mr-2 h-4 w-4" />
-                {processing ? 'Enviando...' : 'Enviar para revisión'}
-            </Button>
-        </form>
+        <>
+            <form onSubmit={submit} className="space-y-3">
+                <div className="space-y-1.5">
+                    <Label htmlFor="video-link">URL del video en Drive</Label>
+                    <Input
+                        id="video-link"
+                        type="url"
+                        placeholder="https://drive.google.com/file/d/..."
+                        value={data.final_video_link}
+                        onChange={(e) => setData('final_video_link', e.target.value)}
+                    />
+                    {errors.final_video_link && (
+                        <p className="text-sm text-destructive">{errors.final_video_link}</p>
+                    )}
+                </div>
+                <Button type="submit" disabled={processing} className="w-full sm:w-auto">
+                    <Send className="mr-2 h-4 w-4" />
+                    {processing ? 'Enviando...' : 'Enviar para revisión'}
+                </Button>
+            </form>
+
+            <Dialog open={submitted} onOpenChange={() => {}}>
+                <DialogContent className="sm:max-w-sm" onInteractOutside={(e) => e.preventDefault()}>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-400" />
+                            ¡Enviado para revisión!
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        El video fue enviado al PM. Te avisamos cuando haya feedback.
+                    </p>
+                    <DialogFooter>
+                        <Button onClick={() => router.visit(editorRoutes.dashboard.url())}>
+                            Volver a mis tareas
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 
