@@ -18,7 +18,7 @@ class WhatsAppService
         $this->phoneNumberId = config('services.whatsapp.phone_number_id') ?? '';
     }
 
-    public function sendClientApprovalMessage(ContentPiece $piece): bool
+    public function sendClientApprovalMessage(ContentPiece $piece, string $reviewUrl = ''): bool
     {
         $to = $piece->client?->whatsapp_number;
 
@@ -29,8 +29,11 @@ class WhatsAppService
             return false;
         }
 
-        $copy = $piece->generated_copy;
-        $message = $this->buildClientMessage($piece, $copy);
+        if (!$reviewUrl && $piece->review_token) {
+            $reviewUrl = url('/review/' . $piece->review_token);
+        }
+
+        $message = $this->buildClientMessage($piece, $reviewUrl);
 
         return $this->sendText($to, $message);
     }
@@ -44,7 +47,7 @@ class WhatsAppService
         return $this->sendText($to, $message);
     }
 
-    private function buildClientMessage(ContentPiece $piece, ?array $copy): string
+    private function buildClientMessage(ContentPiece $piece, string $reviewUrl = ''): string
     {
         $objective = $piece->objective ?? 'sin descripción';
         $videoLink = $piece->final_video_link ?? '(link no disponible)';
@@ -53,14 +56,18 @@ class WhatsAppService
         $msg .= "🎬 *{$piece->client->name}* — {$objective}\n\n";
         $msg .= "📎 Ver video: {$videoLink}\n";
 
-        if ($copy) {
-            $msg .= "\n✍️ Variantes de copy sugeridas:\n\n";
-            $msg .= "1️⃣ *Directo*\n{$copy['directo']}\n\n";
-            $msg .= "2️⃣ *Storytelling*\n{$copy['storytelling']}\n\n";
-            $msg .= "3️⃣ *Educativo*\n{$copy['educativo']}\n";
+        $copy = $piece->generated_copy;
+        $chosenVariant = $piece->client_chosen_copy;
+
+        if ($copy && $chosenVariant && isset($copy[$chosenVariant])) {
+            $msg .= "\n✍️ *Copy sugerido:*\n{$copy[$chosenVariant]}\n";
         }
 
-        $msg .= "\nRespondé con *APRUEBO* o contanos qué cambios necesitás.";
+        if ($reviewUrl) {
+            $msg .= "\n🔗 Aprobá o pedí cambios desde acá: {$reviewUrl}";
+        } else {
+            $msg .= "\nRespondé con *APRUEBO* o contanos qué cambios necesitás.";
+        }
 
         return $msg;
     }

@@ -59,7 +59,17 @@ class ReviewController extends Controller
     {
         $piece->load('client');
 
-        $piece->update(['status' => ContentPiece::STATUS_PM_APPROVED]);
+        $request->validate([
+            'selected_copy' => ['nullable', 'in:directo,storytelling,educativo'],
+        ]);
+
+        $token = \Illuminate\Support\Str::uuid()->toString();
+
+        $piece->update([
+            'status'             => ContentPiece::STATUS_PM_APPROVED,
+            'review_token'       => $token,
+            'client_chosen_copy' => $request->selected_copy,
+        ]);
 
         AuditLog::create([
             'user_id'     => $request->user()->id,
@@ -74,17 +84,15 @@ class ReviewController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        // Enviar WhatsApp al cliente
+        // Siempre pasa a CLIENT_REVIEW (el link público ya está disponible)
+        $piece->refresh();
+        $piece->update(['status' => ContentPiece::STATUS_CLIENT_REVIEW]);
+
         $sent = $this->whatsapp->sendClientApprovalMessage($piece);
 
-        if ($sent) {
-            $piece->update(['status' => ContentPiece::STATUS_CLIENT_REVIEW]);
-        }
-
-        // Notificar al PM que se envió (o que no había número)
         $msg = $sent
             ? 'Pieza aprobada y enviada al cliente por WhatsApp.'
-            : 'Pieza aprobada. (WhatsApp no configurado — no se envió al cliente.)';
+            : 'Pieza aprobada. Link de revisión generado (WhatsApp no configurado).';
 
         return redirect()->route('pm.dashboard')->with('success', $msg);
     }

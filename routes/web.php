@@ -14,6 +14,7 @@ use App\Http\Controllers\PM\BriefController;
 use App\Http\Controllers\PM\BriefPdfController;
 use App\Http\Controllers\PM\PmController;
 use App\Http\Controllers\PM\ReviewController;
+use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\Webhook\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -105,6 +106,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/alerts', [AlertConfigController::class, 'index'])->name('alerts.index');
     Route::put('/alerts/{alertConfig}', [AlertConfigController::class, 'update'])->name('alerts.update');
 });
+
+// --- Revisión pública del cliente (sin auth) ---
+Route::get('/review/{token}', [ClientReviewController::class, 'show'])->name('client-review.show');
+Route::post('/review/{token}/respond', [ClientReviewController::class, 'respond'])->name('client-review.respond');
 
 // --- Webhook WhatsApp (público) ---
 Route::get('/webhook/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhook.whatsapp.verify');

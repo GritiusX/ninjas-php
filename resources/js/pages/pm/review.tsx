@@ -160,9 +160,10 @@ function RequestChangesModal({
 export default function ReviewRoom({ piece }: Props) {
     const [changesOpen, setChangesOpen] = useState(false);
     const [noNumberOpen, setNoNumberOpen] = useState(false);
+    const [selectedCopy, setSelectedCopy] = useState<'directo' | 'storytelling' | 'educativo' | null>(null);
 
     function approve() {
-        router.post(reviewRoutes.approve.url(piece.id));
+        router.post(reviewRoutes.approve.url(piece.id), { selected_copy: selectedCopy });
     }
 
     const canApprove = piece.status === 'INTERNAL_REVIEW';
@@ -307,6 +308,33 @@ export default function ReviewRoom({ piece }: Props) {
                                     <CardTitle className="text-base text-foreground">Decisión</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
+                                    {canApprove && piece.generated_copy && (
+                                        <div className="space-y-1.5">
+                                            <p className="text-xs text-muted-foreground font-medium">Variante a enviar al cliente:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(['directo', 'storytelling', 'educativo'] as const).map((v) => (
+                                                    <label
+                                                        key={v}
+                                                        className={`flex items-center gap-1.5 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                                            selectedCopy === v
+                                                                ? 'border-green-500 bg-green-500/10 text-green-600 dark:text-green-400'
+                                                                : 'border-border text-muted-foreground hover:border-muted-foreground'
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name="selected_copy"
+                                                            value={v}
+                                                            checked={selectedCopy === v}
+                                                            onChange={() => setSelectedCopy(v)}
+                                                            className="sr-only"
+                                                        />
+                                                        <span className="capitalize">{v}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                     {canApprove && (
                                         <Button
                                             className="w-full bg-green-600 hover:bg-green-500 text-white"

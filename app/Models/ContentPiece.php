@@ -50,6 +50,8 @@ class ContentPiece extends Model
         'internal_comments',
         'client_feedback',
         'generated_copy',
+        'review_token',
+        'client_chosen_copy',
     ];
 
     protected function casts(): array

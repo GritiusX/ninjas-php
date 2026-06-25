@@ -70,6 +70,8 @@ export type ContentPiece = {
     internal_comments: string | null;
     client_feedback: string | null;
     generated_copy: GeneratedCopy | null;
+    review_token: string | null;
+    client_chosen_copy: 'directo' | 'storytelling' | 'educativo' | null;
     paused_until: string | null;
     pause_reason: string | null;
     created_at: string;
