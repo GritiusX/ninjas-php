@@ -1,4 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import * as XLSX from 'xlsx';
 import {
     AlertCircle,
     Calendar,
@@ -292,6 +293,25 @@ function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[]
 
 const PRIORITY_LABEL: Record<Priority, string> = { 1: '🔴 Crítico', 2: '🟠 Alto', 3: '🟡 Medio' };
 
+function parseXlsxFile(file: File, clients: Client[], editors: Editor[]): Promise<BulkRow[]> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target!.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const raw = XLSX.utils.sheet_to_csv(sheet, { FS: '\t' });
+                resolve(parseTsv(raw, clients, editors));
+            } catch {
+                reject(new Error('No se pudo leer el archivo. Asegurate de que sea un .xlsx válido.'));
+            }
+        };
+        reader.onerror = () => reject(new Error('Error al leer el archivo.'));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
 function BulkImportModal({
     clients,
     editors,
@@ -303,17 +323,21 @@ function BulkImportModal({
     open: boolean;
     onClose: () => void;
 }) {
-    const [step, setStep] = useState<'paste' | 'preview'>('paste');
+    const [inputMode, setInputMode] = useState<'paste' | 'file'>('paste');
+    const [step, setStep] = useState<'input' | 'preview'>('input');
     const [rawText, setRawText] = useState('');
     const [rows, setRows] = useState<BulkRow[]>([]);
     const [submitting, setSubmitting] = useState(false);
+    const [fileError, setFileError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
 
     function handleClose() {
-        setStep('paste');
+        setStep('input');
+        setInputMode('paste');
         setRawText('');
         setRows([]);
         setSearch('');
+        setFileError(null);
         onClose();
     }
 
@@ -321,6 +345,24 @@ function BulkImportModal({
         const parsed = parseTsv(rawText, clients, editors);
         setRows(parsed);
         setStep('preview');
+    }
+
+    async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setFileError(null);
+        try {
+            const parsed = await parseXlsxFile(file, clients, editors);
+            if (parsed.length === 0) {
+                setFileError('El archivo no tiene filas con datos válidos.');
+                return;
+            }
+            setRows(parsed);
+            setStep('preview');
+        } catch (err: unknown) {
+            setFileError(err instanceof Error ? err.message : 'Error inesperado.');
+        }
+        e.target.value = '';
     }
 
     function handleImport() {
@@ -358,10 +400,29 @@ function BulkImportModal({
                     </DialogTitle>
                 </DialogHeader>
 
-                {step === 'paste' && (
+                {step === 'input' && (
                     <div className="space-y-4">
+                        {/* Tabs */}
+                        <div className="flex rounded-lg border border-border overflow-hidden text-sm">
+                            <button
+                                type="button"
+                                onClick={() => setInputMode('paste')}
+                                className={`flex-1 py-2 font-medium transition-colors ${inputMode === 'paste' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Pegar tabla
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setInputMode('file')}
+                                className={`flex-1 py-2 font-medium transition-colors ${inputMode === 'file' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Subir Excel (.xlsx)
+                            </button>
+                        </div>
+
+                        {/* Referencia de columnas */}
                         <div className="rounded-md border border-border bg-muted/30 p-3 text-sm space-y-1.5">
-                            <p className="font-medium text-foreground">Columnas del template (en este orden):</p>
+                            <p className="font-medium text-foreground">Columnas requeridas (en este orden):</p>
                             <p className="font-mono text-xs text-muted-foreground break-all">{TEMPLATE_HEADER}</p>
                             <button
                                 type="button"
@@ -372,15 +433,38 @@ function BulkImportModal({
                             </button>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <Label>Pegá tu tabla acá (copiada desde Excel o Google Sheets)</Label>
-                            <textarea
-                                className="min-h-[180px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-                                value={rawText}
-                                onChange={(e) => setRawText(e.target.value)}
-                                placeholder={"Cliente\tConcepto\tProducto\t...\nCafé Gourmet\tLanzamiento Cold Brew\t..."}
-                            />
-                        </div>
+                        {inputMode === 'paste' && (
+                            <div className="space-y-1.5">
+                                <Label>Pegá tu tabla (copiada desde Excel o Google Sheets)</Label>
+                                <textarea
+                                    className="min-h-[180px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                                    value={rawText}
+                                    onChange={(e) => setRawText(e.target.value)}
+                                    placeholder={"Cliente\tConcepto\tProducto\t...\nCafé Gourmet\tLanzamiento Cold Brew\t..."}
+                                />
+                            </div>
+                        )}
+
+                        {inputMode === 'file' && (
+                            <div className="space-y-2">
+                                <Label>Archivo Excel</Label>
+                                <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 px-6 py-10 cursor-pointer hover:border-muted-foreground transition-colors">
+                                    <Upload className="h-7 w-7 text-muted-foreground" />
+                                    <span className="text-sm text-muted-foreground text-center">
+                                        Hacé clic o arrastrá tu archivo <span className="font-medium text-foreground">.xlsx</span>
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept=".xlsx,.xls"
+                                        className="sr-only"
+                                        onChange={handleFile}
+                                    />
+                                </label>
+                                {fileError && (
+                                    <p className="text-xs text-destructive">{fileError}</p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -449,17 +533,19 @@ function BulkImportModal({
                 )}
 
                 <DialogFooter>
-                    {step === 'paste' && (
+                    {step === 'input' && (
                         <>
                             <Button variant="outline" onClick={handleClose}>Cancelar</Button>
-                            <Button onClick={handleParse} disabled={!rawText.trim()}>
-                                Previsualizar →
-                            </Button>
+                            {inputMode === 'paste' && (
+                                <Button onClick={handleParse} disabled={!rawText.trim()}>
+                                    Previsualizar →
+                                </Button>
+                            )}
                         </>
                     )}
                     {step === 'preview' && (
                         <>
-                            <Button variant="outline" onClick={() => setStep('paste')}>
+                            <Button variant="outline" onClick={() => setStep('input')}>
                                 ← Volver
                             </Button>
                             <Button onClick={handleImport} disabled={hasErrors || submitting || rows.length === 0}>
