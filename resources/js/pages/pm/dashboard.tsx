@@ -212,30 +212,18 @@ function MultiLinkInput({
 
 // ─── Bulk import modal ───────────────────────────────────────────────────────
 
-const TEMPLATE_HEADER = 'Cliente\tConcepto\tProducto\tHook\tDesarrollo\tCTA\tPrioridad\tDeadline (DD/MM/AAAA)\tEditor';
-const TEMPLATE_EXAMPLE = 'Café Gourmet\tLanzamiento Cold Brew\tCold Brew 24hs\tBarista vierte el café en slow motion\tMostrar proceso, producto final, persona disfrutándolo\tPedí el tuyo en...\tAlto\t15/07/2025\tAna';
+const TEMPLATE_HEADER = 'Desarrollo contenido\tInstrucciones editor\tFecha entrega (DD/MM/AAAA)\tMaterial referencia\tCliente';
+const TEMPLATE_EXAMPLE = 'Mostrar proceso, producto final, persona disfrutándolo\tUsar música trending, evitar texto en pantalla\t15/07/2025\thttps://drive.google.com/file/d/ejemplo\tCafé Gourmet';
 
 type BulkRow = {
     client_id: number | null;
     clientName: string;
-    concept: string;
-    product: string;
     development: string;
-    hook: string;
-    cta: string;
-    priority: Priority;
+    brief_notes: string;
     deadline: string;
-    editor_id: number | null;
-    editorName: string;
+    raw_material_links: string[];
     error: string | null;
 };
-
-function parsePriority(raw: string): Priority {
-    const v = raw.trim().toLowerCase();
-    if (v === 'crítico' || v === 'critico' || v === '1') return 1;
-    if (v === 'alto' || v === '2') return 2;
-    return 3;
-}
 
 function parseDeadline(raw: string): string {
     const trimmed = raw.trim();
@@ -247,45 +235,60 @@ function parseDeadline(raw: string): string {
     return trimmed;
 }
 
-function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[] {
+function parseMaterialLinks(raw: string): string[] {
+    return raw.split(/[,;\n|]/).map((s) => s.trim()).filter(Boolean);
+}
+
+function isValidUrl(value: string): boolean {
+    try {
+        new URL(value);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function isBulkHeaderRow(cols: string[]): boolean {
+    const first = (cols[0] ?? '').toLowerCase();
+    return first.startsWith('desarrollo');
+}
+
+function parseTsv(text: string, clients: Client[]): BulkRow[] {
     const lines = text.trim().split('\n').filter((l) => l.trim() !== '');
     const rows: BulkRow[] = [];
 
     for (const line of lines) {
         const cols = line.split('\t').map((c) => c.trim());
-        const clientName = cols[0] ?? '';
 
-        // skip header row
-        if (clientName.toLowerCase() === 'cliente') continue;
+        if (isBulkHeaderRow(cols)) continue;
 
-        const concept = cols[1] ?? '';
-        if (!clientName || !concept) continue;
+        const development = cols[0] ?? '';
+        const brief_notes = cols[1] ?? '';
+        const deadline = parseDeadline(cols[2] ?? '');
+        const raw_material_links = parseMaterialLinks(cols[3] ?? '');
+        const clientName = cols[4] ?? '';
+
+        if (!clientName || !development) continue;
 
         const matchedClient = clients.find(
             (c) => c.name.toLowerCase() === clientName.toLowerCase(),
         ) ?? null;
 
-        const editorName = cols[8] ?? '';
-        const matchedEditor = editorName
-            ? (editors.find((e) => e.name.toLowerCase() === editorName.toLowerCase()) ?? null)
-            : null;
-
         let error: string | null = null;
         if (!matchedClient) error = `Cliente "${clientName}" no encontrado`;
-        else if (editorName && !matchedEditor) error = `Editor "${editorName}" no encontrado`;
+        else if (raw_material_links.length === 0) error = 'Material referencia requerido';
+        else {
+            const invalidLink = raw_material_links.find((link) => !isValidUrl(link));
+            if (invalidLink) error = `URL inválida: "${invalidLink}"`;
+        }
 
         rows.push({
             client_id: matchedClient?.id ?? null,
             clientName,
-            concept,
-            product: cols[2] ?? '',
-            hook: cols[3] ?? '',
-            development: cols[4] ?? '',
-            cta: cols[5] ?? '',
-            priority: parsePriority(cols[6] ?? ''),
-            deadline: parseDeadline(cols[7] ?? ''),
-            editor_id: matchedEditor?.id ?? null,
-            editorName,
+            development,
+            brief_notes,
+            deadline,
+            raw_material_links,
             error,
         });
     }
@@ -293,35 +296,63 @@ function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[]
     return rows;
 }
 
-const PRIORITY_LABEL: Record<Priority, string> = { 1: '🔴 Crítico', 2: '🟠 Alto', 3: '🟡 Medio' };
-
-function parseXlsxFile(file: File, clients: Client[], editors: Editor[]): Promise<BulkRow[]> {
+function parseSpreadsheetFile(file: File, clients: Client[]): Promise<BulkRow[]> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
+        const isCsv = file.name.toLowerCase().endsWith('.csv');
+
         reader.onload = (e) => {
             try {
-                const data = new Uint8Array(e.target!.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                let workbook;
+                if (isCsv) {
+                    workbook = XLSX.read(e.target!.result as string, { type: 'string' });
+                } else {
+                    workbook = XLSX.read(new Uint8Array(e.target!.result as ArrayBuffer), { type: 'array', cellDates: true });
+                }
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const raw = XLSX.utils.sheet_to_csv(sheet, { FS: '\t' });
-                resolve(parseTsv(raw, clients, editors));
+                resolve(parseTsv(raw, clients));
             } catch {
-                reject(new Error('No se pudo leer el archivo. Asegurate de que sea un .xlsx válido.'));
+                reject(new Error('No se pudo leer el archivo. Verificá que sea .xlsx o .csv válido.'));
             }
         };
         reader.onerror = () => reject(new Error('Error al leer el archivo.'));
-        reader.readAsArrayBuffer(file);
+        if (isCsv) {
+            reader.readAsText(file, 'UTF-8');
+        } else {
+            reader.readAsArrayBuffer(file);
+        }
     });
+}
+
+function downloadExampleCsv() {
+    const esc = (s: string) => (/[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+    const rows = [
+        ['Desarrollo contenido', 'Instrucciones editor', 'Fecha entrega (DD/MM/AAAA)', 'Material referencia', 'Cliente'],
+        [
+            'Mostrar proceso del producto y persona disfrutándolo',
+            'Usar música trending, evitar texto en pantalla',
+            '15/07/2025',
+            'https://drive.google.com/file/d/ejemplo',
+            'Café Gourmet',
+        ],
+    ];
+    const csv = rows.map((r) => r.map(esc).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ejemplo_carga_masiva.csv';
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 function BulkImportModal({
     clients,
-    editors,
     open,
     onClose,
 }: {
     clients: Client[];
-    editors: Editor[];
     open: boolean;
     onClose: () => void;
 }) {
@@ -344,7 +375,7 @@ function BulkImportModal({
     }
 
     function handleParse() {
-        const parsed = parseTsv(rawText, clients, editors);
+        const parsed = parseTsv(rawText, clients);
         setRows(parsed);
         setStep('preview');
     }
@@ -354,7 +385,7 @@ function BulkImportModal({
         if (!file) return;
         setFileError(null);
         try {
-            const parsed = await parseXlsxFile(file, clients, editors);
+            const parsed = await parseSpreadsheetFile(file, clients);
             if (parsed.length === 0) {
                 setFileError('El archivo no tiene filas con datos válidos.');
                 return;
@@ -370,14 +401,11 @@ function BulkImportModal({
     function handleImport() {
         const payload = rows.map((r) => ({
             client_id: r.client_id,
-            concept: r.concept,
-            product: r.product || null,
-            hook: r.hook || null,
+            concept: r.development.slice(0, 1000),
             development: r.development || null,
-            cta: r.cta || null,
-            priority: r.priority,
+            brief_notes: r.brief_notes || null,
             deadline: r.deadline || null,
-            editor_id: r.editor_id || null,
+            raw_material_links: r.raw_material_links,
         }));
 
         setSubmitting(true);
@@ -418,7 +446,7 @@ function BulkImportModal({
                                 onClick={() => setInputMode('file')}
                                 className={`flex-1 py-2 font-medium transition-colors ${inputMode === 'file' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                             >
-                                Subir Excel (.xlsx)
+                                Subir archivo (.xlsx / .csv)
                             </button>
                         </div>
 
@@ -426,13 +454,22 @@ function BulkImportModal({
                         <div className="rounded-md border border-border bg-muted/30 p-3 text-sm space-y-1.5">
                             <p className="font-medium text-foreground">Columnas requeridas (en este orden):</p>
                             <p className="font-mono text-xs text-muted-foreground break-all">{TEMPLATE_HEADER}</p>
-                            <button
-                                type="button"
-                                onClick={copyTemplate}
-                                className="text-xs text-blue-400 hover:text-blue-300"
-                            >
-                                Copiar template con ejemplo →
-                            </button>
+                            <div className="flex items-center gap-3 pt-0.5">
+                                <button
+                                    type="button"
+                                    onClick={copyTemplate}
+                                    className="text-xs text-blue-400 hover:text-blue-300"
+                                >
+                                    Copiar template →
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={downloadExampleCsv}
+                                    className="text-xs text-green-400 hover:text-green-300"
+                                >
+                                    Descargar ejemplo .csv →
+                                </button>
+                            </div>
                         </div>
 
                         {inputMode === 'paste' && (
@@ -442,7 +479,7 @@ function BulkImportModal({
                                     className="min-h-[180px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                                     value={rawText}
                                     onChange={(e) => setRawText(e.target.value)}
-                                    placeholder={"Cliente\tConcepto\tProducto\t...\nCafé Gourmet\tLanzamiento Cold Brew\t..."}
+                                    placeholder={"Desarrollo contenido\tInstrucciones editor\tFecha entrega\tMaterial referencia\tCliente\nMostrar proceso...\tUsar música trending...\t15/07/2025\thttps://...\tCafé Gourmet"}
                                 />
                             </div>
                         )}
@@ -453,11 +490,14 @@ function BulkImportModal({
                                 <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 px-6 py-10 cursor-pointer hover:border-muted-foreground transition-colors">
                                     <Upload className="h-7 w-7 text-muted-foreground" />
                                     <span className="text-sm text-muted-foreground text-center">
-                                        Hacé clic o arrastrá tu archivo <span className="font-medium text-foreground">.xlsx</span>
+                                        Hacé clic o arrastrá tu archivo{' '}
+                                        <span className="font-medium text-foreground">.xlsx</span>
+                                        {' '}o{' '}
+                                        <span className="font-medium text-foreground">.csv</span>
                                     </span>
                                     <input
                                         type="file"
-                                        accept=".xlsx,.xls"
+                                        accept=".xlsx,.xls,.csv"
                                         className="sr-only"
                                         onChange={handleFile}
                                     />
@@ -485,19 +525,19 @@ function BulkImportModal({
                                 <Input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Buscar por título..."
+                                    placeholder="Buscar por desarrollo..."
                                     className="h-8 pl-8 text-sm"
                                 />
                             </div>
                             <span className="shrink-0 text-sm text-muted-foreground">
-                                {rows.filter(r => !search || r.concept.toLowerCase().includes(search.toLowerCase())).length} de {rows.length}
+                                {rows.filter(r => !search || r.development.toLowerCase().includes(search.toLowerCase())).length} de {rows.length}
                             </span>
                         </div>
 
                         {/* Cards grid */}
                         <div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1">
                             {rows
-                                .filter((r) => !search || r.concept.toLowerCase().includes(search.toLowerCase()))
+                                .filter((r) => !search || r.development.toLowerCase().includes(search.toLowerCase()))
                                 .map((row, i) => (
                                     <div
                                         key={i}
@@ -511,19 +551,18 @@ function BulkImportModal({
                                             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 {row.clientName}
                                             </span>
-                                            <span className="text-xs shrink-0">{PRIORITY_LABEL[row.priority]}</span>
-                                        </div>
-                                        <p className="text-sm font-medium text-foreground leading-snug">
-                                            {row.concept}
-                                        </p>
-                                        {row.hook && (
-                                            <p className="text-xs text-muted-foreground line-clamp-2">{row.hook}</p>
-                                        )}
-                                        <div className="flex items-center justify-between text-xs pt-1 border-t border-border">
-                                            <span className="text-muted-foreground">
-                                                {row.editorName || <span className="italic">Sin editor</span>}
+                                            <span className="text-xs shrink-0 text-muted-foreground">
+                                                {row.deadline || '—'}
                                             </span>
-                                            <span className="text-muted-foreground">{row.deadline || '—'}</span>
+                                        </div>
+                                        <p className="text-sm font-medium text-foreground leading-snug line-clamp-3">
+                                            {row.development}
+                                        </p>
+                                        {row.brief_notes && (
+                                            <p className="text-xs text-muted-foreground line-clamp-2">{row.brief_notes}</p>
+                                        )}
+                                        <div className="text-xs pt-1 border-t border-border text-muted-foreground">
+                                            {row.raw_material_links.length} link(s) de material
                                         </div>
                                         {row.error && (
                                             <p className="text-xs text-destructive font-medium">{row.error}</p>
@@ -1617,7 +1656,6 @@ export default function PmDashboard({
 
             <BulkImportModal
                 clients={clients}
-                editors={editors}
                 open={bulkOpen}
                 onClose={() => setBulkOpen(false)}
             />
