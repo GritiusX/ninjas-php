@@ -213,7 +213,6 @@ function MultiLinkInput({
 // ─── Bulk import modal ───────────────────────────────────────────────────────
 
 const TEMPLATE_HEADER = 'Desarrollo contenido\tInstrucciones editor\tFecha entrega (DD/MM/AAAA)\tMaterial referencia\tCliente';
-const TEMPLATE_EXAMPLE = 'Mostrar proceso, producto final, persona disfrutándolo\tUsar música trending, evitar texto en pantalla\t15/07/2025\thttps://drive.google.com/file/d/ejemplo\tCafé Gourmet';
 
 type BulkRow = {
     client_id: number | null;
@@ -356,28 +355,18 @@ function BulkImportModal({
     open: boolean;
     onClose: () => void;
 }) {
-    const [inputMode, setInputMode] = useState<'paste' | 'file'>('paste');
-    const [step, setStep] = useState<'input' | 'preview'>('input');
-    const [rawText, setRawText] = useState('');
+    const [step, setStep] = useState<'upload' | 'preview'>('upload');
     const [rows, setRows] = useState<BulkRow[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [fileError, setFileError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
 
     function handleClose() {
-        setStep('input');
-        setInputMode('paste');
-        setRawText('');
+        setStep('upload');
         setRows([]);
         setSearch('');
         setFileError(null);
         onClose();
-    }
-
-    function handleParse() {
-        const parsed = parseTsv(rawText, clients);
-        setRows(parsed);
-        setStep('preview');
     }
 
     async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -416,9 +405,6 @@ function BulkImportModal({
     }
 
     const hasErrors = rows.some((r) => r.error !== null);
-    const copyTemplate = () => {
-        navigator.clipboard.writeText(TEMPLATE_HEADER + '\n' + TEMPLATE_EXAMPLE);
-    };
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
@@ -430,82 +416,39 @@ function BulkImportModal({
                     </DialogTitle>
                 </DialogHeader>
 
-                {step === 'input' && (
+                {step === 'upload' && (
                     <div className="space-y-4">
-                        {/* Tabs */}
-                        <div className="flex rounded-lg border border-border overflow-hidden text-sm">
-                            <button
-                                type="button"
-                                onClick={() => setInputMode('paste')}
-                                className={`flex-1 py-2 font-medium transition-colors ${inputMode === 'paste' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                            >
-                                Pegar tabla
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setInputMode('file')}
-                                className={`flex-1 py-2 font-medium transition-colors ${inputMode === 'file' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                            >
-                                Subir archivo (.xlsx / .csv)
-                            </button>
-                        </div>
-
                         {/* Referencia de columnas */}
                         <div className="rounded-md border border-border bg-muted/30 p-3 text-sm space-y-1.5">
                             <p className="font-medium text-foreground">Columnas requeridas (en este orden):</p>
                             <p className="font-mono text-xs text-muted-foreground break-all">{TEMPLATE_HEADER}</p>
-                            <div className="flex items-center gap-3 pt-0.5">
-                                <button
-                                    type="button"
-                                    onClick={copyTemplate}
-                                    className="text-xs text-blue-400 hover:text-blue-300"
-                                >
-                                    Copiar template →
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={downloadExampleCsv}
-                                    className="text-xs text-green-400 hover:text-green-300"
-                                >
-                                    Descargar ejemplo .csv →
-                                </button>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={downloadExampleCsv}
+                                className="text-xs text-green-400 hover:text-green-300"
+                            >
+                                Descargar ejemplo .csv →
+                            </button>
                         </div>
 
-                        {inputMode === 'paste' && (
-                            <div className="space-y-1.5">
-                                <Label>Pegá tu tabla (copiada desde Excel o Google Sheets)</Label>
-                                <textarea
-                                    className="min-h-[180px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-                                    value={rawText}
-                                    onChange={(e) => setRawText(e.target.value)}
-                                    placeholder={"Desarrollo contenido\tInstrucciones editor\tFecha entrega\tMaterial referencia\tCliente\nMostrar proceso...\tUsar música trending...\t15/07/2025\thttps://...\tCafé Gourmet"}
-                                />
-                            </div>
-                        )}
-
-                        {inputMode === 'file' && (
-                            <div className="space-y-2">
-                                <Label>Archivo Excel</Label>
-                                <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 px-6 py-10 cursor-pointer hover:border-muted-foreground transition-colors">
-                                    <Upload className="h-7 w-7 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground text-center">
-                                        Hacé clic o arrastrá tu archivo{' '}
-                                        <span className="font-medium text-foreground">.xlsx</span>
-                                        {' '}o{' '}
-                                        <span className="font-medium text-foreground">.csv</span>
-                                    </span>
-                                    <input
-                                        type="file"
-                                        accept=".xlsx,.xls,.csv"
-                                        className="sr-only"
-                                        onChange={handleFile}
-                                    />
-                                </label>
-                                {fileError && (
-                                    <p className="text-xs text-destructive">{fileError}</p>
-                                )}
-                            </div>
+                        {/* Drop zone */}
+                        <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 px-6 py-12 cursor-pointer hover:border-muted-foreground transition-colors">
+                            <Upload className="h-8 w-8 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground text-center">
+                                Hacé clic o arrastrá tu archivo{' '}
+                                <span className="font-medium text-foreground">.xlsx</span>
+                                {' '}o{' '}
+                                <span className="font-medium text-foreground">.csv</span>
+                            </span>
+                            <input
+                                type="file"
+                                accept=".xlsx,.xls,.csv"
+                                className="sr-only"
+                                onChange={handleFile}
+                            />
+                        </label>
+                        {fileError && (
+                            <p className="text-xs text-destructive">{fileError}</p>
                         )}
                     </div>
                 )}
@@ -514,7 +457,7 @@ function BulkImportModal({
                     <div className="space-y-3">
                         {hasErrors && (
                             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                                Hay filas con errores. Corregí el texto y volvé a parsear.
+                                Hay filas con errores. Corregí el archivo y volvé a subir.
                             </div>
                         )}
 
@@ -574,19 +517,12 @@ function BulkImportModal({
                 )}
 
                 <DialogFooter>
-                    {step === 'input' && (
-                        <>
-                            <Button variant="outline" onClick={handleClose}>Cancelar</Button>
-                            {inputMode === 'paste' && (
-                                <Button onClick={handleParse} disabled={!rawText.trim()}>
-                                    Previsualizar →
-                                </Button>
-                            )}
-                        </>
+                    {step === 'upload' && (
+                        <Button variant="outline" onClick={handleClose}>Cancelar</Button>
                     )}
                     {step === 'preview' && (
                         <>
-                            <Button variant="outline" onClick={() => setStep('input')}>
+                            <Button variant="outline" onClick={() => setStep('upload')}>
                                 ← Volver
                             </Button>
                             <Button onClick={handleImport} disabled={hasErrors || submitting || rows.length === 0}>
