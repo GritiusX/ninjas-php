@@ -1,6 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
-import { ArrowRight, CheckCircle2, Clock, Download, FileArchive, Loader2, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowRight, CheckCircle2, Clock, Download, FileArchive, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -34,6 +34,48 @@ export default function MetricsIndex({ clients }: Props) {
     const [dlState, setDlState] = useState<DownloadState>('idle');
     const [dlError, setDlError] = useState<string | null>(null);
     const [dlProgress, setDlProgress] = useState<{ ready: number; total: number } | null>(null);
+
+    type SyncState = { open: false } | { open: true; current: number; total: number; currentName: string; errors: string[] };
+    const [syncState, setSyncState] = useState<SyncState>({ open: false });
+    const abortRef = useRef(false);
+
+    async function handleSyncAll() {
+        const targets = linked; // only clients with metricool_blog_id
+        if (!targets.length) return;
+
+        abortRef.current = false;
+        setSyncState({ open: true, current: 0, total: targets.length, currentName: targets[0].name, errors: [] });
+
+        const csrf = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+        const errors: string[] = [];
+
+        for (let i = 0; i < targets.length; i++) {
+            if (abortRef.current) break;
+            const client = targets[i];
+            setSyncState({ open: true, current: i + 1, total: targets.length, currentName: client.name, errors });
+
+            try {
+                const res = await fetch(`/metrics/${client.id}/sync-one`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({})) as { error?: string };
+                    errors.push(`${client.name}: ${body.error ?? res.status}`);
+                }
+            } catch {
+                errors.push(`${client.name}: error de red`);
+            }
+        }
+
+        setSyncState({ open: false });
+        router.reload({ only: ['clients'] });
+    }
+
+    function handleCancelSync() {
+        abortRef.current = true;
+        setSyncState({ open: false });
+    }
 
     async function handleDownloadAll() {
         setDlState('generating');
@@ -95,6 +137,55 @@ export default function MetricsIndex({ clients }: Props) {
     return (
         <>
             <Head title="Métricas" />
+
+            {/* Modal sync progreso */}
+            <Dialog open={syncState.open} onOpenChange={() => {}}>
+                <DialogContent className="sm:max-w-sm" onInteractOutside={(e) => e.preventDefault()}>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <RefreshCw className="h-5 w-5 text-primary" />
+                            Sincronizando métricas
+                        </DialogTitle>
+                        <DialogDescription>
+                            Esto puede tardar varios minutos. No cierres esta ventana.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {syncState.open && (
+                        <div className="space-y-4 py-2">
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Progreso</span>
+                                    <span className="font-medium text-foreground">
+                                        {syncState.current - 1} / {syncState.total}
+                                    </span>
+                                </div>
+                                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary transition-all duration-500"
+                                        style={{ width: `${Math.round(((syncState.current - 1) / syncState.total) * 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                                <span>Sincronizando <span className="font-medium text-foreground">{syncState.currentName}</span>...</span>
+                            </div>
+
+                            {syncState.errors.length > 0 && (
+                                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive space-y-0.5">
+                                    {syncState.errors.map((e, i) => <p key={i}>{e}</p>)}
+                                </div>
+                            )}
+
+                            <Button variant="outline" size="sm" className="w-full" onClick={handleCancelSync}>
+                                Cancelar
+                            </Button>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={modalOpen} onOpenChange={(open) => { if (!open && dlState !== 'generating' && dlState !== 'downloading') setDlState('idle'); }}>
                 <DialogContent className="sm:max-w-md" onInteractOutside={(e) => { if (dlState === 'generating' || dlState === 'downloading') e.preventDefault(); }}>
@@ -165,20 +256,35 @@ export default function MetricsIndex({ clients }: Props) {
                             automáticamente el día 2 de cada mes.
                         </p>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0"
-                        onClick={handleDownloadAll}
-                        disabled={dlState === 'generating' || dlState === 'downloading'}
-                    >
-                        {dlState === 'generating' || dlState === 'downloading' ? (
-                            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Download className="mr-1.5 h-4 w-4" />
-                        )}
-                        Reportes Metricool
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSyncAll}
+                            disabled={syncState.open}
+                        >
+                            {syncState.open ? (
+                                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                            ) : (
+                                <RefreshCw className="mr-1.5 h-4 w-4" />
+                            )}
+                            Sincronizar todos
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={handleDownloadAll}
+                            disabled={dlState === 'generating' || dlState === 'downloading'}
+                        >
+                            {dlState === 'generating' || dlState === 'downloading' ? (
+                                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-1.5 h-4 w-4" />
+                            )}
+                            Reportes Metricool
+                        </Button>
+                    </div>
                 </div>
 
                 {clients.length === 0 ? (

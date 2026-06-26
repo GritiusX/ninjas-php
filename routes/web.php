@@ -72,6 +72,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
 // --- Panel de Métricas (PM + Admin) ---
 Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->group(function () {
     Route::get('/', [MetricsController::class, 'index'])->name('index');
+    Route::post('/{client}/sync-one', [MetricsController::class, 'syncOne'])->name('sync-one');
     Route::post('/reports-generate', [MetricsController::class, 'metricoolReportsGenerate'])->name('reportsGenerate');
     Route::get('/reports-status', [MetricsController::class, 'metricoolReportsStatus'])->name('reportsStatus');
     Route::get('/reports-zip', [MetricsController::class, 'metricoolReportsZipAll'])->name('reportsZip');

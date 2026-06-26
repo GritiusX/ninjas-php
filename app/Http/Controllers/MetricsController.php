@@ -132,6 +132,34 @@ class MetricsController extends Controller
         return back()->with('success', $message);
     }
 
+    public function syncOne(Client $client): JsonResponse
+    {
+        set_time_limit(600); // 10 minutos por cliente
+
+        if (! $client->metricool_blog_id) {
+            return response()->json(['error' => 'Sin blog ID configurado.'], 422);
+        }
+
+        $now = now()->startOfMonth();
+
+        try {
+            (new SyncClientMetricsForMonth($client->id, $now->year, $now->month))
+                ->handle(
+                    app(MetricoolBundleBuilder::class),
+                    app(KpiCalculator::class),
+                    app(GoogleAdsService::class),
+                );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[SyncOne] Error', [
+                'client_id' => $client->id,
+                'error'     => $e->getMessage(),
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
+        return response()->json(['ok' => true, 'client' => $client->name]);
+    }
+
     public function metricoolReportsDiagnose(): JsonResponse
     {
         $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();

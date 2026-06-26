@@ -8,14 +8,14 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Sync diaria del mes actual a las 2am GMT-3 (05:00 UTC)
-Schedule::command('metricool:sync --current-month')
+// Sync diaria del mes actual a las 2am GMT-3 (05:00 UTC), cliente por cliente con 10s de delay
+Schedule::command('metricool:sync-staggered --delay=10')
     ->dailyAt('05:00')
     ->withoutOverlapping()
     ->onOneServer();
 
 // Sync final del mes anterior el día 2 de cada mes (cierra los datos completos)
-Schedule::command('metricool:sync')
+Schedule::command('metricool:sync-staggered --previous-month --delay=10')
     ->monthlyOn(2, '05:00')
     ->withoutOverlapping()
     ->onOneServer();
