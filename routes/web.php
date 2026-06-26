@@ -13,6 +13,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PM\BriefController;
 use App\Http\Controllers\PM\BriefPdfController;
 use App\Http\Controllers\PM\PmController;
+use App\Http\Controllers\PM\MetricoolScheduleController;
 use App\Http\Controllers\PM\ReviewController;
 use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\Webhook\WhatsAppWebhookController;
@@ -62,6 +63,10 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::post('/review/{piece}/approve', [ReviewController::class, 'approve'])->name('review.approve');
     Route::post('/review/{piece}/request-changes', [ReviewController::class, 'requestChanges'])->name('review.request-changes');
     Route::post('/review/{piece}/approve-client', [ReviewController::class, 'approveClientRevision'])->name('review.approve-client');
+
+    // Metricool scheduling
+    Route::get('/pieces/{piece}/metricool-networks', [MetricoolScheduleController::class, 'networks'])->name('pieces.metricool-networks');
+    Route::post('/pieces/{piece}/schedule-metricool', [MetricoolScheduleController::class, 'schedule'])->name('pieces.schedule-metricool');
 });
 
 // --- Panel de Métricas (PM + Admin) ---

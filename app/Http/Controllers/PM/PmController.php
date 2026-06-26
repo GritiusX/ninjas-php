@@ -50,14 +50,21 @@ class PmController extends Controller
             ->orderBy('deadline')
             ->get();
 
+        $approvedQueue = ContentPiece::with(['client', 'editor'])
+            ->where('status', ContentPiece::STATUS_CLIENT_APPROVED)
+            ->orderBy('priority')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
         $clients = Client::orderBy('name')->get(['id', 'name']);
         $editors = User::where('role', 'editor')->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('pm/dashboard', [
-            'reviewQueue' => $reviewQueue,
-            'briefQueue' => $briefQueue,
-            'clients' => $clients,
-            'editors' => $editors,
+            'reviewQueue'   => $reviewQueue,
+            'briefQueue'    => $briefQueue,
+            'approvedQueue' => $approvedQueue,
+            'clients'       => $clients,
+            'editors'       => $editors,
         ]);
     }
 }

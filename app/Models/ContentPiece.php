@@ -15,6 +15,7 @@ class ContentPiece extends Model
     public const STATUS_CLIENT_REVIEW = 'CLIENT_REVIEW';
     public const STATUS_CLIENT_REVISION = 'CLIENT_REVISION';
     public const STATUS_CLIENT_APPROVED = 'CLIENT_APPROVED';
+    public const STATUS_PUBLISHED = 'PUBLISHED';
 
     public const PRIORITY_CRITICAL = 1;
     public const PRIORITY_HIGH = 2;

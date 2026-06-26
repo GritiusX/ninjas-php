@@ -36,6 +36,49 @@ class MetricoolClient
         return $this->get('/admin/simpleProfiles', []);
     }
 
+    /**
+     * @param  array<array{network:string,id:string}>  $providers
+     * @param  array<string>  $media
+     * @throws RuntimeException on API failure
+     */
+    public function schedulePost(
+        int $blogId,
+        array $providers,
+        string $dateTime,
+        string $timezone,
+        string $text,
+        bool $draft,
+        array $media = [],
+    ): array {
+        $url = $this->baseUrl . '/v2/scheduler/posts';
+
+        $body = [
+            'targetBrandId'   => $blogId,
+            'providers'       => $providers,
+            'publicationDate' => ['dateTime' => $dateTime, 'timezone' => $timezone],
+            'text'            => $text,
+            'draft'           => $draft,
+        ];
+
+        if (!empty($media)) {
+            $body['media'] = $media;
+            $body['saveExternalMediaFiles'] = true;
+        }
+
+        $response = $this->http()->asJson()->post($url, $body);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            return is_array($data) ? $data : [];
+        }
+
+        $this->logFailure('/v2/scheduler/posts', $body, $response);
+        throw new RuntimeException(
+            'Error al programar en Metricool (' . $response->status() . '): ' .
+            mb_substr((string) $response->body(), 0, 200)
+        );
+    }
+
     // Returns all metric values for a category on a single day — best for cumulative totals.
     // Categories: instagram, Facebook, fbAdsPerformance, adwordsPerformance, Audience, Contents, Linkedin
     public function statsValues(string $category, string $blogId, CarbonInterface $date): array
