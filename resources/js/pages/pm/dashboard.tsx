@@ -19,6 +19,7 @@ import {
     UserCheck,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { CopyPublicReviewLink } from '@/components/copy-public-review-link';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
@@ -346,6 +347,9 @@ function downloadExampleCsv() {
     URL.revokeObjectURL(url);
 }
 
+const TEMPLATE_EXAMPLE =
+    'Mostrar proceso del producto y persona disfrutándolo\tUsar música trending, evitar texto en pantalla\t15/07/2025\thttps://drive.google.com/file/d/ejemplo\tCafé Gourmet';
+
 function BulkImportModal({
     clients,
     open,
@@ -355,17 +359,23 @@ function BulkImportModal({
     open: boolean;
     onClose: () => void;
 }) {
-    const [step, setStep] = useState<'upload' | 'preview'>('upload');
+    const [step, setStep] = useState<'input' | 'preview'>('input');
+    const [inputMode, setInputMode] = useState<'upload' | 'paste'>('upload');
     const [rows, setRows] = useState<BulkRow[]>([]);
+    const [rawText, setRawText] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [fileError, setFileError] = useState<string | null>(null);
+    const [pasteError, setPasteError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
 
     function handleClose() {
-        setStep('upload');
+        setStep('input');
+        setInputMode('upload');
         setRows([]);
+        setRawText('');
         setSearch('');
         setFileError(null);
+        setPasteError(null);
         onClose();
     }
 
@@ -387,6 +397,17 @@ function BulkImportModal({
         e.target.value = '';
     }
 
+    function handleParse() {
+        setPasteError(null);
+        const parsed = parseTsv(rawText, clients);
+        if (parsed.length === 0) {
+            setPasteError('No se encontraron filas con datos válidos. Verificá el formato.');
+            return;
+        }
+        setRows(parsed);
+        setStep('preview');
+    }
+
     function handleImport() {
         const payload = rows.map((r) => ({
             client_id: r.client_id,
@@ -404,6 +425,10 @@ function BulkImportModal({
         });
     }
 
+    function copyTemplate() {
+        navigator.clipboard.writeText(TEMPLATE_HEADER + '\n' + TEMPLATE_EXAMPLE);
+    }
+
     const hasErrors = rows.some((r) => r.error !== null);
 
     return (
@@ -416,39 +441,102 @@ function BulkImportModal({
                     </DialogTitle>
                 </DialogHeader>
 
-                {step === 'upload' && (
+                {step === 'input' && (
                     <div className="space-y-4">
-                        {/* Referencia de columnas */}
-                        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm space-y-1.5">
-                            <p className="font-medium text-foreground">Columnas requeridas (en este orden):</p>
-                            <p className="font-mono text-xs text-muted-foreground break-all">{TEMPLATE_HEADER}</p>
+                        {/* Tabs */}
+                        <div className="flex gap-1 rounded-lg border border-border bg-muted/30 p-1">
                             <button
                                 type="button"
-                                onClick={downloadExampleCsv}
-                                className="text-xs text-green-400 hover:text-green-300"
+                                onClick={() => setInputMode('upload')}
+                                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                                    inputMode === 'upload'
+                                        ? 'bg-background text-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
                             >
-                                Descargar ejemplo .csv →
+                                Subir archivo
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setInputMode('paste')}
+                                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                                    inputMode === 'paste'
+                                        ? 'bg-background text-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                Pegar tabla
                             </button>
                         </div>
 
-                        {/* Drop zone */}
-                        <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 px-6 py-12 cursor-pointer hover:border-muted-foreground transition-colors">
-                            <Upload className="h-8 w-8 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground text-center">
-                                Hacé clic o arrastrá tu archivo{' '}
-                                <span className="font-medium text-foreground">.xlsx</span>
-                                {' '}o{' '}
-                                <span className="font-medium text-foreground">.csv</span>
-                            </span>
-                            <input
-                                type="file"
-                                accept=".xlsx,.xls,.csv"
-                                className="sr-only"
-                                onChange={handleFile}
-                            />
-                        </label>
-                        {fileError && (
-                            <p className="text-xs text-destructive">{fileError}</p>
+                        {/* Referencia de columnas (siempre visible) */}
+                        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm space-y-1.5">
+                            <p className="font-medium text-foreground">Columnas requeridas (en este orden):</p>
+                            <p className="font-mono text-xs text-muted-foreground break-all">{TEMPLATE_HEADER}</p>
+                            {inputMode === 'upload' ? (
+                                <button
+                                    type="button"
+                                    onClick={downloadExampleCsv}
+                                    className="text-xs text-green-400 hover:text-green-300"
+                                >
+                                    Descargar ejemplo .csv →
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={copyTemplate}
+                                    className="text-xs text-green-400 hover:text-green-300"
+                                >
+                                    Copiar plantilla →
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Subir archivo */}
+                        {inputMode === 'upload' && (
+                            <>
+                                <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 px-6 py-12 cursor-pointer hover:border-muted-foreground transition-colors">
+                                    <Upload className="h-8 w-8 text-muted-foreground" />
+                                    <span className="text-sm text-muted-foreground text-center">
+                                        Hacé clic o arrastrá tu archivo{' '}
+                                        <span className="font-medium text-foreground">.xlsx</span>
+                                        {' '}o{' '}
+                                        <span className="font-medium text-foreground">.csv</span>
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept=".xlsx,.xls,.csv"
+                                        className="sr-only"
+                                        onChange={handleFile}
+                                    />
+                                </label>
+                                {fileError && (
+                                    <p className="text-xs text-destructive">{fileError}</p>
+                                )}
+                            </>
+                        )}
+
+                        {/* Pegar tabla */}
+                        {inputMode === 'paste' && (
+                            <div className="space-y-2">
+                                <textarea
+                                    className="min-h-[180px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                                    value={rawText}
+                                    onChange={(e) => setRawText(e.target.value)}
+                                    placeholder={`Pegá acá las columnas copiadas desde Excel o Google Sheets:\n\n${TEMPLATE_HEADER}\n${TEMPLATE_EXAMPLE}`}
+                                />
+                                {pasteError && (
+                                    <p className="text-xs text-destructive">{pasteError}</p>
+                                )}
+                                <Button
+                                    type="button"
+                                    onClick={handleParse}
+                                    disabled={!rawText.trim()}
+                                    className="w-full"
+                                >
+                                    Previsualizar →
+                                </Button>
+                            </div>
                         )}
                     </div>
                 )}
@@ -517,12 +605,12 @@ function BulkImportModal({
                 )}
 
                 <DialogFooter>
-                    {step === 'upload' && (
+                    {step === 'input' && (
                         <Button variant="outline" onClick={handleClose}>Cancelar</Button>
                     )}
                     {step === 'preview' && (
                         <>
-                            <Button variant="outline" onClick={() => setStep('upload')}>
+                            <Button variant="outline" onClick={() => setStep('input')}>
                                 ← Volver
                             </Button>
                             <Button onClick={handleImport} disabled={hasErrors || submitting || rows.length === 0}>
@@ -907,6 +995,7 @@ function BriefCard({
                                     Asignar
                                 </Button>
                             )}
+                            <CopyPublicReviewLink token={piece.review_token} />
                             <a href={`/pm/brief/${piece.id}/pdf`} target="_blank" rel="noopener noreferrer">
                                 <Button
                                     size="icon"
@@ -1266,14 +1355,17 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                                 </a>
                             )}
                         </div>
-                        <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-500 text-white"
-                            onClick={() => setScheduleOpen(true)}
-                        >
-                            <Send className="mr-1.5 h-3.5 w-3.5" />
-                            Programar
-                        </Button>
+                        <div className="flex shrink-0 items-center gap-1">
+                            <CopyPublicReviewLink token={piece.review_token} />
+                            <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-500 text-white"
+                                onClick={() => setScheduleOpen(true)}
+                            >
+                                <Send className="mr-1.5 h-3.5 w-3.5" />
+                                Programar
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

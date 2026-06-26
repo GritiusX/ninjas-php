@@ -12,6 +12,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
+import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-review-link';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,10 @@ function buildWhatsAppUrl(piece: ContentPiece): string {
     const number = piece.client!.whatsapp_number!.replace(/\D/g, '');
     const title = piece.concept ?? piece.product ?? 'tu contenido';
     const client = piece.client!.name;
-    const message = `¡Hola! 👋 Les escribimos desde Little Ninjas.\n\nYa está listo el contenido de *${client}*: _"${title}"_.\n\nQuedamos atentos a tu feedback. 🎬`;
+    let message = `¡Hola! 👋 Les escribimos desde Little Ninjas.\n\nYa está listo el contenido de *${client}*: _"${title}"_.\n\nQuedamos atentos a tu feedback. 🎬`;
+    if (piece.review_token) {
+        message += `\n\n🔗 Revisá y aprobá acá: ${publicReviewUrl(piece.review_token)}`;
+    }
     return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
@@ -197,22 +201,25 @@ export default function ReviewRoom({ piece }: Props) {
                     </div>
 
                     {piece.client && (
-                        piece.client.whatsapp_number ? (
-                            <a href={buildWhatsAppUrl(piece)} target="_blank" rel="noopener noreferrer">
-                                <Button className="bg-green-600 hover:bg-green-500 text-white gap-2">
+                        <div className="flex items-center gap-2">
+                            <CopyPublicReviewLink token={piece.review_token} variant="button" />
+                            {piece.client.whatsapp_number ? (
+                                <a href={buildWhatsAppUrl(piece)} target="_blank" rel="noopener noreferrer">
+                                    <Button className="bg-green-600 hover:bg-green-500 text-white gap-2">
+                                        <MessageCircle className="h-4 w-4" />
+                                        Contactar cliente
+                                    </Button>
+                                </a>
+                            ) : (
+                                <Button
+                                    className="bg-green-600 hover:bg-green-500 text-white gap-2"
+                                    onClick={() => setNoNumberOpen(true)}
+                                >
                                     <MessageCircle className="h-4 w-4" />
                                     Contactar cliente
                                 </Button>
-                            </a>
-                        ) : (
-                            <Button
-                                className="bg-green-600 hover:bg-green-500 text-white gap-2"
-                                onClick={() => setNoNumberOpen(true)}
-                            >
-                                <MessageCircle className="h-4 w-4" />
-                                Contactar cliente
-                            </Button>
-                        )
+                            )}
+                        </div>
                     )}
                 </div>
 
