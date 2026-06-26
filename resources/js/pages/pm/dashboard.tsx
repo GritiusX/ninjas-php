@@ -797,17 +797,10 @@ function EditBriefModal({
     };
 
     const { data, setData, put, transform, processing, errors } = useForm({
-        concept: piece.concept ?? '',
-        product: piece.product ?? '',
-        category: piece.category ?? '',
-        objective: piece.objective ?? '',
-        hook: piece.hook ?? '',
-        development: piece.development ?? '',
-        cta: piece.cta ?? '',
+        development: piece.development ?? piece.concept ?? '',
         brief_notes: piece.brief_notes ?? '',
-        raw_material_links: (piece.raw_material_links?.length ? piece.raw_material_links : ['']) as string[],
-        priority: String(piece.priority),
         deadline: toDatetimeLocal(piece.deadline),
+        raw_material_links: (piece.raw_material_links?.length ? piece.raw_material_links : ['']) as string[],
     });
 
     transform((d) => ({
@@ -822,38 +815,9 @@ function EditBriefModal({
         });
     }
 
-    function field(
-        label: string,
-        key: keyof typeof data,
-        opts?: { placeholder?: string; textarea?: boolean },
-    ) {
-        return (
-            <div className="space-y-1.5">
-                <Label>{label}</Label>
-                {opts?.textarea ? (
-                    <textarea
-                        className="min-h-[72px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-                        value={data[key] as string}
-                        onChange={(e) => setData(key, e.target.value)}
-                        placeholder={opts.placeholder}
-                    />
-                ) : (
-                    <Input
-                        value={data[key] as string}
-                        onChange={(e) => setData(key, e.target.value)}
-                        placeholder={opts?.placeholder}
-                    />
-                )}
-                {errors[key] && (
-                    <p className="text-xs text-destructive">{errors[key]}</p>
-                )}
-            </div>
-        );
-    }
-
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Pencil className="h-4 w-4" />
@@ -862,69 +826,68 @@ function EditBriefModal({
                 </DialogHeader>
 
                 <form id="edit-brief-form" onSubmit={submit} className="space-y-4">
-                    {/* Concepto + producto */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {field('Concepto creativo', 'concept', { placeholder: 'Ej: Lanzamiento Cold Brew...' })}
-                        {field('Producto / servicio', 'product', { placeholder: 'Ej: Cold Brew 24hs' })}
-                    </div>
-
-                    {/* Categoría + deadline */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {field('Categoría', 'category', { placeholder: 'Ej: Lanzamiento, Retención...' })}
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
-                                Deadline
-                            </Label>
-                            <Input
-                                type="datetime-local"
-                                value={data.deadline}
-                                onChange={(e) => setData('deadline', e.target.value)}
-                            />
-                            {errors.deadline && (
-                                <p className="text-xs text-destructive">{errors.deadline}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Prioridad */}
+                    {/* Desarrollo contenido */}
                     <div className="space-y-1.5">
-                        <Label>Prioridad</Label>
-                        <Select value={data.priority} onValueChange={(v) => setData('priority', v)}>
-                            <SelectTrigger className="w-48">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="1">🔴 Crítico</SelectItem>
-                                <SelectItem value="2">🟠 Alto</SelectItem>
-                                <SelectItem value="3">🟡 Medio</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Label>
+                            Desarrollo contenido <span className="text-destructive">*</span>
+                        </Label>
+                        <textarea
+                            className="min-h-[80px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                            value={data.development}
+                            onChange={(e) => setData('development', e.target.value)}
+                            placeholder="Cómo se desarrolla la historia..."
+                        />
+                        {errors.development && (
+                            <p className="text-xs text-destructive">{errors.development}</p>
+                        )}
                     </div>
 
-                    {field('Objetivo de campaña', 'objective', { textarea: true, placeholder: 'Qué queremos lograr...' })}
-                    {field('Hook visual del video', 'hook', { textarea: true, placeholder: 'Cómo arranca el video...' })}
-                    {field('Desarrollo del contenido', 'development', { textarea: true, placeholder: 'Cómo se desarrolla la historia...' })}
-                    {field('CTA', 'cta', { placeholder: 'Ej: Pedí el tuyo en...' })}
-
-                    {/* Material de referencia - múltiples links */}
+                    {/* Instrucciones editor */}
                     <div className="space-y-1.5">
-                        <Label>Material de referencia</Label>
+                        <Label>Instrucciones editor</Label>
+                        <textarea
+                            className="min-h-[72px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                            value={data.brief_notes}
+                            onChange={(e) => setData('brief_notes', e.target.value)}
+                            placeholder="Instrucciones adicionales para el editor..."
+                        />
+                        {errors.brief_notes && (
+                            <p className="text-xs text-destructive">{errors.brief_notes}</p>
+                        )}
+                    </div>
+
+                    {/* Fecha entrega */}
+                    <div className="space-y-1.5">
+                        <Label className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            Fecha entrega
+                        </Label>
+                        <Input
+                            type="datetime-local"
+                            value={data.deadline}
+                            onChange={(e) => setData('deadline', e.target.value)}
+                        />
+                        {errors.deadline && (
+                            <p className="text-xs text-destructive">{errors.deadline}</p>
+                        )}
+                    </div>
+
+                    {/* Material referencia */}
+                    <div className="space-y-1.5">
+                        <Label>Material referencia</Label>
                         <MultiLinkInput
                             links={data.raw_material_links as string[]}
                             onChange={(links) => setData('raw_material_links', links)}
                             errors={errors as Record<string, string>}
                         />
                     </div>
-
-                    {field('Notas para el editor', 'brief_notes', { textarea: true, placeholder: 'Instrucciones adicionales...' })}
                 </form>
 
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={processing}>
                         Cancelar
                     </Button>
-                    <Button type="submit" form="edit-brief-form" disabled={processing}>
+                    <Button type="submit" form="edit-brief-form" disabled={processing || !data.development.trim()}>
                         <Pencil className="mr-1.5 h-4 w-4" />
                         {processing ? 'Guardando...' : 'Guardar cambios'}
                     </Button>

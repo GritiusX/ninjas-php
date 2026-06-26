@@ -252,8 +252,7 @@ export default function MetricsIndex({ clients }: Props) {
                             Métricas de clientes
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Snapshot mensual cerrado con datos de Metricool. El sync corre
-                            automáticamente el día 2 de cada mes.
+                            Snapshot mensual de datos de Metricool por cliente.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
