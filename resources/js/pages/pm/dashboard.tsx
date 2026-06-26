@@ -936,6 +936,16 @@ function EditBriefModal({
 
 // ─── Brief queue card ────────────────────────────────────────────────────────
 
+function ViewReviewLink({ pieceId }: { pieceId: number }) {
+    return (
+        <Link href={reviewRoutes.show.url(pieceId)}>
+            <Button size="sm" variant="outline">
+                Ver
+            </Button>
+        </Link>
+    );
+}
+
 function BriefCard({
     piece,
     editors,
@@ -985,6 +995,7 @@ function BriefCard({
                         </div>
 
                         <div className="flex shrink-0 items-center gap-2">
+                            <ViewReviewLink pieceId={piece.id} />
                             {!piece.assigned_editor_id && (
                                 <Button
                                     size="sm"
@@ -1139,12 +1150,7 @@ function ReviewCard({ piece }: { piece: ContentPiece }) {
                             </a>
                         )}
                     </div>
-                    <Link href={reviewRoutes.show.url(piece.id)}>
-                        <Button size="sm">
-                            Revisar
-                            <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                    </Link>
+                    <ViewReviewLink pieceId={piece.id} />
                 </div>
             </CardContent>
         </Card>
@@ -1209,7 +1215,7 @@ function MetricoolScheduleModal({
 
         router.post(
             `/pm/pieces/${piece.id}/schedule-metricool`,
-            { providers, date_time: dateTime, timezone, text, draft },
+            { providers, date_time: dateTime.length === 16 ? dateTime + ':00' : dateTime, timezone, text, draft },
             { onFinish: () => { setProcessing(false); onClose(); } },
         );
     }
@@ -1330,12 +1336,12 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
 
     return (
         <>
-            <Card className="border-green-800/40 bg-green-950/20">
+            <Card className="border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-950/20">
                 <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
                             <div className="mb-1 flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-semibold tracking-wide text-green-400 uppercase">
+                                <span className="text-xs font-semibold tracking-wide text-green-800 uppercase dark:text-green-400">
                                     {piece.client?.name}
                                 </span>
                                 <PriorityBadge priority={piece.priority} />
@@ -1348,7 +1354,7 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                                     href={piece.final_video_link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                                 >
                                     <ExternalLink className="h-3 w-3" />
                                     Ver video
@@ -1356,6 +1362,7 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                             )}
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
+                            <ViewReviewLink pieceId={piece.id} />
                             <CopyPublicReviewLink token={piece.review_token} />
                             <Button
                                 size="sm"
@@ -1518,10 +1525,10 @@ export default function PmDashboard({
                 {approvedQueue.length > 0 && (
                     <section className="space-y-3">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold tracking-wider text-green-400 uppercase">
+                            <h2 className="text-sm font-semibold tracking-wider text-green-800 uppercase dark:text-green-400">
                                 Listos para publicar
                             </h2>
-                            <Badge className="border-green-500/30 bg-green-500/20 text-green-400">
+                            <Badge className="border-green-200 bg-green-100 text-green-800 dark:border-green-500/30 dark:bg-green-500/20 dark:text-green-400">
                                 {approvedQueue.length}
                             </Badge>
                         </div>

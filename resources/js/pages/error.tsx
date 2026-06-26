@@ -8,6 +8,11 @@ const ERROR_META: Record<number, { icon: typeof AlertTriangle; title: string; de
         title: 'Sin permiso',
         description: 'No tenés acceso a esta página.',
     },
+    405: {
+        icon: Ban,
+        title: 'Este enlace ya fue utilizado',
+        description: 'Ya respondiste sobre este contenido. Si necesitás hacer un cambio, comunicate con tu agencia.',
+    },
     404: {
         icon: AlertTriangle,
         title: 'Página no encontrada',
@@ -50,10 +55,12 @@ export default function ErrorPage({ status }: { status: number }) {
                     </div>
 
                     <div className="flex gap-3 pt-2">
-                        <Button variant="outline" onClick={() => router.visit('/')} >
-                            <Home className="mr-1.5 h-4 w-4" />
-                            Inicio
-                        </Button>
+                        {status !== 405 && (
+                            <Button variant="outline" onClick={() => router.visit('/')}>
+                                <Home className="mr-1.5 h-4 w-4" />
+                                Inicio
+                            </Button>
+                        )}
                         {status >= 500 && (
                             <Button variant="outline" onClick={() => window.location.reload()}>
                                 <RefreshCw className="mr-1.5 h-4 w-4" />
