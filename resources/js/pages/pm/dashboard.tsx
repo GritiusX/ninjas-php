@@ -541,50 +541,29 @@ function BulkImportModal({
 
 function NewBriefModal({
     clients,
-    editors,
     open,
     onClose,
 }: {
     clients: Client[];
-    editors: Editor[];
     open: boolean;
     onClose: () => void;
 }) {
     const { data, setData, post, transform, processing, errors, reset } = useForm<{
         client_id: string;
-        concept: string;
-        product: string;
-        category: string;
-        objective: string;
-        hook: string;
         development: string;
-        cta: string;
         brief_notes: string;
-        raw_material_links: string[];
-        priority: string;
         deadline: string;
-        editor_id: string;
-        is_scheduled: boolean;
+        raw_material_links: string[];
     }>({
         client_id: '',
-        concept: '',
-        product: '',
-        category: '',
-        objective: '',
-        hook: '',
         development: '',
-        cta: '',
         brief_notes: '',
-        raw_material_links: [''],
-        priority: '3',
         deadline: '',
-        editor_id: 'none',
-        is_scheduled: false,
+        raw_material_links: [''],
     });
 
     transform((d) => ({
         ...d,
-        editor_id: d.editor_id === 'none' ? '' : d.editor_id,
         raw_material_links: d.raw_material_links.filter((l) => l.trim() !== ''),
     }));
 
@@ -598,50 +577,15 @@ function NewBriefModal({
         });
     }
 
-    function field(
-        label: string,
-        key: keyof typeof data,
-        opts?: { type?: string; placeholder?: string; textarea?: boolean; required?: boolean },
-    ) {
-        return (
-            <div className="space-y-1.5">
-                <Label>
-                    {label}
-                    {opts?.required && <span className="text-destructive ml-1">*</span>}
-                </Label>
-                {opts?.textarea ? (
-                    <textarea
-                        className="min-h-[72px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-                        value={data[key] as string}
-                        onChange={(e) => setData(key, e.target.value)}
-                        placeholder={opts.placeholder}
-                    />
-                ) : (
-                    <Input
-                        type={opts?.type ?? 'text'}
-                        value={data[key] as string}
-                        onChange={(e) => setData(key, e.target.value)}
-                        placeholder={opts?.placeholder}
-                    />
-                )}
-                {errors[key] && (
-                    <p className="text-xs text-destructive">{errors[key]}</p>
-                )}
-            </div>
-        );
-    }
-
     const canSubmit =
         !processing &&
         !!data.client_id &&
-        !!data.concept.trim() &&
-        !!data.deadline &&
-        data.editor_id !== 'none' &&
+        !!data.development.trim() &&
         data.raw_material_links.some((l) => l.trim() !== '');
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <FilePlus className="h-5 w-5" />
@@ -650,137 +594,81 @@ function NewBriefModal({
                 </DialogHeader>
 
                 <form id="brief-form" onSubmit={submit} className="space-y-4">
-                    {/* Cliente + prioridad */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <Label>
-                                Cliente{' '}
-                                <span className="text-destructive">*</span>
-                            </Label>
-                            <Select
-                                value={data.client_id}
-                                onValueChange={(v) => setData('client_id', v)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccioná un cliente..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {clients.map((c) => (
-                                        <SelectItem
-                                            key={c.id}
-                                            value={String(c.id)}
-                                        >
-                                            {c.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {errors.client_id && (
-                                <p className="text-xs text-destructive">
-                                    {errors.client_id}
-                                </p>
-                            )}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label>Prioridad</Label>
-                            <Select
-                                value={data.priority}
-                                onValueChange={(v) => setData('priority', v)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">🔴 Crítico</SelectItem>
-                                    <SelectItem value="2">🟠 Alto</SelectItem>
-                                    <SelectItem value="3">🟡 Medio</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Concepto + producto */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {field('Concepto creativo', 'concept', {
-                            placeholder: 'Ej: Lanzamiento Cold Brew...',
-                            required: true,
-                        })}
-                        {field('Producto / servicio', 'product', {
-                            placeholder: 'Ej: Cold Brew 24hs',
-                        })}
-                    </div>
-
-                    {/* Categoría + deadline */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {field('Categoría', 'category', {
-                            placeholder: 'Ej: Lanzamiento, Retención...',
-                        })}
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
-                                Deadline
-                                <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                                type="datetime-local"
-                                value={data.deadline}
-                                onChange={(e) =>
-                                    setData('deadline', e.target.value)
-                                }
-                            />
-                            {errors.deadline && (
-                                <p className="text-xs text-destructive">{errors.deadline}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    {field('Objetivo de campaña', 'objective', {
-                        textarea: true,
-                        placeholder: 'Qué queremos lograr con este contenido...',
-                    })}
-                    {field('Hook visual del video', 'hook', {
-                        textarea: true,
-                        placeholder: 'Descripción de cómo arranca el video...',
-                    })}
-                    {field('Desarrollo del contenido', 'development', {
-                        textarea: true,
-                        placeholder: 'Cómo se desarrolla la historia...',
-                    })}
-
-                    {/* CTA + editor */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {field('CTA', 'cta', {
-                            placeholder: 'Ej: Pedí el tuyo en...',
-                        })}
-                        <div className="space-y-1.5">
-                            <Label>
-                                Asignar editor{' '}
-                                <span className="text-destructive">*</span>
-                            </Label>
-                            <Select
-                                value={data.editor_id}
-                                onValueChange={(v) => setData('editor_id', v)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Sin asignar" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">Sin asignar</SelectItem>
-                                    {editors.map((e) => (
-                                        <SelectItem key={e.id} value={String(e.id)}>
-                                            {e.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Material de referencia - múltiples links */}
+                    {/* Cliente */}
                     <div className="space-y-1.5">
                         <Label>
-                            Material de referencia{' '}
-                            <span className="text-destructive">*</span>
+                            Cliente <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                            value={data.client_id}
+                            onValueChange={(v) => setData('client_id', v)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Seleccioná un cliente..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {clients.map((c) => (
+                                    <SelectItem key={c.id} value={String(c.id)}>
+                                        {c.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {errors.client_id && (
+                            <p className="text-xs text-destructive">{errors.client_id}</p>
+                        )}
+                    </div>
+
+                    {/* Desarrollo contenido */}
+                    <div className="space-y-1.5">
+                        <Label>
+                            Desarrollo contenido <span className="text-destructive">*</span>
+                        </Label>
+                        <textarea
+                            className="min-h-[80px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                            value={data.development}
+                            onChange={(e) => setData('development', e.target.value)}
+                            placeholder="Cómo se desarrolla la historia..."
+                        />
+                        {errors.development && (
+                            <p className="text-xs text-destructive">{errors.development}</p>
+                        )}
+                    </div>
+
+                    {/* Instrucciones editor */}
+                    <div className="space-y-1.5">
+                        <Label>Instrucciones editor</Label>
+                        <textarea
+                            className="min-h-[72px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                            value={data.brief_notes}
+                            onChange={(e) => setData('brief_notes', e.target.value)}
+                            placeholder="Instrucciones adicionales para el editor..."
+                        />
+                        {errors.brief_notes && (
+                            <p className="text-xs text-destructive">{errors.brief_notes}</p>
+                        )}
+                    </div>
+
+                    {/* Fecha entrega */}
+                    <div className="space-y-1.5">
+                        <Label className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            Fecha entrega
+                        </Label>
+                        <Input
+                            type="datetime-local"
+                            value={data.deadline}
+                            onChange={(e) => setData('deadline', e.target.value)}
+                        />
+                        {errors.deadline && (
+                            <p className="text-xs text-destructive">{errors.deadline}</p>
+                        )}
+                    </div>
+
+                    {/* Material referencia */}
+                    <div className="space-y-1.5">
+                        <Label>
+                            Material referencia <span className="text-destructive">*</span>
                         </Label>
                         <MultiLinkInput
                             links={data.raw_material_links}
@@ -788,26 +676,13 @@ function NewBriefModal({
                             errors={errors as Record<string, string>}
                         />
                     </div>
-
-                    {field('Notas para el editor', 'brief_notes', {
-                        textarea: true,
-                        placeholder: 'Instrucciones adicionales...',
-                    })}
                 </form>
 
                 <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        disabled={processing}
-                    >
+                    <Button variant="outline" onClick={onClose} disabled={processing}>
                         Cancelar
                     </Button>
-                    <Button
-                        type="submit"
-                        form="brief-form"
-                        disabled={!canSubmit}
-                    >
+                    <Button type="submit" form="brief-form" disabled={!canSubmit}>
                         <FilePlus className="mr-1.5 h-4 w-4" />
                         {processing ? 'Creando...' : 'Crear brief'}
                     </Button>
@@ -1585,7 +1460,6 @@ export default function PmDashboard({
 
             <NewBriefModal
                 clients={clients}
-                editors={editors}
                 open={briefOpen}
                 onClose={() => setBriefOpen(false)}
             />

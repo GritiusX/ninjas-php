@@ -44,7 +44,11 @@
       "Bash(python -c ' *)",
       "Bash(Get-ChildItem -Path \"app/Notifications\" -ErrorAction SilentlyContinue)",
       "Bash(Select-Object Name, FullName)",
-      "Bash(php.exe artisan *)"
+      "Bash(php.exe artisan *)",
+      "Bash(npm install *)",
+      "WebFetch(domain:developers.metricool.com)",
+      "WebFetch(domain:metricool.com)",
+      "WebFetch(domain:web.postman.co)"
     ]
   }
 }

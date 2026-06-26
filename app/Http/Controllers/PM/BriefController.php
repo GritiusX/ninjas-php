@@ -13,39 +13,23 @@ class BriefController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'client_id'     => ['required', 'exists:clients,id'],
-            'concept'       => ['required', 'string', 'max:1000'],
-            'product'       => ['nullable', 'string', 'max:500'],
-            'category'      => ['nullable', 'string', 'max:80'],
-            'objective'     => ['nullable', 'string'],
-            'hook'          => ['nullable', 'string'],
-            'development'   => ['nullable', 'string'],
-            'cta'           => ['nullable', 'string', 'max:255'],
-            'brief_notes'   => ['nullable', 'string'],
-            'client_status' => ['nullable', 'string', 'max:120'],
-            'is_scheduled'          => ['boolean'],
-            'priority'              => ['required', 'integer', 'in:1,2,3'],
-            'deadline'              => ['required', 'date'],
-            'raw_material_link'     => ['nullable', 'url', 'max:500'],
-            'raw_material_links'    => ['required', 'array', 'min:1', 'max:10'],
-            'raw_material_links.*'  => ['required', 'url', 'max:500'],
-            'editor_id'             => ['required', 'exists:users,id'],
+            'client_id'            => ['required', 'exists:clients,id'],
+            'development'          => ['required', 'string', 'max:1000'],
+            'brief_notes'          => ['nullable', 'string'],
+            'deadline'             => ['nullable', 'date'],
+            'raw_material_links'   => ['required', 'array', 'min:1', 'max:10'],
+            'raw_material_links.*' => ['required', 'url', 'max:500'],
         ]);
 
-        $status = ContentPiece::STATUS_BRIEF;
-        $editorId = null;
-
-        if (! empty($data['editor_id'])) {
-            $editorId = $data['editor_id'];
-            $status = ContentPiece::STATUS_EDITING;
-        }
-
-        unset($data['editor_id']);
-
         ContentPiece::create([
-            ...$data,
-            'assigned_editor_id' => $editorId,
-            'status' => $status,
+            'client_id'          => $data['client_id'],
+            'concept'            => $data['development'],
+            'development'        => $data['development'],
+            'brief_notes'        => $data['brief_notes'] ?? null,
+            'deadline'           => $data['deadline'] ?? null,
+            'raw_material_links' => $data['raw_material_links'],
+            'priority'           => ContentPiece::PRIORITY_MEDIUM,
+            'status'             => ContentPiece::STATUS_BRIEF,
         ]);
 
         return redirect()->route('pm.dashboard')->with('success', 'Brief creado correctamente.');
@@ -54,32 +38,26 @@ class BriefController extends Controller
     public function bulkStore(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'rows'                  => ['required', 'array', 'min:1', 'max:50'],
-            'rows.*.client_id'      => ['required', 'exists:clients,id'],
-            'rows.*.concept'        => ['required', 'string', 'max:1000'],
-            'rows.*.product'        => ['nullable', 'string', 'max:500'],
-            'rows.*.category'       => ['nullable', 'string', 'max:80'],
-            'rows.*.hook'           => ['nullable', 'string'],
-            'rows.*.cta'            => ['nullable', 'string', 'max:255'],
-            'rows.*.priority'       => ['required', 'integer', 'in:1,2,3'],
-            'rows.*.deadline'       => ['nullable', 'date'],
-            'rows.*.editor_id'      => ['nullable', 'exists:users,id'],
+            'rows'                     => ['required', 'array', 'min:1', 'max:50'],
+            'rows.*.client_id'         => ['required', 'exists:clients,id'],
+            'rows.*.concept'           => ['required', 'string', 'max:1000'],
+            'rows.*.development'       => ['nullable', 'string'],
+            'rows.*.brief_notes'       => ['nullable', 'string'],
+            'rows.*.deadline'          => ['nullable', 'date'],
+            'rows.*.raw_material_links'    => ['required', 'array', 'min:1', 'max:10'],
+            'rows.*.raw_material_links.*'  => ['required', 'url', 'max:500'],
         ]);
 
         foreach ($data['rows'] as $row) {
-            $editorId = $row['editor_id'] ?? null;
-
             ContentPiece::create([
                 'client_id'          => $row['client_id'],
                 'concept'            => $row['concept'],
-                'product'            => $row['product'] ?? null,
-                'category'           => $row['category'] ?? null,
-                'hook'               => $row['hook'] ?? null,
-                'cta'                => $row['cta'] ?? null,
-                'priority'           => $row['priority'],
+                'development'        => $row['development'] ?? null,
+                'brief_notes'        => $row['brief_notes'] ?? null,
                 'deadline'           => $row['deadline'] ?? null,
-                'assigned_editor_id' => $editorId,
-                'status'             => $editorId ? ContentPiece::STATUS_EDITING : ContentPiece::STATUS_BRIEF,
+                'raw_material_links' => $row['raw_material_links'],
+                'priority'           => ContentPiece::PRIORITY_MEDIUM,
+                'status'             => ContentPiece::STATUS_BRIEF,
             ]);
         }
 
