@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Editor;
 use App\Http\Controllers\Controller;
 use App\Models\ContentPiece;
 use App\Models\User;
+use App\Services\GoogleDriveService;
 use App\Services\NotificationService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\RedirectResponse;
@@ -91,21 +92,31 @@ class EditorController extends Controller
         }
 
         $request->validate([
-            'final_video_link' => ['required', 'url', 'max:500'],
+            'video' => ['required', 'file', 'mimetypes:video/mp4,video/quicktime,video/x-msvideo', 'max:2097152'],
         ]);
 
         $piece->load('client');
-        $editor = $request->user();
+        $editor     = $request->user();
+        $pieceName  = $piece->concept ?? $piece->product ?? "Pieza {$piece->id}";
+        $file       = $request->file('video');
+
+        set_time_limit(0);
+
+        $drive     = new GoogleDriveService();
+        $videoLink = $drive->uploadVideo(
+            $file->getRealPath(),
+            $file->getClientOriginalName(),
+            $piece->client->name,
+            $pieceName,
+        );
 
         $piece->update([
-            'final_video_link' => $request->final_video_link,
+            'final_video_link' => $videoLink,
             'status'           => ContentPiece::STATUS_INTERNAL_REVIEW,
         ]);
 
-        // Notificación en app a los PMs
         $this->notifications->notifyPmVideoSubmitted($piece, $editor);
 
-        // WhatsApp al PM si tiene número configurado
         $pms = User::whereIn('role', ['pm', 'admin'])
             ->where('is_active', true)
             ->whereNotNull('whatsapp_number')
@@ -120,6 +131,6 @@ class EditorController extends Controller
             );
         }
 
-        return back()->with('success', 'Video enviado para revisión.');
+        return back()->with('success', 'Video subido y enviado para revisión.');
     }
 }

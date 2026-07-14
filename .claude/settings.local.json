@@ -48,7 +48,10 @@
       "Bash(npm install *)",
       "WebFetch(domain:developers.metricool.com)",
       "WebFetch(domain:metricool.com)",
-      "WebFetch(domain:web.postman.co)"
+      "WebFetch(domain:web.postman.co)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(cat storage/app/.gitignore)",
+      "Bash(cat storage/app/private/.gitignore)"
     ]
   }
 }

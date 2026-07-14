@@ -1,11 +1,10 @@
 ﻿import { Head, Link, router, useForm } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ExternalLink, Link2, Send, Target, BookOpen, MessageSquare, Megaphone } from 'lucide-react';
-import { useState } from 'react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ExternalLink, Link2, Send, Target, BookOpen, MessageSquare, Megaphone, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import * as editorRoutes from '@/routes/editor';
 import type { ContentPiece } from '@/types';
@@ -27,38 +26,81 @@ function formatDeadline(deadline: string | null) {
 }
 
 function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
-    const { data, setData, post, processing, errors } = useForm({
-        final_video_link: piece.final_video_link ?? '',
+    const { data, setData, post, processing, progress, errors } = useForm<{ video: File | null }>({
+        video: null,
     });
     const [submitted, setSubmitted] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
     const isUpdate = piece.status === 'INTERNAL_REVIEW';
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
         post(editorRoutes.submitVideo.url(piece.id), {
+            forceFormData: true,
             onSuccess: () => setSubmitted(true),
         });
     }
 
+    const uploadPercent = progress?.percentage ?? 0;
+
     return (
         <>
-            <form onSubmit={submit} className="space-y-3">
-                <div className="space-y-1.5">
-                    <Label htmlFor="video-link">URL del video en Drive</Label>
-                    <Input
-                        id="video-link"
-                        type="url"
-                        placeholder="https://drive.google.com/file/d/..."
-                        value={data.final_video_link}
-                        onChange={(e) => setData('final_video_link', e.target.value)}
+            <form onSubmit={submit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Archivo de video</Label>
+
+                    <div
+                        className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                        onClick={() => inputRef.current?.click()}
+                    >
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        {data.video ? (
+                            <div>
+                                <p className="text-sm font-medium text-foreground">{data.video.name}</p>
+                                <p className="text-xs text-muted-foreground">{(data.video.size / 1024 / 1024).toFixed(1)} MB</p>
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="text-sm font-medium text-foreground">Hacé click para seleccionar</p>
+                                <p className="text-xs text-muted-foreground">MP4 o MOV · máx 2 GB</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <input
+                        ref={inputRef}
+                        type="file"
+                        accept="video/mp4,video/quicktime,video/x-msvideo"
+                        className="hidden"
+                        onChange={(e) => setData('video', e.target.files?.[0] ?? null)}
                     />
-                    {errors.final_video_link && (
-                        <p className="text-sm text-destructive">{errors.final_video_link}</p>
+
+                    {errors.video && (
+                        <p className="text-sm text-destructive">{errors.video}</p>
                     )}
                 </div>
-                <Button type="submit" disabled={processing} className="w-full sm:w-auto">
+
+                {processing && (
+                    <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{uploadPercent < 100 ? 'Subiendo a Drive...' : 'Procesando...'}</span>
+                            {uploadPercent < 100 && <span>{uploadPercent}%</span>}
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                                className="h-full rounded-full bg-primary transition-all duration-300"
+                                style={{ width: uploadPercent < 100 ? `${uploadPercent}%` : '100%' }}
+                            />
+                        </div>
+                        {uploadPercent >= 100 && (
+                            <p className="text-xs text-muted-foreground">Subiendo a Google Drive, no cierres esta ventana...</p>
+                        )}
+                    </div>
+                )}
+
+                <Button type="submit" disabled={processing || !data.video} className="w-full sm:w-auto">
                     <Send className="mr-2 h-4 w-4" />
-                    {processing ? 'Enviando...' : isUpdate ? 'Actualizar y re-enviar' : 'Enviar para revisión'}
+                    {processing ? 'Subiendo...' : isUpdate ? 'Actualizar y re-enviar' : 'Subir y enviar para revisión'}
                 </Button>
             </form>
 
@@ -72,8 +114,8 @@ function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
                     </DialogHeader>
                     <p className="text-sm text-muted-foreground">
                         {isUpdate
-                            ? 'El nuevo link fue enviado al PM para revisión.'
-                            : 'El video fue enviado al PM. Te avisamos cuando haya feedback.'}
+                            ? 'El nuevo video fue subido a Drive y enviado al PM para revisión.'
+                            : 'El video fue subido a Drive y enviado al PM. Te avisamos cuando haya feedback.'}
                     </p>
                     <DialogFooter>
                         <Button onClick={() => router.visit(editorRoutes.dashboard.url())}>

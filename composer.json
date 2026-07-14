@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.3.0",
         "barryvdh/laravel-dompdf": "^3.1",
+        "google/apiclient": "^2.15",
         "googleads/google-ads-php": "^33.4",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/fortify": "^1.34",

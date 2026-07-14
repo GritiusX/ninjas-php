@@ -50,4 +50,9 @@ return [
         'api_version'  => env('META_ADS_API_VERSION', 'v19.0'),
     ],
 
+    'google_drive' => [
+        'service_account_path' => env('GOOGLE_DRIVE_SERVICE_ACCOUNT_PATH'),
+        'root_folder_id'       => env('GOOGLE_DRIVE_ROOT_FOLDER_ID'),
+    ],
+
 ];
