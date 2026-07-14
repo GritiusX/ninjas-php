@@ -24,9 +24,10 @@ class GoogleDriveService
 
     public function uploadVideo(string $filePath, string $fileName, string $clientName, string $pieceName): string
     {
-        $rootFolderId  = config('services.google_drive.root_folder_id');
+        $rootFolderId   = config('services.google_drive.root_folder_id');
         $clientFolderId = $this->getOrCreateFolder($clientName, $rootFolderId);
-        $pieceFolderId  = $this->getOrCreateFolder($pieceName, $clientFolderId);
+        $stagingId      = $this->getOrCreateFolder('En revisión', $clientFolderId);
+        $pieceFolderId  = $this->getOrCreateFolder($pieceName, $stagingId);
 
         $mimeType = mime_content_type($filePath) ?: 'video/mp4';
         $fileSize = filesize($filePath);
@@ -65,6 +66,36 @@ class GoogleDriveService
         ]), ['supportsAllDrives' => true]);
 
         return "https://drive.google.com/file/d/{$fileId}/view";
+    }
+
+    public function moveVideoToDelivery(string $videoLink, string $clientName, string $pieceName): void
+    {
+        preg_match('/\/d\/([a-zA-Z0-9_-]+)/', $videoLink, $matches);
+        $fileId = $matches[1] ?? null;
+
+        if (!$fileId) {
+            return;
+        }
+
+        $rootFolderId   = config('services.google_drive.root_folder_id');
+        $clientFolderId = $this->getOrCreateFolder($clientName, $rootFolderId);
+        $deliveryId     = $this->getOrCreateFolder('A entregar', $clientFolderId);
+        $pieceFolderId  = $this->getOrCreateFolder($pieceName, $deliveryId);
+
+        // Get current parents to remove them
+        $file = $this->drive->files->get($fileId, [
+            'fields'            => 'parents',
+            'supportsAllDrives' => true,
+        ]);
+
+        $previousParents = implode(',', $file->getParents() ?? []);
+
+        $this->drive->files->update($fileId, new DriveFile(), [
+            'addParents'        => $pieceFolderId,
+            'removeParents'     => $previousParents,
+            'supportsAllDrives' => true,
+            'fields'            => 'id',
+        ]);
     }
 
     public function streamFile(string $fileId): \GuzzleHttp\Psr7\Response

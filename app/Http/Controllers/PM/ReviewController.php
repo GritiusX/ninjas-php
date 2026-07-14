@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\ContentPiece;
 use App\Models\User;
 use App\Services\GeminiService;
+use App\Services\GoogleDriveService;
 use App\Services\NotificationService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\RedirectResponse;
@@ -142,7 +143,22 @@ class ReviewController extends Controller
 
     public function approveClientRevision(ContentPiece $piece): RedirectResponse
     {
+        $piece->load('client');
+
         $piece->update(['status' => ContentPiece::STATUS_CLIENT_APPROVED]);
+
+        if ($piece->final_video_link) {
+            $pieceName = $piece->concept ?? $piece->product ?? "Pieza {$piece->id}";
+            try {
+                (new GoogleDriveService())->moveVideoToDelivery(
+                    $piece->final_video_link,
+                    $piece->client->name,
+                    $pieceName,
+                );
+            } catch (\Throwable) {
+                // Mover en Drive es best-effort, no bloquea el flujo
+            }
+        }
 
         return redirect()->route('pm.dashboard')->with('success', 'Pieza marcada como aprobada por el cliente.');
     }
