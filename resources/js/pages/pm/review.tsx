@@ -235,31 +235,23 @@ export default function ReviewRoom({ piece }: Props) {
                             <CardContent>
                                 {piece.final_video_link ? (
                                     <div className="space-y-3">
-                                        <div className="aspect-video rounded-lg bg-muted border border-border flex items-center justify-center overflow-hidden">
-                                            {piece.final_video_link.includes('drive.google.com') ? (
-                                                <iframe
-                                                    src={piece.final_video_link.replace('/view', '/preview')}
-                                                    className="w-full h-full rounded-lg"
-                                                    allow="autoplay"
-                                                    allowFullScreen
-                                                />
-                                            ) : (
-                                                <video
-                                                    src={piece.final_video_link}
-                                                    controls
-                                                    className="w-full h-full rounded-lg"
-                                                />
-                                            )}
-                                        </div>
-                                        <a
-                                            href={piece.final_video_link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300"
-                                        >
-                                            <ExternalLink className="h-3.5 w-3.5" />
-                                            Abrir en Drive
-                                        </a>
+                                        {piece.final_video_link.includes('drive.google.com') ? (
+                                            <a
+                                                href={piece.final_video_link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="aspect-video rounded-lg bg-muted border border-border flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-blue-400 hover:text-blue-400 transition-colors group"
+                                            >
+                                                <ExternalLink className="h-10 w-10 group-hover:scale-110 transition-transform" />
+                                                <span className="text-sm font-medium">Abrir video en Google Drive</span>
+                                            </a>
+                                        ) : (
+                                            <video
+                                                src={piece.final_video_link}
+                                                controls
+                                                className="w-full rounded-lg border border-border"
+                                            />
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="aspect-video rounded-lg bg-muted border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground">
