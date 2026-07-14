@@ -4,6 +4,7 @@ import {
     ArrowLeft,
     CheckCircle2,
     ExternalLink,
+    Info,
     Loader2,
     MessageCircle,
     MessageSquare,
@@ -245,6 +246,12 @@ export default function ReviewRoom({ piece }: Props) {
                                             className="w-full rounded-lg border border-border"
                                             preload="metadata"
                                         />
+                                        {piece.final_video_link.includes('drive.google.com') && (
+                                            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                                                <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                                                El video se transmite desde Google Drive a través del servidor. Si es muy pesado puede tardar unos segundos en cargar o en responder al seek.
+                                            </p>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="aspect-video rounded-lg bg-muted border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground">
