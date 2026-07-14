@@ -1386,6 +1386,10 @@ export default function PmDashboard({
     const [briefOpen, setBriefOpen] = useState(false);
     const [bulkOpen, setBulkOpen] = useState(false);
     const [briefClientId, setBriefClientId] = useState('');
+    const [pdfFrom, setPdfFrom] = useState('');
+    const [pdfTo, setPdfTo] = useState('');
+    const [pdfFilterBy, setPdfFilterBy] = useState<'deadline' | 'created_at'>('deadline');
+    const [pdfPopover, setPdfPopover] = useState(false);
 
     const clientReview = briefQueue.filter((p) =>
         ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status),
@@ -1417,8 +1421,8 @@ export default function PmDashboard({
                                 Vista tabla
                             </Button>
                         </Link>
-                        <div className="flex items-center gap-1">
-                            <Select value={briefClientId} onValueChange={setBriefClientId}>
+                        <div className="relative flex items-center gap-1">
+                            <Select value={briefClientId} onValueChange={(v) => { setBriefClientId(v); setPdfPopover(false); }}>
                                 <SelectTrigger className="h-9 w-44 text-xs">
                                     <SelectValue placeholder="Brief por cliente..." />
                                 </SelectTrigger>
@@ -1430,23 +1434,65 @@ export default function PmDashboard({
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <a
-                                href={briefClientId ? `/pm/client/${briefClientId}/brief-pdf` : '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => { if (!briefClientId) e.preventDefault(); }}
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9"
+                                disabled={!briefClientId}
+                                title="Descargar brief del cliente"
+                                type="button"
+                                onClick={() => setPdfPopover((v) => !v)}
                             >
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-9 w-9"
-                                    disabled={!briefClientId}
-                                    title="Descargar brief del cliente"
-                                    type="button"
-                                >
-                                    <Download className="h-4 w-4" />
-                                </Button>
-                            </a>
+                                <Download className="h-4 w-4" />
+                            </Button>
+                            {pdfPopover && briefClientId && (
+                                <div className="absolute right-0 top-10 z-50 w-72 rounded-lg border border-border bg-card p-4 shadow-lg space-y-3">
+                                    <p className="text-xs font-semibold text-foreground">Filtrar por período</p>
+                                    <div className="flex gap-1 rounded-md border border-border p-0.5 text-xs">
+                                        {(['deadline', 'created_at'] as const).map((opt) => (
+                                            <button
+                                                key={opt}
+                                                type="button"
+                                                onClick={() => setPdfFilterBy(opt)}
+                                                className={`flex-1 rounded py-1 transition-colors ${pdfFilterBy === opt ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                            >
+                                                {opt === 'deadline' ? 'Deadline' : 'Fecha de carga'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <label className="text-xs text-muted-foreground">Desde</label>
+                                            <input
+                                                type="date"
+                                                value={pdfFrom}
+                                                onChange={(e) => setPdfFrom(e.target.value)}
+                                                className="w-full rounded-md border border-input bg-transparent px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs text-muted-foreground">Hasta</label>
+                                            <input
+                                                type="date"
+                                                value={pdfTo}
+                                                onChange={(e) => setPdfTo(e.target.value)}
+                                                className="w-full rounded-md border border-input bg-transparent px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                                            />
+                                        </div>
+                                    </div>
+                                    <a
+                                        href={`/pm/client/${briefClientId}/brief-pdf?filter_by=${pdfFilterBy}${pdfFrom ? `&from=${pdfFrom}` : ''}${pdfTo ? `&to=${pdfTo}` : ''}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={() => setPdfPopover(false)}
+                                    >
+                                        <Button size="sm" className="w-full">
+                                            <Download className="mr-2 h-3.5 w-3.5" />
+                                            Descargar PDF
+                                        </Button>
+                                    </a>
+                                </div>
+                            )}
                         </div>
                         <Button variant="outline" onClick={() => setBulkOpen(true)}>
                             <Upload className="mr-2 h-4 w-4" />

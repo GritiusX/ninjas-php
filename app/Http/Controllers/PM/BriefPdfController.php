@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ContentPiece;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Http\Response;
 
@@ -22,14 +23,35 @@ class BriefPdfController extends Controller
         return $pdf->download($filename);
     }
 
-    public function downloadClient(Client $client): Response
+    public function downloadClient(Request $request, Client $client): Response
     {
-        $pieces = $client->contentPieces()->with('editor')->orderBy('deadline')->get();
+        $request->validate([
+            'from'      => ['nullable', 'date'],
+            'to'        => ['nullable', 'date'],
+            'filter_by' => ['nullable', 'in:created_at,deadline'],
+        ]);
 
-        $pdf = Pdf::loadView('pdf.brief-client', compact('client', 'pieces'))
+        $filterBy = $request->input('filter_by', 'deadline');
+        $from     = $request->input('from');
+        $to       = $request->input('to');
+
+        $query = $client->contentPieces()->with('editor');
+
+        if ($from) {
+            $query->whereDate($filterBy, '>=', $from);
+        }
+
+        if ($to) {
+            $query->whereDate($filterBy, '<=', $to);
+        }
+
+        $pieces = $query->orderBy('deadline')->get();
+
+        $pdf = Pdf::loadView('pdf.brief-client', compact('client', 'pieces', 'from', 'to', 'filterBy'))
             ->setPaper('a4', 'landscape');
 
-        $filename = 'brief-' . Str::slug($client->name) . '.pdf';
+        $suffix   = $from || $to ? '-' . ($from ?? '') . '-' . ($to ?? '') : '';
+        $filename = 'brief-' . Str::slug($client->name) . $suffix . '.pdf';
 
         return $pdf->download($filename);
     }
