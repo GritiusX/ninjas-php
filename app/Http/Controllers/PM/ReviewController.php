@@ -129,6 +129,17 @@ class ReviewController extends Controller
         return redirect()->route('pm.dashboard')->with('success', 'Cambios solicitados al editor.');
     }
 
+    public function notifyEditor(ContentPiece $piece): RedirectResponse
+    {
+        $piece->load('client');
+
+        $piece->update(['status' => ContentPiece::STATUS_REVISION]);
+
+        $this->notifications->notifyEditorClientRevision($piece);
+
+        return redirect()->route('pm.dashboard')->with('success', 'Editor notificado. La tarea volvió a edición.');
+    }
+
     public function approveClientRevision(ContentPiece $piece): RedirectResponse
     {
         $piece->update(['status' => ContentPiece::STATUS_CLIENT_APPROVED]);

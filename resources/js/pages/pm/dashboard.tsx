@@ -2,6 +2,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import * as XLSX from 'xlsx';
 import {
     AlertCircle,
+    Bell,
     Calendar,
     ChevronDown,
     ChevronRight,
@@ -959,6 +960,17 @@ function BriefCard({
 
                         <div className="flex shrink-0 items-center gap-2">
                             <ViewReviewLink pieceId={piece.id} />
+                            {piece.status === 'CLIENT_REVISION' && piece.assigned_editor_id && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-orange-500 text-orange-500 hover:bg-orange-500/10"
+                                    onClick={() => router.post(`/pm/review/${piece.id}/notify-editor`)}
+                                >
+                                    <Bell className="mr-1 h-3.5 w-3.5" />
+                                    Avisar al editor
+                                </Button>
+                            )}
                             {!piece.assigned_editor_id && (
                                 <Button
                                     size="sm"

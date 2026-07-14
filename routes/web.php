@@ -63,6 +63,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::post('/review/{piece}/approve', [ReviewController::class, 'approve'])->name('review.approve');
     Route::post('/review/{piece}/request-changes', [ReviewController::class, 'requestChanges'])->name('review.request-changes');
     Route::post('/review/{piece}/approve-client', [ReviewController::class, 'approveClientRevision'])->name('review.approve-client');
+    Route::post('/review/{piece}/notify-editor', [ReviewController::class, 'notifyEditor'])->name('review.notify-editor');
 
     // Metricool scheduling
     Route::get('/pieces/{piece}/metricool-networks', [MetricoolScheduleController::class, 'networks'])->name('pieces.metricool-networks');

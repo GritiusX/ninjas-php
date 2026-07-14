@@ -130,7 +130,7 @@ function SubmitVideoForm({ piece }: { piece: ContentPiece }) {
 
 export default function EditorTask({ piece }: Props) {
     const deadline = formatDeadline(piece.deadline);
-    const canSubmit = ['EDITING', 'REVISION', 'INTERNAL_REVIEW', 'CLIENT_REVISION'].includes(piece.status);
+    const canSubmit = ['EDITING', 'REVISION', 'INTERNAL_REVIEW'].includes(piece.status);
 
     return (
         <>

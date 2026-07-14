@@ -76,6 +76,22 @@ class NotificationService
         }
     }
 
+    public function notifyEditorClientRevision(ContentPiece $piece): void
+    {
+        if (!$piece->assigned_editor_id) {
+            return;
+        }
+
+        AppNotification::create([
+            'user_id'    => $piece->assigned_editor_id,
+            'type'       => 'changes.requested',
+            'title'      => "[{$piece->client->name}] El cliente pidió cambios — revisá y resubí",
+            'body'       => $piece->concept ?? $piece->product,
+            'link'       => "/editor/task/{$piece->id}",
+            'created_at' => now(),
+        ]);
+    }
+
     public function notifyPmClientRequestedChanges(ContentPiece $piece, string $message): void
     {
         $pms = User::whereIn('role', ['pm', 'admin'])->where('is_active', true)->get();
