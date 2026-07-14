@@ -235,23 +235,16 @@ export default function ReviewRoom({ piece }: Props) {
                             <CardContent>
                                 {piece.final_video_link ? (
                                     <div className="space-y-3">
-                                        {piece.final_video_link.includes('drive.google.com') ? (
-                                            <a
-                                                href={piece.final_video_link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="aspect-video rounded-lg bg-muted border border-border flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-blue-400 hover:text-blue-400 transition-colors group"
-                                            >
-                                                <ExternalLink className="h-10 w-10 group-hover:scale-110 transition-transform" />
-                                                <span className="text-sm font-medium">Abrir video en Google Drive</span>
-                                            </a>
-                                        ) : (
-                                            <video
-                                                src={piece.final_video_link}
-                                                controls
-                                                className="w-full rounded-lg border border-border"
-                                            />
-                                        )}
+                                        <video
+                                            src={
+                                                piece.final_video_link.includes('drive.google.com')
+                                                    ? `/pm/review/${piece.id}/stream-video`
+                                                    : piece.final_video_link
+                                            }
+                                            controls
+                                            className="w-full rounded-lg border border-border"
+                                            preload="metadata"
+                                        />
                                     </div>
                                 ) : (
                                     <div className="aspect-video rounded-lg bg-muted border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground">

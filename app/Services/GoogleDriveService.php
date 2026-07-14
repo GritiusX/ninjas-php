@@ -67,6 +67,23 @@ class GoogleDriveService
         return "https://drive.google.com/file/d/{$fileId}/view";
     }
 
+    public function streamFile(string $fileId): \GuzzleHttp\Psr7\Response
+    {
+        $this->client->setDefer(false);
+        return $this->drive->files->get($fileId, [
+            'alt'               => 'media',
+            'supportsAllDrives' => true,
+        ]);
+    }
+
+    public function getFileMetadata(string $fileId): DriveFile
+    {
+        return $this->drive->files->get($fileId, [
+            'fields'            => 'id,name,mimeType,size',
+            'supportsAllDrives' => true,
+        ]);
+    }
+
     private function getOrCreateFolder(string $name, string $parentId): string
     {
         $escaped = str_replace("'", "\\'", $name);

@@ -15,6 +15,7 @@ use App\Http\Controllers\PM\BriefPdfController;
 use App\Http\Controllers\PM\PmController;
 use App\Http\Controllers\PM\MetricoolScheduleController;
 use App\Http\Controllers\PM\ReviewController;
+use App\Http\Controllers\PM\VideoStreamController;
 use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\Webhook\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +65,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::post('/review/{piece}/request-changes', [ReviewController::class, 'requestChanges'])->name('review.request-changes');
     Route::post('/review/{piece}/approve-client', [ReviewController::class, 'approveClientRevision'])->name('review.approve-client');
     Route::post('/review/{piece}/notify-editor', [ReviewController::class, 'notifyEditor'])->name('review.notify-editor');
+    Route::get('/review/{piece}/stream-video', [VideoStreamController::class, 'stream'])->name('review.stream-video');
 
     // Metricool scheduling
     Route::get('/pieces/{piece}/metricool-networks', [MetricoolScheduleController::class, 'networks'])->name('pieces.metricool-networks');
