@@ -38,7 +38,10 @@ class GoogleDriveService
 
         // Resumable upload — handles large files without memory issues
         $this->client->setDefer(true);
-        $request = $this->drive->files->create($fileMetadata, ['fields' => 'id,webViewLink']);
+        $request = $this->drive->files->create($fileMetadata, [
+            'fields'           => 'id,webViewLink',
+            'supportsAllDrives' => true,
+        ]);
 
         $chunkSize = 10 * 1024 * 1024; // 10MB chunks
         $media     = new MediaFileUpload($this->client, $request, $mimeType, null, true, $chunkSize);
@@ -59,7 +62,7 @@ class GoogleDriveService
         $this->drive->permissions->create($fileId, new Permission([
             'type' => 'anyone',
             'role' => 'reader',
-        ]));
+        ]), ['supportsAllDrives' => true]);
 
         return "https://drive.google.com/file/d/{$fileId}/view";
     }
@@ -68,8 +71,10 @@ class GoogleDriveService
     {
         $escaped = str_replace("'", "\\'", $name);
         $results = $this->drive->files->listFiles([
-            'q'      => "name = '{$escaped}' and '{$parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
-            'fields' => 'files(id)',
+            'q'                     => "name = '{$escaped}' and '{$parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            'fields'                => 'files(id)',
+            'includeItemsFromAllDrives' => true,
+            'supportsAllDrives'     => true,
         ]);
 
         if (!empty($results->getFiles())) {
@@ -80,7 +85,7 @@ class GoogleDriveService
             'name'     => $name,
             'mimeType' => 'application/vnd.google-apps.folder',
             'parents'  => [$parentId],
-        ]), ['fields' => 'id']);
+        ]), ['fields' => 'id', 'supportsAllDrives' => true]);
 
         return $folder->getId();
     }

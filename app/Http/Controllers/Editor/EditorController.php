@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\GoogleDriveService;
 use App\Services\NotificationService;
 use App\Services\WhatsAppService;
+use Google\Service\Exception as GoogleServiceException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -102,13 +103,26 @@ class EditorController extends Controller
 
         set_time_limit(0);
 
-        $drive     = new GoogleDriveService();
-        $videoLink = $drive->uploadVideo(
-            $file->getRealPath(),
-            $file->getClientOriginalName(),
-            $piece->client->name,
-            $pieceName,
-        );
+        try {
+            $drive     = new GoogleDriveService();
+            $videoLink = $drive->uploadVideo(
+                $file->getRealPath(),
+                $file->getClientOriginalName(),
+                $piece->client->name,
+                $pieceName,
+            );
+        } catch (GoogleServiceException $e) {
+            $errors = $e->getErrors();
+            $reason = $errors[0]['reason'] ?? 'unknown';
+            $msg = match ($reason) {
+                'storageQuotaExceeded' => 'Error de Google Drive: cuota de almacenamiento agotada. Contactá al administrador.',
+                'forbidden'            => 'Error de Google Drive: sin permisos para subir el archivo.',
+                default                => 'Error de Google Drive: ' . ($errors[0]['message'] ?? $e->getMessage()),
+            };
+            return back()->withErrors(['video' => $msg]);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['video' => 'Error al subir el video: ' . $e->getMessage()]);
+        }
 
         $piece->update([
             'final_video_link' => $videoLink,
