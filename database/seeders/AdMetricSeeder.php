@@ -17,11 +17,11 @@ class AdMetricSeeder extends Seeder
         $c = fn(string $name) => Client::where('name', $name)->value('id');
 
         // name => [base_investment, roas_multiplier, base_transactions]
-        // Café Gourmet BA   → roas_goal 4.00 → verde
+        // Aura Natural      → roas_goal 4.00 → verde
         // FitStore AR       → roas_goal 3.50 → amarillo (~2.8x)
         // TechHogar         → roas_goal 3.00 → rojo (~1.9x)
         $clients = [
-            $c('Café Gourmet BA')    => ['inv' => 5000,  'roas' => 4.3,  'trx' => 47],
+            $c('Aura Natural')       => ['inv' => 5000,  'roas' => 4.3,  'trx' => 47],
             $c('FitStore Argentina') => ['inv' => 9000,  'roas' => 2.8,  'trx' => 63],
             $c('TechHogar')          => ['inv' => 12000, 'roas' => 1.9,  'trx' => 27],
         ];

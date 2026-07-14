@@ -38,17 +38,19 @@ class BriefController extends Controller
     public function bulkStore(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'rows'                     => ['required', 'array', 'min:1', 'max:50'],
-            'rows.*.client_id'         => ['required', 'exists:clients,id'],
-            'rows.*.concept'           => ['required', 'string', 'max:1000'],
-            'rows.*.development'       => ['nullable', 'string'],
-            'rows.*.brief_notes'       => ['nullable', 'string'],
-            'rows.*.deadline'          => ['nullable', 'date'],
+            'rows'                         => ['required', 'array', 'min:1', 'max:50'],
+            'rows.*.client_id'             => ['required', 'exists:clients,id'],
+            'rows.*.concept'               => ['required', 'string', 'max:1000'],
+            'rows.*.development'           => ['nullable', 'string'],
+            'rows.*.brief_notes'           => ['nullable', 'string'],
+            'rows.*.deadline'              => ['nullable', 'date'],
             'rows.*.raw_material_links'    => ['required', 'array', 'min:1', 'max:10'],
             'rows.*.raw_material_links.*'  => ['required', 'url', 'max:500'],
+            'rows.*.assigned_editor_id'    => ['nullable', 'exists:users,id'],
         ]);
 
         foreach ($data['rows'] as $row) {
+            $editorId = $row['assigned_editor_id'] ?? null;
             ContentPiece::create([
                 'client_id'          => $row['client_id'],
                 'concept'            => $row['concept'],
@@ -57,7 +59,8 @@ class BriefController extends Controller
                 'deadline'           => $row['deadline'] ?? null,
                 'raw_material_links' => $row['raw_material_links'],
                 'priority'           => ContentPiece::PRIORITY_MEDIUM,
-                'status'             => ContentPiece::STATUS_BRIEF,
+                'status'             => $editorId ? ContentPiece::STATUS_EDITING : ContentPiece::STATUS_BRIEF,
+                'assigned_editor_id' => $editorId,
             ]);
         }
 

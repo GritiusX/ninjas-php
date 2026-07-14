@@ -51,7 +51,8 @@
       "WebFetch(domain:web.postman.co)",
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(cat storage/app/.gitignore)",
-      "Bash(cat storage/app/private/.gitignore)"
+      "Bash(cat storage/app/private/.gitignore)",
+      "WebFetch(domain:claude.ai)"
     ]
   }
 }

@@ -11,8 +11,7 @@ class ContentPieceSeeder extends Seeder
 {
     public function run(): void
     {
-        $ana   = User::where('email', 'ana@littleninjas.com.ar')->first();
-        $marco = User::where('email', 'marco@littleninjas.com.ar')->first();
+        $felipe = User::where('email', 'felipe@littleninjas.com')->first();
 
         $drive = 'https://drive.google.com/drive/folders/';
 
@@ -20,11 +19,11 @@ class ContentPieceSeeder extends Seeder
 
         $pieces = [
 
-            // ── Café Gourmet BA ───────────────────────────────────────────────
+            // ── Aura Natural ───────────────────────────────────────────────
 
             [
-                'client_id'          => $c('Café Gourmet BA'),
-                'assigned_editor_id' => $ana->id,
+                'client_id'          => $c('Aura Natural'),
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'EDITING',
                 'priority'           => 1,
                 'deadline'           => now()->addDay(),
@@ -39,8 +38,8 @@ class ContentPieceSeeder extends Seeder
                 'raw_material_links' => [$drive . 'coldbrewraw1', $drive . 'coldbrewraw2'],
             ],
             [
-                'client_id'          => $c('Café Gourmet BA'),
-                'assigned_editor_id' => $ana->id,
+                'client_id'          => $c('Aura Natural'),
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'INTERNAL_REVIEW',
                 'priority'           => 2,
                 'deadline'           => now()->addDays(2),
@@ -56,8 +55,8 @@ class ContentPieceSeeder extends Seeder
                 'final_video_link'   => 'https://drive.google.com/file/d/demo_final_video/view',
             ],
             [
-                'client_id'          => $c('Café Gourmet BA'),
-                'assigned_editor_id' => $ana->id,
+                'client_id'          => $c('Aura Natural'),
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'CLIENT_REVIEW',
                 'priority'           => 2,
                 'deadline'           => now()->addDays(7),
@@ -72,7 +71,7 @@ class ContentPieceSeeder extends Seeder
                 'final_video_link'   => 'https://drive.google.com/file/d/demo_invernal/view',
             ],
             [
-                'client_id'          => $c('Café Gourmet BA'),
+                'client_id'          => $c('Aura Natural'),
                 'assigned_editor_id' => null,
                 'status'             => 'BRIEF',
                 'priority'           => 3,
@@ -91,7 +90,7 @@ class ContentPieceSeeder extends Seeder
 
             [
                 'client_id'          => $c('FitStore Argentina'),
-                'assigned_editor_id' => $ana->id,
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'EDITING',
                 'priority'           => 2,
                 'deadline'           => now()->addDays(4),
@@ -107,7 +106,7 @@ class ContentPieceSeeder extends Seeder
             ],
             [
                 'client_id'          => $c('FitStore Argentina'),
-                'assigned_editor_id' => $ana->id,
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'REVISION',
                 'priority'           => 1,
                 'deadline'           => now()->addDays(1),
@@ -141,7 +140,7 @@ class ContentPieceSeeder extends Seeder
 
             [
                 'client_id'          => $c('TechHogar'),
-                'assigned_editor_id' => $marco->id,
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'INTERNAL_REVIEW',
                 'priority'           => 1,
                 'deadline'           => now()->subDay(),
@@ -157,7 +156,7 @@ class ContentPieceSeeder extends Seeder
             ],
             [
                 'client_id'          => $c('TechHogar'),
-                'assigned_editor_id' => $marco->id,
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'EDITING',
                 'priority'           => 2,
                 'deadline'           => now()->addDays(6),
@@ -189,7 +188,7 @@ class ContentPieceSeeder extends Seeder
 
             [
                 'client_id'          => $c('Moda Porteña'),
-                'assigned_editor_id' => $marco->id,
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'PM_APPROVED',
                 'priority'           => 2,
                 'deadline'           => now()->addDays(3),
@@ -205,7 +204,7 @@ class ContentPieceSeeder extends Seeder
             ],
             [
                 'client_id'          => $c('Moda Porteña'),
-                'assigned_editor_id' => $marco->id,
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'CLIENT_REVISION',
                 'priority'           => 1,
                 'deadline'           => now()->addDays(2),
@@ -240,7 +239,7 @@ class ContentPieceSeeder extends Seeder
 
             [
                 'client_id'          => $c('Suplementos Pro AR'),
-                'assigned_editor_id' => $marco->id,
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'EDITING',
                 'priority'           => 2,
                 'deadline'           => now()->addDays(5),
@@ -272,7 +271,7 @@ class ContentPieceSeeder extends Seeder
 
             [
                 'client_id'          => $c('BellezaNatural AR'),
-                'assigned_editor_id' => $ana->id,
+                'assigned_editor_id' => $felipe->id,
                 'status'             => 'EDITING',
                 'priority'           => 2,
                 'deadline'           => now()->addDays(8),

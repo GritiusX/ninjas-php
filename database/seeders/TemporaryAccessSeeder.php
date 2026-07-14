@@ -11,21 +11,18 @@ class TemporaryAccessSeeder extends Seeder
 {
     public function run(): void
     {
-        $ana   = User::where('email', 'ana@littleninjas.com.ar')->first();
-        $marco = User::where('email', 'marco@littleninjas.com.ar')->first();
-        $admin = User::where('email', 'admin@littleninjas.com.ar')->first();
+        $felipe = User::where('email', 'felipe@littleninjas.com')->first();
+        $admin  = User::where('email', 'gonzalo@littleninjas.com')->first();
 
         $clientId = fn(string $name) => Client::where('name', $name)->value('id');
 
         $accesses = [
-            // Ana — Café Gourmet BA, FitStore, BellezaNatural
-            [$ana->id, $clientId('Café Gourmet BA')],
-            [$ana->id, $clientId('FitStore Argentina')],
-            [$ana->id, $clientId('BellezaNatural AR')],
-            // Marco — TechHogar, Moda Porteña, Suplementos Pro AR
-            [$marco->id, $clientId('TechHogar')],
-            [$marco->id, $clientId('Moda Porteña')],
-            [$marco->id, $clientId('Suplementos Pro AR')],
+            [$felipe->id, $clientId('Aura Natural')],
+            [$felipe->id, $clientId('FitStore Argentina')],
+            [$felipe->id, $clientId('BellezaNatural AR')],
+            [$felipe->id, $clientId('TechHogar')],
+            [$felipe->id, $clientId('Moda Porteña')],
+            [$felipe->id, $clientId('Suplementos Pro AR')],
         ];
 
         foreach (array_filter($accesses, fn($a) => $a[0] && $a[1]) as [$userId, $clientId]) {

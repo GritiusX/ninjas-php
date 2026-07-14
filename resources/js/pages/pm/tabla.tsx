@@ -49,7 +49,6 @@ function EditableRow({
     const { data, setData, put, processing, reset } = useForm({
         concept: piece.concept ?? '',
         product: piece.product ?? '',
-        priority: String(piece.priority),
         deadline: toDatetimeLocal(piece.deadline),
         brief_notes: piece.brief_notes ?? '',
     });
@@ -94,18 +93,6 @@ function EditableRow({
                 <td className="px-3 py-2">
                     <StatusBadge status={piece.status} />
                 </td>
-                <td className="px-3 py-2">
-                    <Select value={data.priority} onValueChange={(v) => setData('priority', v)}>
-                        <SelectTrigger className="h-8 w-28 text-sm">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="1">🔴 Crítico</SelectItem>
-                            <SelectItem value="2">🟠 Alto</SelectItem>
-                            <SelectItem value="3">🟡 Medio</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </td>
                 <td className="px-3 py-2 text-sm text-muted-foreground">
                     {piece.editor?.name ?? '—'}
                 </td>
@@ -142,9 +129,6 @@ function EditableRow({
                 </td>
                 <td className="px-3 py-2.5">
                     <StatusBadge status={piece.status} />
-                </td>
-                <td className="px-3 py-2.5">
-                    <PriorityBadge priority={piece.priority} />
                 </td>
                 <td className="px-3 py-2.5 text-sm">
                     {piece.editor ? (
@@ -338,7 +322,6 @@ export default function PmTabla({ pieces, clients, editors }: Props) {
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Concepto</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
-                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prioridad</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Editor</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deadline</th>
                                     <th className="px-3 py-2.5 w-12"></th>

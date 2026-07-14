@@ -10,36 +10,25 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::firstOrCreate(['email' => 'admin@littleninjas.com.ar'], [
-            'name' => 'Admin',
-            'password' => Hash::make('ninja123'),
-            'role' => 'admin',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        $users = [
+            ['name' => 'Gonzalo',    'email' => 'gonzalo@littleninjas.com',    'role' => 'admin'],
+            ['name' => 'Giuseppe',   'email' => 'giuseppe@littleninjas.com',   'role' => 'admin'],
+            ['name' => 'Manuel',     'email' => 'manuel@littleninjas.com',     'role' => 'admin'],
+            ['name' => 'Felipe',     'email' => 'felipe@littleninjas.com',     'role' => 'editor'],
+            ['name' => 'Matias',     'email' => 'matias@littleninjas.com',     'role' => 'paid_pauta'],
+            ['name' => 'Santiago',   'email' => 'santiago@littleninjas.com',   'role' => 'paid_pauta'],
+            ['name' => 'Diseñadora', 'email' => 'disenadora@littleninjas.com', 'role' => 'diseño'],
+            ['name' => 'AM',         'email' => 'am@littleninjas.com',         'role' => 'redes'],
+        ];
 
-        User::firstOrCreate(['email' => 'pm@littleninjas.com.ar'], [
-            'name' => 'PM Ninja',
-            'password' => Hash::make('ninja123'),
-            'role' => 'pm',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
-
-        User::firstOrCreate(['email' => 'ana@littleninjas.com.ar'], [
-            'name' => 'Ana Editora',
-            'password' => Hash::make('ninja123'),
-            'role' => 'editor',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
-
-        User::firstOrCreate(['email' => 'marco@littleninjas.com.ar'], [
-            'name' => 'Marco Editor',
-            'password' => Hash::make('ninja123'),
-            'role' => 'editor',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        foreach ($users as $u) {
+            User::firstOrCreate(['email' => $u['email']], [
+                'name'                  => $u['name'],
+                'password'              => Hash::make('Ninjas2025!'),
+                'role'                  => $u['role'],
+                'is_active'             => true,
+                'email_verified_at'     => now(),
+            ]);
+        }
     }
 }

@@ -214,7 +214,7 @@ function MultiLinkInput({
 
 // ─── Bulk import modal ───────────────────────────────────────────────────────
 
-const TEMPLATE_HEADER = 'Desarrollo contenido\tInstrucciones editor\tFecha entrega (DD/MM/AAAA)\tMaterial referencia\tCliente';
+const TEMPLATE_HEADER = 'Desarrollo contenido\tInstrucciones editor\tFecha entrega (DD/MM/AAAA)\tMaterial referencia\tCliente\tEditor';
 
 type BulkRow = {
     client_id: number | null;
@@ -223,6 +223,8 @@ type BulkRow = {
     brief_notes: string;
     deadline: string;
     raw_material_links: string[];
+    assigned_editor_id: number | null;
+    editorName: string;
     error: string | null;
 };
 
@@ -254,7 +256,7 @@ function isBulkHeaderRow(cols: string[]): boolean {
     return first.startsWith('desarrollo');
 }
 
-function parseTsv(text: string, clients: Client[]): BulkRow[] {
+function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[] {
     const lines = text.trim().split('\n').filter((l) => l.trim() !== '');
     const rows: BulkRow[] = [];
 
@@ -268,6 +270,7 @@ function parseTsv(text: string, clients: Client[]): BulkRow[] {
         const deadline = parseDeadline(cols[2] ?? '');
         const raw_material_links = parseMaterialLinks(cols[3] ?? '');
         const clientName = cols[4] ?? '';
+        const editorName = cols[5] ?? '';
 
         if (!clientName || !development) continue;
 
@@ -275,9 +278,14 @@ function parseTsv(text: string, clients: Client[]): BulkRow[] {
             (c) => c.name.toLowerCase() === clientName.toLowerCase(),
         ) ?? null;
 
+        const matchedEditor = editorName
+            ? (editors.find((e) => e.name.toLowerCase() === editorName.toLowerCase()) ?? null)
+            : null;
+
         let error: string | null = null;
         if (!matchedClient) error = `Cliente "${clientName}" no encontrado`;
         else if (raw_material_links.length === 0) error = 'Material referencia requerido';
+        else if (editorName && !matchedEditor) error = `Editor "${editorName}" no encontrado`;
         else {
             const invalidLink = raw_material_links.find((link) => !isValidUrl(link));
             if (invalidLink) error = `URL inválida: "${invalidLink}"`;
@@ -290,6 +298,8 @@ function parseTsv(text: string, clients: Client[]): BulkRow[] {
             brief_notes,
             deadline,
             raw_material_links,
+            assigned_editor_id: matchedEditor?.id ?? null,
+            editorName,
             error,
         });
     }
@@ -297,7 +307,7 @@ function parseTsv(text: string, clients: Client[]): BulkRow[] {
     return rows;
 }
 
-function parseSpreadsheetFile(file: File, clients: Client[]): Promise<BulkRow[]> {
+function parseSpreadsheetFile(file: File, clients: Client[], editors: Editor[]): Promise<BulkRow[]> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         const isCsv = file.name.toLowerCase().endsWith('.csv');
@@ -312,7 +322,7 @@ function parseSpreadsheetFile(file: File, clients: Client[]): Promise<BulkRow[]>
                 }
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const raw = XLSX.utils.sheet_to_csv(sheet, { FS: '\t' });
-                resolve(parseTsv(raw, clients));
+                resolve(parseTsv(raw, clients, editors));
             } catch {
                 reject(new Error('No se pudo leer el archivo. Verificá que sea .xlsx o .csv válido.'));
             }
@@ -335,7 +345,8 @@ function downloadExampleCsv() {
             'Usar música trending, evitar texto en pantalla',
             '15/07/2025',
             'https://drive.google.com/file/d/ejemplo',
-            'Café Gourmet',
+            'Aura Natural',
+            'Felipe',
         ],
     ];
     const csv = rows.map((r) => r.map(esc).join(',')).join('\n');
@@ -349,14 +360,16 @@ function downloadExampleCsv() {
 }
 
 const TEMPLATE_EXAMPLE =
-    'Mostrar proceso del producto y persona disfrutándolo\tUsar música trending, evitar texto en pantalla\t15/07/2025\thttps://drive.google.com/file/d/ejemplo\tCafé Gourmet';
+    'Mostrar proceso del producto y persona disfrutándolo\tUsar música trending, evitar texto en pantalla\t15/07/2025\thttps://drive.google.com/file/d/ejemplo\tAura Natural\tFelipe';
 
 function BulkImportModal({
     clients,
+    editors,
     open,
     onClose,
 }: {
     clients: Client[];
+    editors: Editor[];
     open: boolean;
     onClose: () => void;
 }) {
@@ -385,7 +398,7 @@ function BulkImportModal({
         if (!file) return;
         setFileError(null);
         try {
-            const parsed = await parseSpreadsheetFile(file, clients);
+            const parsed = await parseSpreadsheetFile(file, clients, editors);
             if (parsed.length === 0) {
                 setFileError('El archivo no tiene filas con datos válidos.');
                 return;
@@ -400,7 +413,7 @@ function BulkImportModal({
 
     function handleParse() {
         setPasteError(null);
-        const parsed = parseTsv(rawText, clients);
+        const parsed = parseTsv(rawText, clients, editors);
         if (parsed.length === 0) {
             setPasteError('No se encontraron filas con datos válidos. Verificá el formato.');
             return;
@@ -417,6 +430,7 @@ function BulkImportModal({
             brief_notes: r.brief_notes || null,
             deadline: r.deadline || null,
             raw_material_links: r.raw_material_links,
+            assigned_editor_id: r.assigned_editor_id || null,
         }));
 
         setSubmitting(true);
@@ -1540,6 +1554,7 @@ export default function PmDashboard({
 
             <BulkImportModal
                 clients={clients}
+                editors={editors}
                 open={bulkOpen}
                 onClose={() => setBulkOpen(false)}
             />
