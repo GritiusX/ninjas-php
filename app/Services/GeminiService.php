@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\AiGlobalContext;
 use App\Models\ContentPiece;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class GeminiService
@@ -52,13 +52,12 @@ class GeminiService
 
     private function getBrandContext(ContentPiece $piece): string
     {
-        $client = $piece->client;
+        $global   = AiGlobalContext::get();
+        $specific = $piece->client?->ai_context ?? '';
 
-        if ($client && $client->context_path && Storage::exists($client->context_path)) {
-            return Storage::get($client->context_path);
-        }
+        $parts = array_filter([$global, $specific]);
 
-        return $client ? "Cliente: {$client->name}" : '';
+        return implode("\n\n---\n\n", $parts) ?: ($piece->client ? "Cliente: {$piece->client->name}" : '');
     }
 
     private function buildSystemInstruction(string $brandContext): string
@@ -82,12 +81,16 @@ PROMPT;
 
     private function buildUserPrompt(ContentPiece $piece): string
     {
+        $development = $piece->development
+            ? "Desarrollo del contenido: {$piece->development}\n"
+            : '';
+
         return <<<PROMPT
 Generá 3 variantes de copy para el siguiente ad:
 
 Objetivo: {$piece->objective}
 Hook visual del video: {$piece->hook}
-CTA: {$piece->cta}
+{$development}CTA: {$piece->cta}
 Categoría: {$piece->category}
 
 Respondé SOLO con este JSON (sin markdown, sin explicaciones):

@@ -13,6 +13,7 @@ class Client extends Model
         'contact_name',
         'contact_email',
         'context_path',
+        'ai_context',
         'whatsapp_number',
         'roas_goal',
         'meta_ad_account_id',

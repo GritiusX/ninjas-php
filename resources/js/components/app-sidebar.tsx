@@ -1,5 +1,5 @@
 ﻿import { Link, usePage } from '@inertiajs/react';
-import { BarChart3, Bell, Film, LayoutGrid, Settings, Shield, Users } from 'lucide-react';
+import { BarChart3, Bell, Film, LayoutGrid, Settings, Shield, Sparkles, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -51,6 +51,7 @@ function useNavItems(): NavItem[] {
             { title: 'Clientes', href: adminClientRoutes.index(), icon: Film },
             { title: 'Accesos / Matriz', href: adminRoutes.matrix(), icon: Shield },
             { title: 'Alertas', href: '/admin/alerts', icon: Bell },
+            { title: 'Contexto IA', href: '/admin/ai-context', icon: Sparkles },
         );
     }
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccessController;
+use App\Http\Controllers\Admin\AiContextController;
 use App\Http\Controllers\Admin\AlertConfigController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\ClientAdminController;
@@ -115,6 +116,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/audit', [AuditController::class, 'index'])->name('audit');
     Route::get('/alerts', [AlertConfigController::class, 'index'])->name('alerts.index');
     Route::put('/alerts/{alertConfig}', [AlertConfigController::class, 'update'])->name('alerts.update');
+    Route::get('/ai-context', [AiContextController::class, 'index'])->name('ai-context.index');
+    Route::post('/ai-context/global', [AiContextController::class, 'updateGlobal'])->name('ai-context.global');
+    Route::patch('/ai-context/client/{client}', [AiContextController::class, 'updateClient'])->name('ai-context.client');
 });
 
 // --- Revisión pública del cliente (sin auth) ---
