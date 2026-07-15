@@ -1,6 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
 import { CheckCircle2, ChevronRight, Clock, ClipboardList } from 'lucide-react';
-import { PriorityBadge } from '@/components/priority-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ContentPiece } from '@/types';
@@ -50,7 +49,6 @@ export default function ReviewList({ pieces }: { pieces: ContentPiece[] }) {
                                                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                                                     {piece.client?.name}
                                                 </span>
-                                                <PriorityBadge priority={piece.priority} />
                                             </div>
 
                                             <p className="font-medium text-foreground truncate">

@@ -1,7 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Check, Download, Pencil, UserCheck, X } from 'lucide-react';
 import { useState } from 'react';
-import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -259,7 +258,7 @@ export default function PmTabla({ pieces, clients, editors }: Props) {
         const sa = STATUS_ORDER[a.status] ?? 99;
         const sb = STATUS_ORDER[b.status] ?? 99;
         if (sa !== sb) return sa - sb;
-        return a.priority - b.priority;
+        return new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime();
     });
 
     return (

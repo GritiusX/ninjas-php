@@ -1,7 +1,6 @@
 ﻿import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ExternalLink, Link2, Send, Target, BookOpen, MessageSquare, Megaphone, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -160,7 +159,6 @@ export default function EditorTask({ piece }: Props) {
                         </div>
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                             <StatusBadge status={piece.status} />
-                            <PriorityBadge priority={piece.priority} />
                             {deadline && (
                                 <span className={`flex items-center gap-1 text-xs font-medium ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}>
                                     <Clock className="h-3.5 w-3.5" />

@@ -16,7 +16,6 @@ import {
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-review-link';
-import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -221,7 +220,6 @@ export default function ReviewRoom({ piece }: Props) {
                             {piece.client?.name}
                         </h1>
                         <StatusBadge status={piece.status} />
-                        <PriorityBadge priority={piece.priority} />
                         {piece.editor && (
                             <span className="text-sm text-muted-foreground">por {piece.editor.name}</span>
                         )}

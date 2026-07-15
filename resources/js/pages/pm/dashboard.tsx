@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CopyPublicReviewLink } from '@/components/copy-public-review-link';
-import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -952,7 +951,6 @@ function BriefCard({
                                     {piece.client?.name}
                                 </span>
                                 <StatusBadge status={piece.status} />
-                                <PriorityBadge priority={piece.priority} />
                                 {deadline && (
                                     <span
                                         className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}
@@ -1109,7 +1107,6 @@ function ReviewCard({ piece }: { piece: ContentPiece }) {
                             <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 {piece.client?.name}
                             </span>
-                            <PriorityBadge priority={piece.priority} />
                             {deadline && (
                                 <span
                                     className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}
@@ -1333,7 +1330,6 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                                 <span className="text-xs font-semibold tracking-wide text-green-800 uppercase dark:text-green-400">
                                     {piece.client?.name}
                                 </span>
-                                <PriorityBadge priority={piece.priority} />
                             </div>
                             <p className="truncate font-medium text-foreground">
                                 {piece.concept ?? piece.product ?? 'Sin concepto'}

@@ -2,7 +2,6 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, ChevronRight, Clock, ExternalLink, Filter, PauseCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -150,7 +149,6 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
                                     {piece.client?.name}
                                 </span>
                                 <StatusBadge status={piece.status} />
-                                <PriorityBadge priority={piece.priority} />
                                 {deadline && (
                                     <span className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}>
                                         <Clock className="h-3 w-3" />
