@@ -63,6 +63,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::get('/review', [ReviewController::class, 'index'])->name('review.index');
     Route::get('/review/{piece}', [ReviewController::class, 'show'])->name('review.show');
     Route::post('/review/{piece}/generate-copy', [ReviewController::class, 'generateCopy'])->name('review.generate-copy');
+    Route::patch('/review/{piece}/copy', [ReviewController::class, 'updateCopy'])->name('review.update-copy');
     Route::post('/review/{piece}/approve', [ReviewController::class, 'approve'])->name('review.approve');
     Route::post('/review/{piece}/request-changes', [ReviewController::class, 'requestChanges'])->name('review.request-changes');
     Route::post('/review/{piece}/approve-client', [ReviewController::class, 'approveClientRevision'])->name('review.approve-client');

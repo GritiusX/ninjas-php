@@ -22,6 +22,10 @@ class GeminiService
 
     public function generateCopy(ContentPiece $piece): array
     {
+        if (empty($this->apiKey)) {
+            return $this->sampleCopy($piece);
+        }
+
         $brandContext = $this->getBrandContext($piece);
         $systemInstruction = $this->buildSystemInstruction($brandContext);
         $userPrompt = $this->buildUserPrompt($piece);
@@ -48,6 +52,18 @@ class GeminiService
         $raw = $response->json('candidates.0.content.parts.0.text', '');
 
         return $this->parseResponse($raw);
+    }
+
+    private function sampleCopy(ContentPiece $piece): array
+    {
+        $cliente = $piece->client?->name ?? 'la marca';
+        $cta     = $piece->cta ?? '¡Conocé más!';
+
+        return [
+            'directo'      => "¿Buscás lo mejor de {$cliente}? Este producto es exactamente lo que necesitás. {$cta}",
+            'storytelling' => "Había un problema que muchos tenían... hasta que {$cliente} lo resolvió. Hoy queremos mostrarte cómo. {$cta}",
+            'educativo'    => "¿Sabías que podés mejorar tu rutina con {$cliente}? Te explicamos por qué vale la pena. {$cta}",
+        ];
     }
 
     private function getBrandContext(ContentPiece $piece): string

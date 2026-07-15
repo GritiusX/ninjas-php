@@ -9,11 +9,12 @@ import {
     Loader2,
     MessageCircle,
     MessageSquare,
+    Save,
     Sparkles,
     ThumbsUp,
     XCircle,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-review-link';
 import { StatusBadge } from '@/components/status-badge';
@@ -42,22 +43,58 @@ function buildWhatsAppUrl(piece: ContentPiece): string {
 
 // ─── Copy panel ──────────────────────────────────────────────────────────────
 
+type CopyVariants = { directo: string; storytelling: string; educativo: string };
+
 function CopyPanel({ piece }: { piece: ContentPiece }) {
     const [generating, setGenerating] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [savedOk, setSavedOk] = useState(false);
+    const [drafts, setDrafts] = useState<CopyVariants>(() => ({
+        directo:      piece.generated_copy?.directo      ?? '',
+        storytelling: piece.generated_copy?.storytelling ?? '',
+        educativo:    piece.generated_copy?.educativo    ?? '',
+    }));
+    const isDirty = useRef(false);
+
+    // Sync when server refreshes generated_copy (e.g. after generate)
+    useEffect(() => {
+        if (!piece.generated_copy) return;
+        setDrafts({
+            directo:      piece.generated_copy.directo,
+            storytelling: piece.generated_copy.storytelling,
+            educativo:    piece.generated_copy.educativo,
+        });
+        isDirty.current = false;
+    }, [piece.generated_copy]);
 
     function generate() {
         setGenerating(true);
-        router.post(
-            reviewRoutes.generateCopy.url(piece.id),
-            {},
-            {
-                onFinish: () => setGenerating(false),
-                preserveScroll: true,
-            },
-        );
+        router.post(reviewRoutes.generateCopy.url(piece.id), {}, {
+            onFinish: () => setGenerating(false),
+            preserveScroll: true,
+        });
     }
 
-    const copy = piece.generated_copy;
+    function saveCopy() {
+        setSaving(true);
+        router.patch(`/pm/review/${piece.id}/copy`, drafts, {
+            preserveScroll: true,
+            onSuccess: () => {
+                isDirty.current = false;
+                setSavedOk(true);
+                setTimeout(() => setSavedOk(false), 2000);
+            },
+            onFinish: () => setSaving(false),
+        });
+    }
+
+    function updateDraft(variant: keyof CopyVariants, value: string) {
+        isDirty.current = true;
+        setDrafts((prev) => ({ ...prev, [variant]: value }));
+    }
+
+    const hasCopy = !!piece.generated_copy;
+    const hasEdits = isDirty.current;
 
     return (
         <div className="space-y-4">
@@ -65,7 +102,7 @@ function CopyPanel({ piece }: { piece: ContentPiece }) {
                 <h3 className="font-semibold text-foreground">Copy generado</h3>
                 <Button
                     size="sm"
-                    variant={copy ? 'outline' : 'default'}
+                    variant={hasCopy ? 'outline' : 'default'}
                     onClick={generate}
                     disabled={generating}
                 >
@@ -74,29 +111,56 @@ function CopyPanel({ piece }: { piece: ContentPiece }) {
                     ) : (
                         <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                     )}
-                    {copy ? 'Regenerar' : 'Generar con IA'}
+                    {hasCopy ? 'Regenerar' : 'Generar con IA'}
                 </Button>
             </div>
 
-            {!copy && !generating && (
+            {!hasCopy && !generating && (
                 <div className="rounded-lg border border-dashed border-border p-6 text-center">
                     <Sparkles className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
-                        Hacé clic en "Generar con IA" para crear 3 variantes de copy con Gemini.
+                        Hacé clic en "Generar con IA" para crear 3 variantes de copy.
                     </p>
                 </div>
             )}
 
-            {copy && (
+            {hasCopy && (
                 <div className="space-y-3">
                     {(['directo', 'storytelling', 'educativo'] as const).map((variant) => (
                         <div key={variant} className="rounded-lg bg-muted border border-border p-4">
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 capitalize">
                                 {variant}
                             </p>
-                            <p className="text-sm text-foreground leading-relaxed">{copy[variant]}</p>
+                            <textarea
+                                className="w-full bg-transparent text-sm text-foreground leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 py-0.5 min-h-[60px]"
+                                value={drafts[variant]}
+                                onChange={(e) => updateDraft(variant, e.target.value)}
+                                rows={3}
+                            />
                         </div>
                     ))}
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                        {savedOk && (
+                            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Guardado
+                            </span>
+                        )}
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={saveCopy}
+                            disabled={saving}
+                        >
+                            {saving ? (
+                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                                <Save className="mr-1.5 h-3.5 w-3.5" />
+                            )}
+                            Guardar cambios
+                        </Button>
+                    </div>
                 </div>
             )}
         </div>
