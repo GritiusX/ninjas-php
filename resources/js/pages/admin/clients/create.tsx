@@ -27,7 +27,7 @@ export default function ClientCreate() {
                     <CardContent className="pt-5">
                         <form onSubmit={submit} className="space-y-4">
                             <Field label="Nombre *" error={errors.name}>
-                                <Input value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Café Gourmet BA" autoFocus />
+                                <Input value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Ej: Aura Natural" autoFocus />
                             </Field>
                             <div className="pt-1 pb-0.5">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contacto del responsable</p>
