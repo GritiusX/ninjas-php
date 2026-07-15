@@ -33,6 +33,27 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->report(function (Throwable $exception) use (&$exceptions): void {
+            // No loguear excepciones HTTP esperadas (404, 403, etc.)
+            if ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                return;
+            }
+
+            $request = request();
+
+            \Illuminate\Support\Facades\Log::channel('errors')->error($exception->getMessage(), [
+                'exception' => get_class($exception),
+                'file'      => $exception->getFile() . ':' . $exception->getLine(),
+                'url'       => $request->fullUrl(),
+                'method'    => $request->method(),
+                'user_id'   => $request->user()?->id,
+                'user'      => $request->user()?->name,
+                'trace'     => collect(explode("\n", $exception->getTraceAsString()))
+                    ->take(15)
+                    ->implode("\n"),
+            ]);
+        });
+
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, Throwable $exception, Request $request) {
             $status = $response->getStatusCode();
 
