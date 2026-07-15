@@ -56,6 +56,19 @@ class ReviewController extends Controller
         }
     }
 
+    public function updateCopy(Request $request, ContentPiece $piece): RedirectResponse
+    {
+        $data = $request->validate([
+            'directo'      => ['required', 'string', 'max:1000'],
+            'storytelling' => ['required', 'string', 'max:1000'],
+            'educativo'    => ['required', 'string', 'max:1000'],
+        ]);
+
+        $piece->update(['generated_copy' => $data]);
+
+        return back()->with('success', 'Copy guardado.');
+    }
+
     public function approve(Request $request, ContentPiece $piece): RedirectResponse
     {
         $piece->load('client');
