@@ -89,13 +89,9 @@ class ReviewController extends Controller
         $piece->refresh();
         $piece->update(['status' => ContentPiece::STATUS_CLIENT_REVIEW]);
 
-        $sent = $this->whatsapp->sendClientApprovalMessage($piece);
+        $this->whatsapp->sendClientApprovalMessage($piece);
 
-        $msg = $sent
-            ? 'Pieza aprobada y enviada al cliente por WhatsApp.'
-            : 'Pieza aprobada. Link de revisión generado (WhatsApp no configurado).';
-
-        return redirect()->route('pm.dashboard')->with('success', $msg);
+        return redirect()->route('pm.review.show', $piece)->with('approved', true);
     }
 
     public function requestChanges(Request $request, ContentPiece $piece): RedirectResponse

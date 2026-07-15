@@ -1,8 +1,9 @@
-﻿import { Head, Link, router, useForm } from '@inertiajs/react';
+﻿import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
     ArrowLeft,
     CheckCircle2,
+    Copy,
     ExternalLink,
     Info,
     Loader2,
@@ -12,7 +13,8 @@ import {
     ThumbsUp,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Input } from '@/components/ui/input';
 import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-review-link';
 import { PriorityBadge } from '@/components/priority-badge';
 import { StatusBadge } from '@/components/status-badge';
@@ -163,14 +165,38 @@ function RequestChangesModal({
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function ReviewRoom({ piece }: Props) {
+    const { flash } = usePage<{ flash: { approved?: boolean } }>().props;
     const [changesOpen, setChangesOpen] = useState(false);
-    const [noNumberOpen, setNoNumberOpen] = useState(false);
+    const [approvedOpen, setApprovedOpen] = useState(false);
     const [selectedCopy, setSelectedCopy] = useState<'directo' | 'storytelling' | 'educativo' | null>(null);
+    const [whatsappInput, setWhatsappInput] = useState('');
+    const [whatsappSaving, setWhatsappSaving] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        if (flash?.approved) setApprovedOpen(true);
+    }, [flash?.approved]);
 
     function approve() {
         router.post(reviewRoutes.approve.url(piece.id), { selected_copy: selectedCopy });
     }
 
+    function saveWhatsapp() {
+        if (!whatsappInput.trim() || !piece.client) return;
+        setWhatsappSaving(true);
+        router.patch(`/pm/client/${piece.client.id}/whatsapp`, { whatsapp_number: whatsappInput }, {
+            onFinish: () => setWhatsappSaving(false),
+        });
+    }
+
+    function copyLink() {
+        if (!piece.review_token) return;
+        navigator.clipboard.writeText(publicReviewUrl(piece.review_token));
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }
+
+    const hasWhatsapp = !!piece.client?.whatsapp_number;
     const canApprove = piece.status === 'INTERNAL_REVIEW';
     const canRequestChanges = piece.status === 'INTERNAL_REVIEW';
 
@@ -204,21 +230,13 @@ export default function ReviewRoom({ piece }: Props) {
                     {piece.client && (
                         <div className="flex items-center gap-2">
                             <CopyPublicReviewLink token={piece.review_token} variant="button" />
-                            {piece.client.whatsapp_number ? (
+                            {hasWhatsapp && piece.review_token && (
                                 <a href={buildWhatsAppUrl(piece)} target="_blank" rel="noopener noreferrer">
                                     <Button className="bg-green-600 hover:bg-green-500 text-white gap-2">
                                         <MessageCircle className="h-4 w-4" />
                                         Contactar cliente
                                     </Button>
                                 </a>
-                            ) : (
-                                <Button
-                                    className="bg-green-600 hover:bg-green-500 text-white gap-2"
-                                    onClick={() => setNoNumberOpen(true)}
-                                >
-                                    <MessageCircle className="h-4 w-4" />
-                                    Contactar cliente
-                                </Button>
                             )}
                         </div>
                     )}
@@ -394,25 +412,74 @@ export default function ReviewRoom({ piece }: Props) {
                 onClose={() => setChangesOpen(false)}
             />
 
-            <Dialog open={noNumberOpen} onOpenChange={setNoNumberOpen}>
+            <Dialog open={approvedOpen} onOpenChange={setApprovedOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            <MessageCircle className="h-5 w-5 text-green-500" />
-                            Número de WhatsApp no configurado
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            Pieza aprobada — lista para el cliente
                         </DialogTitle>
                     </DialogHeader>
-                    <p className="text-sm text-muted-foreground">
-                        El cliente <strong className="text-foreground">{piece.client?.name}</strong> no tiene un número de WhatsApp cargado. Agregalo en la configuración del cliente.
-                    </p>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setNoNumberOpen(false)}>
-                            Cancelar
-                        </Button>
-                        <Link href={`/admin/clients/${piece.client?.id}/edit?highlight=whatsapp`}>
-                            <Button className="bg-green-600 hover:bg-green-500 text-white">
-                                Cargar número
-                            </Button>
+
+                    <div className="space-y-4">
+                        {/* Link de revisión */}
+                        {piece.review_token && (
+                            <div className="space-y-1.5">
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Link de revisión para el cliente</p>
+                                <div className="flex items-center gap-2">
+                                    <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs text-foreground">
+                                        {publicReviewUrl(piece.review_token)}
+                                    </code>
+                                    <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={copyLink}>
+                                        {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* WhatsApp */}
+                        {piece.client?.whatsapp_number ? (
+                            <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-3 space-y-2">
+                                <p className="text-xs font-medium text-green-400 flex items-center gap-1.5">
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                    WhatsApp enviado a {piece.client.whatsapp_number}
+                                </p>
+                                {piece.review_token && (
+                                    <a href={buildWhatsAppUrl(piece)} target="_blank" rel="noopener noreferrer"
+                                        className="text-xs text-green-400 hover:text-green-300 underline">
+                                        Reenviar mensaje manualmente →
+                                    </a>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                    El cliente no tiene número de WhatsApp. Agregalo para poder contactarlo directamente.
+                                </p>
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="+54 9 11 1234-5678"
+                                        value={whatsappInput}
+                                        onChange={(e) => setWhatsappInput(e.target.value)}
+                                        className="text-sm"
+                                    />
+                                    <Button
+                                        size="sm"
+                                        disabled={!whatsappInput.trim() || whatsappSaving}
+                                        onClick={saveWhatsapp}
+                                        className="shrink-0"
+                                    >
+                                        {whatsappSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Guardar'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setApprovedOpen(false)}>Cerrar</Button>
+                        <Link href="/pm">
+                            <Button>Ir al dashboard</Button>
                         </Link>
                     </DialogFooter>
                 </DialogContent>

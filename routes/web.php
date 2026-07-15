@@ -66,6 +66,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::post('/review/{piece}/approve-client', [ReviewController::class, 'approveClientRevision'])->name('review.approve-client');
     Route::post('/review/{piece}/notify-editor', [ReviewController::class, 'notifyEditor'])->name('review.notify-editor');
     Route::get('/review/{piece}/stream-video', [VideoStreamController::class, 'stream'])->name('review.stream-video');
+    Route::patch('/client/{client}/whatsapp', [\App\Http\Controllers\PM\ClientWhatsAppController::class, 'update'])->name('client.whatsapp.update');
 
     // Metricool scheduling
     Route::get('/pieces/{piece}/metricool-networks', [MetricoolScheduleController::class, 'networks'])->name('pieces.metricool-networks');
