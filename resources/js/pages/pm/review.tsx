@@ -108,6 +108,13 @@ function CopyPanel({
     const [generating, setGenerating] = useState(false);
     const [saving, setSaving] = useState(false);
     const [savedOk, setSavedOk] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+
+    useEffect(() => {
+        if (cooldown <= 0) return;
+        const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+        return () => clearTimeout(t);
+    }, [cooldown]);
     const [drafts, setDrafts] = useState<CopyVariants>(() => ({
         directo:      piece.generated_copy?.directo      ?? '',
         storytelling: piece.generated_copy?.storytelling ?? '',
@@ -128,7 +135,11 @@ function CopyPanel({
     function generate() {
         setGenerating(true);
         router.post(reviewRoutes.generateCopy.url(piece.id), {}, {
-            onFinish: () => setGenerating(false),
+            onFinish: (page) => {
+                setGenerating(false);
+                const flash = (page.props as { flash?: { error?: string } }).flash;
+                if (flash?.error?.includes('Límite de requests')) setCooldown(60);
+            },
             preserveScroll: true,
         });
     }
@@ -171,15 +182,15 @@ function CopyPanel({
                     size="sm"
                     variant={hasCopy ? 'outline' : 'default'}
                     onClick={generate}
-                    disabled={generating || overLimit}
-                    title={overLimit ? 'Límite mensual de tokens alcanzado' : undefined}
+                    disabled={generating || overLimit || cooldown > 0}
+                    title={overLimit ? 'Límite mensual de tokens alcanzado' : cooldown > 0 ? `Esperá ${cooldown}s` : undefined}
                 >
                     {generating ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                     ) : (
                         <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                     )}
-                    {hasCopy ? 'Regenerar' : 'Generar con IA'}
+                    {cooldown > 0 ? `Esperá ${cooldown}s` : hasCopy ? 'Regenerar' : 'Generar con IA'}
                 </Button>
             </div>
 

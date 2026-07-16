@@ -48,6 +48,10 @@ class GeminiService
             ],
         ]);
 
+        if ($response->status() === 429) {
+            throw new RuntimeException('Límite de requests de Gemini alcanzado. Esperá 1 minuto y volvé a intentar.');
+        }
+
         if ($response->failed()) {
             throw new RuntimeException('Error al conectar con Gemini: '.$response->status());
         }
