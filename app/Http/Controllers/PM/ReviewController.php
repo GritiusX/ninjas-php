@@ -5,6 +5,7 @@ namespace App\Http\Controllers\PM;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ContentPiece;
+use App\Models\GeminiUsage;
 use App\Models\User;
 use App\Services\GeminiService;
 use App\Services\GoogleDriveService;
@@ -40,7 +41,16 @@ class ReviewController extends Controller
     {
         $piece->load('client', 'editor');
 
-        return Inertia::render('pm/review', ['piece' => $piece]);
+        $monthlyTokenLimit = (int) config('services.gemini.monthly_token_limit', 1_000_000);
+
+        return Inertia::render('pm/review', [
+            'piece'        => $piece,
+            'geminiUsage'  => [
+                'monthly_tokens'  => GeminiUsage::monthlyTotal(),
+                'monthly_limit'   => $monthlyTokenLimit,
+                'piece_generates' => GeminiUsage::pieceCount($piece->id),
+            ],
+        ]);
     }
 
     public function generateCopy(Request $request, ContentPiece $piece): RedirectResponse
@@ -48,10 +58,25 @@ class ReviewController extends Controller
         $piece->load('client');
 
         try {
-            $copy = $this->gemini->generateCopy($piece);
+            $result     = $this->gemini->generateCopy($piece);
+            $tokensUsed = $result['tokens_used'];
+            $copy       = array_diff_key($result, ['tokens_used' => true]);
+
             $piece->update(['generated_copy' => $copy]);
 
-            return back()->with('success', 'Copy generado correctamente.');
+            if ($tokensUsed > 0) {
+                GeminiUsage::create([
+                    'user_id'          => $request->user()->id,
+                    'content_piece_id' => $piece->id,
+                    'tokens_used'      => $tokensUsed,
+                ]);
+            }
+
+            $msg = $tokensUsed > 0
+                ? "Copy generado correctamente. ({$tokensUsed} tokens usados)"
+                : 'Copy generado correctamente.';
+
+            return back()->with('success', $msg);
         } catch (RuntimeException $e) {
             Log::channel('errors')->error($e->getMessage(), [
                 'url'       => request()->fullUrl(),

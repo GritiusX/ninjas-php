@@ -26,7 +26,13 @@ import * as pmRoutes from '@/routes/pm';
 import * as reviewRoutes from '@/routes/pm/review';
 import type { ContentPiece } from '@/types';
 
-type Props = { piece: ContentPiece };
+type GeminiUsage = {
+    monthly_tokens: number;
+    monthly_limit: number;
+    piece_generates: number;
+};
+
+type Props = { piece: ContentPiece; geminiUsage: GeminiUsage };
 
 // ─── WhatsApp ────────────────────────────────────────────────────────────────
 
@@ -56,14 +62,48 @@ const COPY_LABELS: Record<CopyKey, string> = {
     educativo: 'Educativo',
 };
 
+function TokenUsageBar({ usage }: { usage: GeminiUsage }) {
+    const pct = Math.min((usage.monthly_tokens / usage.monthly_limit) * 100, 100);
+    const color = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-orange-400' : 'bg-blue-500';
+    const fmt = (n: number) => n >= 1_000_000
+        ? `${(n / 1_000_000).toFixed(2)}M`
+        : n >= 1_000
+        ? `${(n / 1_000).toFixed(1)}k`
+        : `${n}`;
+
+    return (
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-foreground">Tokens IA este mes</span>
+                <span className="text-muted-foreground tabular-nums">
+                    {fmt(usage.monthly_tokens)} / {fmt(usage.monthly_limit)}
+                </span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
+                <div
+                    className={`h-full rounded-full transition-all ${color}`}
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+            {pct >= 90 && (
+                <p className="text-xs text-red-500 font-medium">
+                    Límite casi alcanzado. Usá el botón de generar solo cuando sea necesario.
+                </p>
+            )}
+        </div>
+    );
+}
+
 function CopyPanel({
     piece,
     selectedCopy,
     setSelectedCopy,
+    geminiUsage,
 }: {
     piece: ContentPiece;
     selectedCopy: CopyKey | null;
     setSelectedCopy: (v: CopyKey | null) => void;
+    geminiUsage: GeminiUsage;
 }) {
     const [generating, setGenerating] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -112,16 +152,27 @@ function CopyPanel({
     }
 
     const hasCopy = !!piece.generated_copy;
+    const overLimit = geminiUsage.monthly_tokens >= geminiUsage.monthly_limit;
 
     return (
         <div className="space-y-4">
+            <TokenUsageBar usage={geminiUsage} />
+
             <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">Copy generado</h3>
+                <div>
+                    <h3 className="font-semibold text-foreground">Copy generado</h3>
+                    {geminiUsage.piece_generates > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Generado {geminiUsage.piece_generates} {geminiUsage.piece_generates === 1 ? 'vez' : 'veces'} este mes
+                        </p>
+                    )}
+                </div>
                 <Button
                     size="sm"
                     variant={hasCopy ? 'outline' : 'default'}
                     onClick={generate}
-                    disabled={generating}
+                    disabled={generating || overLimit}
+                    title={overLimit ? 'Límite mensual de tokens alcanzado' : undefined}
                 >
                     {generating ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -265,7 +316,7 @@ function RequestChangesModal({
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function ReviewRoom({ piece }: Props) {
+export default function ReviewRoom({ piece, geminiUsage }: Props) {
     const { flash } = usePage<{ flash: { approved?: boolean } }>().props;
     const [changesOpen, setChangesOpen] = useState(false);
     const [approvedOpen, setApprovedOpen] = useState(false);
@@ -417,6 +468,7 @@ export default function ReviewRoom({ piece }: Props) {
                                     piece={piece}
                                     selectedCopy={selectedCopy}
                                     setSelectedCopy={setSelectedCopy}
+                                    geminiUsage={geminiUsage}
                                 />
                             </CardContent>
                         </Card>

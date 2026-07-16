@@ -20,10 +20,13 @@ class GeminiService
         $this->endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
     }
 
+    /**
+     * @return array{ directo: string, storytelling: string, educativo: string, tokens_used: int }
+     */
     public function generateCopy(ContentPiece $piece): array
     {
         if (empty($this->apiKey)) {
-            return $this->sampleCopy($piece);
+            return array_merge($this->sampleCopy($piece), ['tokens_used' => 0]);
         }
 
         $brandContext = $this->getBrandContext($piece);
@@ -49,9 +52,10 @@ class GeminiService
             throw new RuntimeException('Error al conectar con Gemini: '.$response->status());
         }
 
-        $raw = $response->json('candidates.0.content.parts.0.text', '');
+        $raw        = $response->json('candidates.0.content.parts.0.text', '');
+        $tokensUsed = $response->json('usageMetadata.totalTokenCount', 0);
 
-        return $this->parseResponse($raw);
+        return array_merge($this->parseResponse($raw), ['tokens_used' => (int) $tokensUsed]);
     }
 
     private function sampleCopy(ContentPiece $piece): array
