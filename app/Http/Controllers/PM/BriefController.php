@@ -23,7 +23,6 @@ class BriefController extends Controller
 
         ContentPiece::create([
             'client_id'          => $data['client_id'],
-            'concept'            => $data['development'],
             'development'        => $data['development'],
             'brief_notes'        => $data['brief_notes'] ?? null,
             'deadline'           => $data['deadline'] ?? null,
