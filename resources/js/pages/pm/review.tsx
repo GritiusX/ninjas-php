@@ -105,10 +105,15 @@ function CopyPanel({
     setSelectedCopy: (v: CopyKey | null) => void;
     geminiUsage: GeminiUsage;
 }) {
+    const { flash } = usePage<{ flash: { error?: string } }>().props;
     const [generating, setGenerating] = useState(false);
     const [saving, setSaving] = useState(false);
     const [savedOk, setSavedOk] = useState(false);
     const [cooldown, setCooldown] = useState(0);
+
+    useEffect(() => {
+        if (flash?.error?.includes('Límite de requests')) setCooldown(60);
+    }, [flash]);
 
     useEffect(() => {
         if (cooldown <= 0) return;
@@ -135,11 +140,7 @@ function CopyPanel({
     function generate() {
         setGenerating(true);
         router.post(reviewRoutes.generateCopy.url(piece.id), {}, {
-            onFinish: (page) => {
-                setGenerating(false);
-                const flash = (page.props as { flash?: { error?: string } }).flash;
-                if (flash?.error?.includes('Límite de requests')) setCooldown(60);
-            },
+            onFinish: () => setGenerating(false),
             preserveScroll: true,
         });
     }
