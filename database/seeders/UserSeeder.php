@@ -11,14 +11,14 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $users = [
-            ['name' => 'Gonzalo',    'email' => 'gonzalo@littleninjas.com',    'role' => 'admin'],
-            ['name' => 'Giuseppe',   'email' => 'giuseppe@littleninjas.com',   'role' => 'admin'],
-            ['name' => 'Manuel',     'email' => 'manuel@littleninjas.com',     'role' => 'admin'],
-            ['name' => 'Felipe',     'email' => 'felipe@littleninjas.com',     'role' => 'editor'],
-            ['name' => 'Matias',     'email' => 'matias@littleninjas.com',     'role' => 'paid_pauta'],
-            ['name' => 'Santiago',   'email' => 'santiago@littleninjas.com',   'role' => 'paid_pauta'],
-            ['name' => 'Diseñadora', 'email' => 'disenadora@littleninjas.com', 'role' => 'diseño'],
-            ['name' => 'AM',         'email' => 'am@littleninjas.com',         'role' => 'redes'],
+            ['name' => 'Gonzalo',    'email' => 'gonzalo@littleninjas.com.ar',    'role' => 'admin'],
+            ['name' => 'Giuseppe',   'email' => 'giuseppe@littleninjas.com.ar',   'role' => 'admin'],
+            ['name' => 'Manuel',     'email' => 'manuel@littleninjas.com.ar',     'role' => 'admin'],
+            ['name' => 'Felipe',     'email' => 'felipe@littleninjas.com.ar',     'role' => 'editor'],
+            ['name' => 'Matias',     'email' => 'matias@littleninjas.com.ar',     'role' => 'paid_pauta'],
+            ['name' => 'Santiago',   'email' => 'santiago@littleninjas.com.ar',   'role' => 'paid_pauta'],
+            ['name' => 'Diseñadora', 'email' => 'disenadora@littleninjas.com.ar', 'role' => 'diseño'],
+            ['name' => 'AM',         'email' => 'am@littleninjas.com.ar',         'role' => 'redes'],
         ];
 
         foreach ($users as $u) {
