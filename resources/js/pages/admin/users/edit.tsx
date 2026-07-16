@@ -64,6 +64,10 @@ export default function UserEdit({ user }: { user: User }) {
                                         <SelectItem value="editor">Editor</SelectItem>
                                         <SelectItem value="pm">PM</SelectItem>
                                         <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="superadmin">Super Admin</SelectItem>
+                                        <SelectItem value="paid_pauta">Paid / Pauta</SelectItem>
+                                        <SelectItem value="diseño">Diseño</SelectItem>
+                                        <SelectItem value="redes">Redes</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </Field>

@@ -49,12 +49,16 @@ export default function UserCreate() {
                                 <Input type="password" value={data.password} onChange={(e) => setData('password', e.target.value)} placeholder="Mínimo 8 caracteres" />
                             </Field>
                             <Field label="Rol" error={errors.role}>
-                                <Select value={data.role} onValueChange={(v) => setData('role', v as 'editor' | 'pm' | 'admin')}>
+                                <Select value={data.role} onValueChange={(v) => setData('role', v)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="editor">Editor</SelectItem>
                                         <SelectItem value="pm">PM</SelectItem>
                                         <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="superadmin">Super Admin</SelectItem>
+                                        <SelectItem value="paid_pauta">Paid / Pauta</SelectItem>
+                                        <SelectItem value="diseño">Diseño</SelectItem>
+                                        <SelectItem value="redes">Redes</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </Field>

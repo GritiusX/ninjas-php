@@ -30,7 +30,7 @@ class UserAdminController extends Controller
             'name'             => ['required', 'string', 'max:120'],
             'email'            => ['required', 'email', 'unique:users'],
             'password'         => ['required', 'string', 'min:8'],
-            'role'             => ['required', 'in:editor,pm,admin,superadmin'],
+            'role'             => ['required', 'in:editor,pm,admin,superadmin,paid_pauta,diseño,redes'],
             'whatsapp_number'  => ['nullable', 'string', 'max:30'],
             'is_active'        => ['boolean'],
         ]);
@@ -52,7 +52,7 @@ class UserAdminController extends Controller
         $data = $request->validate([
             'name'             => ['required', 'string', 'max:120'],
             'email'            => ['required', 'email', 'unique:users,email,'.$user->id],
-            'role'             => ['required', 'in:editor,pm,admin,superadmin'],
+            'role'             => ['required', 'in:editor,pm,admin,superadmin,paid_pauta,diseño,redes'],
             'whatsapp_number'  => ['nullable', 'string', 'max:30'],
             'is_active'        => ['boolean'],
             'password'         => ['nullable', 'string', 'min:8'],
