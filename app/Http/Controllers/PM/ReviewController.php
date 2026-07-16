@@ -12,6 +12,7 @@ use App\Services\NotificationService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
@@ -52,6 +53,15 @@ class ReviewController extends Controller
 
             return back()->with('success', 'Copy generado correctamente.');
         } catch (RuntimeException $e) {
+            Log::channel('errors')->error($e->getMessage(), [
+                'url'       => request()->fullUrl(),
+                'method'    => 'POST',
+                'user'      => $request->user()?->email,
+                'piece_id'  => $piece->id,
+                'client'    => $piece->client?->name,
+                'exception' => get_class($e),
+            ]);
+
             return back()->with('error', $e->getMessage());
         }
     }

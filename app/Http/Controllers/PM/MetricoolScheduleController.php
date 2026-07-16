@@ -9,6 +9,7 @@ use App\Services\Metricool\MetricoolClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class MetricoolScheduleController extends Controller
@@ -90,6 +91,16 @@ class MetricoolScheduleController extends Controller
                 media:     $request->input('media', []),
             );
         } catch (RuntimeException $e) {
+            Log::channel('errors')->error($e->getMessage(), [
+                'url'       => $request->fullUrl(),
+                'method'    => 'POST',
+                'user'      => $request->user()?->email,
+                'piece_id'  => $piece->id,
+                'client'    => $piece->client?->name,
+                'blog_id'   => $blogId,
+                'exception' => get_class($e),
+            ]);
+
             return back()->with('error', $e->getMessage());
         }
 
