@@ -94,12 +94,6 @@
     <div class="client-name">{{ $piece->client?->name ?? '—' }}</div>
     <div class="concept">{{ $piece->concept ?? $piece->product ?? 'Sin concepto' }}</div>
     <div class="meta">
-        @php
-            $priorityLabel = match((int)$piece->priority) { 1 => 'Crítico', 2 => 'Alto', default => 'Medio' };
-            $priorityClass = 'priority-' . $piece->priority;
-        @endphp
-        <span class="badge {{ $priorityClass }}">{{ $priorityLabel }}</span>
-
         @if($piece->deadline)
             <span class="deadline-label">
                 Deadline: <span class="deadline-value">{{ \Carbon\Carbon::parse($piece->deadline)->format('d/m/Y') }}</span>

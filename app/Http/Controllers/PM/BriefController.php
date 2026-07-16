@@ -19,6 +19,7 @@ class BriefController extends Controller
             'deadline'             => ['nullable', 'date'],
             'raw_material_links'   => ['required', 'array', 'min:1', 'max:10'],
             'raw_material_links.*' => ['required', 'url', 'max:500'],
+            'assigned_editor_id'   => ['nullable', 'exists:users,id'],
         ]);
 
         ContentPiece::create([
@@ -27,6 +28,7 @@ class BriefController extends Controller
             'brief_notes'        => $data['brief_notes'] ?? null,
             'deadline'           => $data['deadline'] ?? null,
             'raw_material_links' => $data['raw_material_links'],
+            'assigned_editor_id' => $data['assigned_editor_id'] ?? null,
             'priority'           => ContentPiece::PRIORITY_MEDIUM,
             'status'             => ContentPiece::STATUS_BRIEF,
         ]);

@@ -124,7 +124,7 @@ function EditableRow({
                     {piece.client?.name}
                 </td>
                 <td className="px-3 py-2.5 text-sm text-foreground max-w-xs truncate">
-                    {piece.concept ?? piece.product ?? <span className="text-muted-foreground italic">Sin concepto</span>}
+                    {piece.development ?? piece.concept ?? piece.product ?? <span className="text-muted-foreground italic">Sin desarrollo</span>}
                 </td>
                 <td className="px-3 py-2.5">
                     <StatusBadge status={piece.status} />
@@ -319,7 +319,7 @@ export default function PmTabla({ pieces, clients, editors }: Props) {
                             <thead>
                                 <tr className="border-b border-border bg-muted/50">
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
-                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Concepto</th>
+                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Desarrollo</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Editor</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deadline</th>

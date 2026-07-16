@@ -21,7 +21,7 @@ class PmController extends Controller
             ->get();
 
         $clients = Client::orderBy('name')->get(['id', 'name']);
-        $editors = User::where('role', 'editor')->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        $editors = User::whereIn('role', ['editor', 'admin', 'superadmin'])->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('pm/tabla', [
             'pieces'  => $pieces,
@@ -57,7 +57,7 @@ class PmController extends Controller
             ->get();
 
         $clients = Client::orderBy('name')->get(['id', 'name']);
-        $editors = User::where('role', 'editor')->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        $editors = User::whereIn('role', ['editor', 'admin', 'superadmin'])->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('pm/dashboard', [
             'reviewQueue'   => $reviewQueue,

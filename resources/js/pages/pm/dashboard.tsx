@@ -643,10 +643,12 @@ function BulkImportModal({
 
 function NewBriefModal({
     clients,
+    editors,
     open,
     onClose,
 }: {
     clients: Client[];
+    editors: Editor[];
     open: boolean;
     onClose: () => void;
 }) {
@@ -656,12 +658,14 @@ function NewBriefModal({
         brief_notes: string;
         deadline: string;
         raw_material_links: string[];
+        assigned_editor_id: string;
     }>({
         client_id: '',
         development: '',
         brief_notes: '',
         deadline: '',
         raw_material_links: [''],
+        assigned_editor_id: '',
     });
 
     transform((d) => ({
@@ -777,6 +781,21 @@ function NewBriefModal({
                             onChange={(links) => setData('raw_material_links', links)}
                             errors={errors as Record<string, string>}
                         />
+                    </div>
+
+                    {/* Editor */}
+                    <div className="space-y-1.5">
+                        <Label>Editor asignado</Label>
+                        <Select value={data.assigned_editor_id} onValueChange={(v) => setData('assigned_editor_id', v)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sin asignar (opcional)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {editors.map((e) => (
+                                    <SelectItem key={e.id} value={String(e.id)}>{e.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </form>
 
@@ -1590,6 +1609,7 @@ export default function PmDashboard({
 
             <NewBriefModal
                 clients={clients}
+                editors={editors}
                 open={briefOpen}
                 onClose={() => setBriefOpen(false)}
             />
