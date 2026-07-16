@@ -18,14 +18,22 @@ export default defineConfig({
             ],
         }),
         inertia(),
-        react({
-            babel: {
-                plugins: ['babel-plugin-react-compiler'],
-            },
-        }),
+        react(),
         tailwindcss(),
         wayfinder({
             formVariants: true,
         }),
     ],
+    build: {
+        target: 'es2020',
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'vendor-react':   ['react', 'react-dom', '@inertiajs/react'],
+                    'vendor-ui':      ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip', 'sonner'],
+                    'vendor-lucide':  ['lucide-react'],
+                },
+            },
+        },
+    },
 });
