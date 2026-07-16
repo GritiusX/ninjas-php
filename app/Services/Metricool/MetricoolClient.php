@@ -53,7 +53,8 @@ class MetricoolClient
         $url = $this->baseUrl . '/v2/scheduler/posts';
 
         $body = [
-            'targetBrandId'   => $blogId,
+            'blogId'          => $blogId,
+            'userId'          => $this->userId,
             'providers'       => $providers,
             'publicationDate' => ['dateTime' => $dateTime, 'timezone' => $timezone],
             'text'            => $text,
