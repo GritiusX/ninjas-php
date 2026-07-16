@@ -278,7 +278,7 @@ function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[]
         ) ?? null;
 
         const matchedEditor = editorName
-            ? (editors.find((e) => e.name.toLowerCase() === editorName.toLowerCase()) ?? null)
+            ? (editors.find((e) => e.name.toLowerCase() === editorName.toLowerCase() || e.name.toLowerCase().startsWith(editorName.toLowerCase() + ' ')) ?? null)
             : null;
 
         let error: string | null = null;
