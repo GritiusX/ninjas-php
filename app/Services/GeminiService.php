@@ -49,7 +49,8 @@ class GeminiService
         ]);
 
         if ($response->status() === 429) {
-            throw new RuntimeException('Límite de requests de Gemini alcanzado. Esperá 1 minuto y volvé a intentar.');
+            $detail = $response->json('error.message') ?? $response->body();
+            throw new RuntimeException('Límite de requests de Gemini alcanzado. Esperá 1 minuto y volvé a intentar. Detalle: ' . mb_substr((string)$detail, 0, 200));
         }
 
         if ($response->failed()) {
