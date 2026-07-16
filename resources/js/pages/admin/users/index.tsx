@@ -18,9 +18,23 @@ type User = {
 };
 
 const ROLE_BADGE: Record<string, string> = {
-    admin: 'bg-purple-600/20 text-purple-300 border-purple-600/30',
-    pm: 'bg-blue-600/20 text-blue-300 border-blue-600/30',
-    editor: 'bg-secondary text-secondary-foreground border-border',
+    admin:      'bg-green-800/30 text-green-300 border-green-700/40',
+    superadmin: 'bg-green-800/30 text-green-300 border-green-700/40',
+    pm:         'bg-blue-800/30 text-blue-200 border-blue-700/40',
+    editor:     'bg-secondary text-secondary-foreground border-border',
+    paid_pauta: 'bg-orange-800/20 text-orange-300 border-orange-700/30',
+    diseño:     'bg-secondary text-secondary-foreground border-border',
+    redes:      'bg-secondary text-secondary-foreground border-border',
+};
+
+const ROLE_LABEL: Record<string, string> = {
+    admin:      'Admin',
+    superadmin: 'Super Admin',
+    pm:         'PM',
+    editor:     'Editor',
+    paid_pauta: 'Pauta',
+    diseño:     'Diseño',
+    redes:      'Redes',
 };
 
 export default function UsersIndex({ users }: { users: User[] }) {
@@ -69,13 +83,13 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                         <td className="px-4 py-3 font-medium text-foreground">{u.name}</td>
                                         <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
                                         <td className="px-4 py-3">
-                                            <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${ROLE_BADGE[u.role]}`}>
-                                                {u.role}
+                                            <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${ROLE_BADGE[u.role] ?? 'bg-secondary text-secondary-foreground border-border'}`}>
+                                                {ROLE_LABEL[u.role] ?? u.role}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
                                             {u.is_active ? (
-                                                <span className="flex items-center gap-1 text-xs text-green-400">
+                                                <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500">
                                                     <UserCheck className="h-3.5 w-3.5" /> Activo
                                                 </span>
                                             ) : (
