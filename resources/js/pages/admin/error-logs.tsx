@@ -27,7 +27,7 @@ function LogRow({ entry, showDetail }: { entry: LogEntry; showDetail: boolean })
                 onClick={() => setOpen((v) => !v)}
                 className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/30 transition-colors"
             >
-                <span className="mt-0.5 shrink-0 text-muted-foreground">
+                <span className="mt-1 shrink-0 text-muted-foreground">
                     {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </span>
                 <div className="flex-1 min-w-0 space-y-1">
@@ -40,25 +40,33 @@ function LogRow({ entry, showDetail }: { entry: LogEntry; showDetail: boolean })
                             <span className="text-xs text-blue-400">{entry.user}</span>
                         )}
                     </div>
-                    <p className="text-sm text-foreground font-medium truncate">{entry.message}</p>
+                    <p className={`text-sm text-foreground font-medium ${open ? 'whitespace-pre-wrap break-words' : 'truncate'}`}>
+                        {entry.message}
+                    </p>
                     {entry.exception && (
-                        <p className="text-xs text-orange-400 font-mono truncate">{entry.exception}</p>
+                        <p className="text-xs text-orange-400 font-mono">{entry.exception}</p>
                     )}
-                    {entry.url && (
+                    {!open && entry.url && (
                         <p className="text-xs text-muted-foreground truncate">{entry.url}</p>
                     )}
                 </div>
             </button>
 
-            {open && showDetail && (
+            {open && (
                 <div className="border-t border-border bg-muted/20 px-4 py-3 space-y-3">
-                    {entry.file && (
+                    {entry.url && (
                         <div>
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Archivo</p>
-                            <p className="text-xs font-mono text-foreground">{entry.file}</p>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">URL</p>
+                            <p className="text-xs font-mono text-foreground break-all">{entry.url}</p>
                         </div>
                     )}
-                    {entry.trace && (
+                    {showDetail && entry.file && (
+                        <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Archivo</p>
+                            <p className="text-xs font-mono text-foreground break-all">{entry.file}</p>
+                        </div>
+                    )}
+                    {showDetail && entry.trace && (
                         <div>
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Traceback</p>
                             <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-all leading-relaxed overflow-x-auto">
@@ -66,14 +74,11 @@ function LogRow({ entry, showDetail }: { entry: LogEntry; showDetail: boolean })
                             </pre>
                         </div>
                     )}
-                </div>
-            )}
-
-            {open && !showDetail && (entry.file || entry.trace) && (
-                <div className="border-t border-border bg-muted/20 px-4 py-3">
-                    <p className="text-xs text-muted-foreground italic">
-                        El detalle completo (traceback y archivo) solo esta disponible para super admin.
-                    </p>
+                    {!showDetail && (entry.file || entry.trace) && (
+                        <p className="text-xs text-muted-foreground italic">
+                            El detalle completo (traceback y archivo) solo está disponible para super admin.
+                        </p>
+                    )}
                 </div>
             )}
         </div>
