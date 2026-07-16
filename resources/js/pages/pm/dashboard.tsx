@@ -338,7 +338,7 @@ function parseSpreadsheetFile(file: File, clients: Client[], editors: Editor[]):
 function downloadExampleCsv() {
     const esc = (s: string) => (/[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
     const rows = [
-        ['Desarrollo contenido', 'Instrucciones editor', 'Fecha entrega (DD/MM/AAAA)', 'Material referencia', 'Cliente'],
+        ['Desarrollo contenido', 'Instrucciones editor', 'Fecha entrega (DD/MM/AAAA)', 'Material referencia', 'Cliente', 'Editor'],
         [
             'Mostrar proceso del producto y persona disfrutándolo',
             'Usar música trending, evitar texto en pantalla',

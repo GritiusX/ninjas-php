@@ -121,11 +121,6 @@ export default function ClientReview({ piece, already_responded, decision, token
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-5 py-5 mb-4">
                         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                             Copy
-                            {piece.client_chosen_copy && (
-                                <span className="ml-2 text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full normal-case">
-                                    {piece.client_chosen_copy}
-                                </span>
-                            )}
                         </h2>
                         <p className="text-gray-800 leading-relaxed text-sm whitespace-pre-wrap">{piece.copy_text}</p>
                     </div>

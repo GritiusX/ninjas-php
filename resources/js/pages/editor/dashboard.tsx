@@ -1,6 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, ChevronRight, Clock, ExternalLink, Filter, PauseCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -228,6 +228,11 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
 export default function EditorDashboard({ pieces, stats }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [clientFilter, setClientFilter] = useState<string>('all');
+
+    useEffect(() => {
+        const timer = setInterval(() => router.reload({ only: ['pieces', 'stats'] }), 30 * 60 * 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     const uniqueClients = Array.from(
         new Map(pieces.filter(p => p.client).map(p => [p.client!.id, p.client!])).values()

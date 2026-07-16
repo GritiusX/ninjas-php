@@ -30,22 +30,41 @@ type Props = { piece: ContentPiece };
 
 // ─── WhatsApp ────────────────────────────────────────────────────────────────
 
+function buildWhatsAppMessage(piece: ContentPiece): string {
+    const client = piece.client?.name ?? 'su marca';
+    const title  = piece.concept ?? piece.product ?? 'el contenido';
+    let msg = `Hola, les escribimos desde Little Ninjas.\n\nYa esta listo el contenido de ${client}: "${title}".\n\nQuedamos atentos al feedback.`;
+    if (piece.review_token) {
+        msg += `\n\nRevisen y aprueben aca: ${publicReviewUrl(piece.review_token)}`;
+    }
+    return msg;
+}
+
 function buildWhatsAppUrl(piece: ContentPiece): string {
     const number = piece.client!.whatsapp_number!.replace(/\D/g, '');
-    const title = piece.concept ?? piece.product ?? 'tu contenido';
-    const client = piece.client!.name;
-    let message = `¡Hola! 👋 Les escribimos desde Little Ninjas.\n\nYa está listo el contenido de *${client}*: _"${title}"_.\n\nQuedamos atentos a tu feedback. 🎬`;
-    if (piece.review_token) {
-        message += `\n\n🔗 Revisá y aprobá acá: ${publicReviewUrl(piece.review_token)}`;
-    }
-    return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${number}?text=${encodeURIComponent(buildWhatsAppMessage(piece))}`;
 }
 
 // ─── Copy panel ──────────────────────────────────────────────────────────────
 
 type CopyVariants = { directo: string; storytelling: string; educativo: string };
+type CopyKey = 'directo' | 'storytelling' | 'educativo';
 
-function CopyPanel({ piece }: { piece: ContentPiece }) {
+const COPY_LABELS: Record<CopyKey, string> = {
+    directo: 'Directo',
+    storytelling: 'Storytelling',
+    educativo: 'Educativo',
+};
+
+function CopyPanel({
+    piece,
+    selectedCopy,
+    setSelectedCopy,
+}: {
+    piece: ContentPiece;
+    selectedCopy: CopyKey | null;
+    setSelectedCopy: (v: CopyKey | null) => void;
+}) {
     const [generating, setGenerating] = useState(false);
     const [saving, setSaving] = useState(false);
     const [savedOk, setSavedOk] = useState(false);
@@ -56,7 +75,6 @@ function CopyPanel({ piece }: { piece: ContentPiece }) {
     }));
     const isDirty = useRef(false);
 
-    // Sync when server refreshes generated_copy (e.g. after generate)
     useEffect(() => {
         if (!piece.generated_copy) return;
         setDrafts({
@@ -88,13 +106,12 @@ function CopyPanel({ piece }: { piece: ContentPiece }) {
         });
     }
 
-    function updateDraft(variant: keyof CopyVariants, value: string) {
+    function updateDraft(variant: CopyKey, value: string) {
         isDirty.current = true;
         setDrafts((prev) => ({ ...prev, [variant]: value }));
     }
 
     const hasCopy = !!piece.generated_copy;
-    const hasEdits = isDirty.current;
 
     return (
         <div className="space-y-4">
@@ -119,26 +136,52 @@ function CopyPanel({ piece }: { piece: ContentPiece }) {
                 <div className="rounded-lg border border-dashed border-border p-6 text-center">
                     <Sparkles className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
-                        Hacé clic en "Generar con IA" para crear 3 variantes de copy.
+                        Hace clic en "Generar con IA" para crear 3 variantes de copy.
                     </p>
                 </div>
             )}
 
             {hasCopy && (
                 <div className="space-y-3">
-                    {(['directo', 'storytelling', 'educativo'] as const).map((variant) => (
-                        <div key={variant} className="rounded-lg bg-muted border border-border p-4">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 capitalize">
-                                {variant}
-                            </p>
-                            <textarea
-                                className="w-full bg-transparent text-sm text-foreground leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 py-0.5 min-h-[60px]"
-                                value={drafts[variant]}
-                                onChange={(e) => updateDraft(variant, e.target.value)}
-                                rows={3}
-                            />
-                        </div>
-                    ))}
+                    {(['directo', 'storytelling', 'educativo'] as const).map((variant) => {
+                        const isSelected = selectedCopy === variant;
+                        return (
+                            <div
+                                key={variant}
+                                className={`rounded-lg border p-4 transition-colors ${
+                                    isSelected
+                                        ? 'border-green-500 bg-green-500/5 dark:bg-green-950/20'
+                                        : 'border-border bg-muted'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${
+                                        isSelected ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'
+                                    }`}>
+                                        {COPY_LABELS[variant]}
+                                        {isSelected && <CheckCircle2 className="h-3 w-3" />}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedCopy(isSelected ? null : variant)}
+                                        className={`text-xs px-2 py-1 rounded border transition-colors ${
+                                            isSelected
+                                                ? 'border-green-500 bg-green-500/10 text-green-600 dark:text-green-400'
+                                                : 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        {isSelected ? 'Seleccionado' : 'Seleccionar'}
+                                    </button>
+                                </div>
+                                <textarea
+                                    className="w-full bg-transparent text-sm text-foreground leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 py-0.5 min-h-[60px]"
+                                    value={drafts[variant]}
+                                    onChange={(e) => updateDraft(variant, e.target.value)}
+                                    rows={3}
+                                />
+                            </div>
+                        );
+                    })}
 
                     <div className="flex items-center justify-end gap-2 pt-1">
                         {savedOk && (
@@ -147,12 +190,7 @@ function CopyPanel({ piece }: { piece: ContentPiece }) {
                                 Guardado
                             </span>
                         )}
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={saveCopy}
-                            disabled={saving}
-                        >
+                        <Button size="sm" variant="outline" onClick={saveCopy} disabled={saving}>
                             {saving ? (
                                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                             ) : (
@@ -231,10 +269,11 @@ export default function ReviewRoom({ piece }: Props) {
     const { flash } = usePage<{ flash: { approved?: boolean } }>().props;
     const [changesOpen, setChangesOpen] = useState(false);
     const [approvedOpen, setApprovedOpen] = useState(false);
-    const [selectedCopy, setSelectedCopy] = useState<'directo' | 'storytelling' | 'educativo' | null>(null);
+    const [selectedCopy, setSelectedCopy] = useState<CopyKey | null>(null);
     const [whatsappInput, setWhatsappInput] = useState('');
     const [whatsappSaving, setWhatsappSaving] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [waMsgCopied, setWaMsgCopied] = useState(false);
 
     useEffect(() => {
         if (flash?.approved) setApprovedOpen(true);
@@ -257,6 +296,12 @@ export default function ReviewRoom({ piece }: Props) {
         navigator.clipboard.writeText(publicReviewUrl(piece.review_token));
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    }
+
+    function copyWaMessage() {
+        navigator.clipboard.writeText(buildWhatsAppMessage(piece));
+        setWaMsgCopied(true);
+        setTimeout(() => setWaMsgCopied(false), 2000);
     }
 
     const hasWhatsapp = !!piece.client?.whatsapp_number;
@@ -292,14 +337,6 @@ export default function ReviewRoom({ piece }: Props) {
                     {piece.client && (
                         <div className="flex items-center gap-2">
                             <CopyPublicReviewLink token={piece.review_token} variant="button" />
-                            {hasWhatsapp && piece.review_token && (
-                                <a href={buildWhatsAppUrl(piece)} target="_blank" rel="noopener noreferrer">
-                                    <Button className="bg-green-600 hover:bg-green-500 text-white gap-2">
-                                        <MessageCircle className="h-4 w-4" />
-                                        Contactar cliente
-                                    </Button>
-                                </a>
-                            )}
                         </div>
                     )}
                 </div>
@@ -376,42 +413,68 @@ export default function ReviewRoom({ piece }: Props) {
                         {/* Copy panel */}
                         <Card className="bg-card border-border">
                             <CardContent className="pt-5">
-                                <CopyPanel piece={piece} />
+                                <CopyPanel
+                                    piece={piece}
+                                    selectedCopy={selectedCopy}
+                                    setSelectedCopy={setSelectedCopy}
+                                />
                             </CardContent>
                         </Card>
+
+                        {/* WhatsApp message preview */}
+                        {piece.review_token && (
+                            <Card className="bg-card border-border">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm text-foreground flex items-center gap-2">
+                                        <MessageCircle className="h-4 w-4 text-green-500" />
+                                        Mensaje para el cliente
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <pre className="text-xs text-foreground leading-relaxed whitespace-pre-wrap font-sans bg-muted rounded-lg p-3 border border-border">
+                                        {buildWhatsAppMessage(piece)}
+                                    </pre>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button size="sm" variant="outline" onClick={copyWaMessage}>
+                                            {waMsgCopied ? (
+                                                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-green-500" />
+                                            ) : (
+                                                <Copy className="mr-1.5 h-3.5 w-3.5" />
+                                            )}
+                                            {waMsgCopied ? 'Copiado' : 'Copiar mensaje'}
+                                        </Button>
+                                        {hasWhatsapp && (
+                                            <a href={buildWhatsAppUrl(piece)} target="_blank" rel="noopener noreferrer">
+                                                <Button size="sm" className="bg-green-600 hover:bg-green-500 text-white">
+                                                    <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+                                                    Abrir WhatsApp
+                                                </Button>
+                                            </a>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Actions */}
                         {(canApprove || canRequestChanges) && (
                             <Card className="bg-card border-border">
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="text-base text-foreground">Decisión</CardTitle>
+                                    <CardTitle className="text-base text-foreground">Decision</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     {canApprove && piece.generated_copy && (
-                                        <div className="space-y-1.5">
-                                            <p className="text-xs text-muted-foreground font-medium">Variante a enviar al cliente:</p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {(['directo', 'storytelling', 'educativo'] as const).map((v) => (
-                                                    <label
-                                                        key={v}
-                                                        className={`flex items-center gap-1.5 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                                            selectedCopy === v
-                                                                ? 'border-green-500 bg-green-500/10 text-green-600 dark:text-green-400'
-                                                                : 'border-border text-muted-foreground hover:border-muted-foreground'
-                                                        }`}
-                                                    >
-                                                        <input
-                                                            type="radio"
-                                                            name="selected_copy"
-                                                            value={v}
-                                                            checked={selectedCopy === v}
-                                                            onChange={() => setSelectedCopy(v)}
-                                                            className="sr-only"
-                                                        />
-                                                        <span className="capitalize">{v}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
+                                        <div>
+                                            {selectedCopy ? (
+                                                <p className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1.5">
+                                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                                    Version seleccionada: {COPY_LABELS[selectedCopy]}
+                                                </p>
+                                            ) : (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Selecciona una version de copy arriba antes de aprobar.
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                     {canApprove && (

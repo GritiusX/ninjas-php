@@ -1,7 +1,8 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import type { Auth } from '@/types';
 
 type LogEntry = {
     timestamp: string;
@@ -16,7 +17,7 @@ type LogEntry = {
 
 type Props = { entries: LogEntry[] };
 
-function LogRow({ entry }: { entry: LogEntry }) {
+function LogRow({ entry, showDetail }: { entry: LogEntry; showDetail: boolean }) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -49,7 +50,7 @@ function LogRow({ entry }: { entry: LogEntry }) {
                 </div>
             </button>
 
-            {open && (
+            {open && showDetail && (
                 <div className="border-t border-border bg-muted/20 px-4 py-3 space-y-3">
                     {entry.file && (
                         <div>
@@ -67,11 +68,22 @@ function LogRow({ entry }: { entry: LogEntry }) {
                     )}
                 </div>
             )}
+
+            {open && !showDetail && (entry.file || entry.trace) && (
+                <div className="border-t border-border bg-muted/20 px-4 py-3">
+                    <p className="text-xs text-muted-foreground italic">
+                        El detalle completo (traceback y archivo) solo esta disponible para super admin.
+                    </p>
+                </div>
+            )}
         </div>
     );
 }
 
 export default function ErrorLogsPage({ entries }: Props) {
+    const { auth } = usePage<{ auth: Auth }>().props;
+    const isSuperAdmin = auth?.user?.role === 'superadmin';
+
     return (
         <>
             <Head title="Logs de errores" />
@@ -84,7 +96,8 @@ export default function ErrorLogsPage({ entries }: Props) {
                             Logs de errores
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Últimos {entries.length} errores · Se guardan por 30 días
+                            Ultimos {entries.length} errores · Se guardan por 30 dias
+                            {isSuperAdmin && ' · Vista completa (super admin)'}
                         </p>
                     </div>
                 </div>
@@ -96,7 +109,7 @@ export default function ErrorLogsPage({ entries }: Props) {
                 ) : (
                     <div className="space-y-2">
                         {entries.map((entry, i) => (
-                            <LogRow key={i} entry={entry} />
+                            <LogRow key={i} entry={entry} showDetail={isSuperAdmin} />
                         ))}
                     </div>
                 )}
