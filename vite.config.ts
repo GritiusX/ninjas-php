@@ -28,10 +28,10 @@ export default defineConfig({
         target: 'es2020',
         rollupOptions: {
             output: {
-                manualChunks: {
-                    'vendor-react':   ['react', 'react-dom', '@inertiajs/react'],
-                    'vendor-ui':      ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip', 'sonner'],
-                    'vendor-lucide':  ['lucide-react'],
+                manualChunks(id) {
+                    if (id.includes('lucide-react')) return 'vendor-lucide';
+                    if (id.includes('react-dom') || id.includes('react/') || id.includes('@inertiajs/react')) return 'vendor-react';
+                    if (id.includes('@radix-ui') || id.includes('sonner')) return 'vendor-ui';
                 },
             },
         },
