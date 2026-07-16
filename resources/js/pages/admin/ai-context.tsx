@@ -68,7 +68,7 @@ export default function AiContextPage({ clients, globalContext }: Props) {
                                 value={globalForm.data.context}
                                 onChange={(e) => globalForm.setData('context', e.target.value)}
                                 placeholder="Ej: Somos Little Ninjas, una agencia de publicidad en video para marcas argentinas. Nuestro estilo es directo, con lenguaje coloquial porteño..."
-                                className="min-h-[160px] font-mono text-sm"
+                                className="w-full min-h-[160px] rounded-md border border-input bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                             />
                             {globalForm.errors.context && (
                                 <p className="text-xs text-destructive">{globalForm.errors.context}</p>
@@ -118,7 +118,7 @@ export default function AiContextPage({ clients, globalContext }: Props) {
                                     value={clientForm.data.ai_context}
                                     onChange={(e) => clientForm.setData('ai_context', e.target.value)}
                                     placeholder={`Contexto específico de ${selectedClient.name}. Ej: marca de skincare natural, público femenino 25-40, tono suave y empático...`}
-                                    className="min-h-[160px] font-mono text-sm"
+                                    className="w-full min-h-[160px] rounded-md border border-input bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                                 />
                                 <div className="flex gap-2">
                                     <Button type="submit" size="sm">
