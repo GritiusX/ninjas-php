@@ -3,6 +3,7 @@ import {
     AlertCircle,
     ArrowLeft,
     CheckCircle2,
+    ClipboardPaste,
     Copy,
     ExternalLink,
     Info,
@@ -110,6 +111,8 @@ function CopyPanel({
     const [saving, setSaving] = useState(false);
     const [savedOk, setSavedOk] = useState(false);
     const [cooldown, setCooldown] = useState(0);
+    const [manualText, setManualText] = useState('');
+    const [savingManual, setSavingManual] = useState(false);
 
     useEffect(() => {
         if (flash?.error?.includes('Límite de requests')) setCooldown(60);
@@ -163,6 +166,20 @@ function CopyPanel({
         setDrafts((prev) => ({ ...prev, [variant]: value }));
     }
 
+    function saveManual() {
+        if (!manualText.trim()) return;
+        setSavingManual(true);
+        router.patch(
+            `/pm/review/${piece.id}/copy`,
+            { directo: manualText, storytelling: '', educativo: '' },
+            {
+                preserveScroll: true,
+                onSuccess: () => setManualText(''),
+                onFinish: () => setSavingManual(false),
+            },
+        );
+    }
+
     const hasCopy = !!piece.generated_copy;
     const overLimit = geminiUsage.monthly_tokens >= geminiUsage.monthly_limit;
 
@@ -170,9 +187,47 @@ function CopyPanel({
         <div className="space-y-4">
             <TokenUsageBar usage={geminiUsage} />
 
+            {/* Manual copy input */}
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                    <ClipboardPaste className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Copy externo
+                    </p>
+                </div>
+                <textarea
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none min-h-[80px]"
+                    placeholder="Pegá acá el copy generado fuera de la plataforma..."
+                    value={manualText}
+                    onChange={(e) => setManualText(e.target.value)}
+                    rows={3}
+                />
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={saveManual}
+                    disabled={savingManual || !manualText.trim()}
+                >
+                    {savingManual ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                        <Save className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Guardar copy
+                </Button>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+                <div className="flex-1 border-t border-border" />
+                <span className="text-xs text-muted-foreground">o generá con IA</span>
+                <div className="flex-1 border-t border-border" />
+            </div>
+
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="font-semibold text-foreground">Copy generado</h3>
+                    <h3 className="font-semibold text-foreground">Copy con IA</h3>
                     {geminiUsage.piece_generates > 0 && (
                         <p className="text-xs text-muted-foreground mt-0.5">
                             Generado {geminiUsage.piece_generates} {geminiUsage.piece_generates === 1 ? 'vez' : 'veces'} este mes
@@ -196,12 +251,9 @@ function CopyPanel({
             </div>
 
             {!hasCopy && !generating && (
-                <div className="rounded-lg border border-dashed border-border p-6 text-center">
-                    <Sparkles className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                        Hace clic en "Generar con IA" para crear 3 variantes de copy.
-                    </p>
-                </div>
+                <p className="text-xs text-muted-foreground text-center pb-1">
+                    Genera 3 variantes de copy (directo, storytelling, educativo).
+                </p>
             )}
 
             {hasCopy && (

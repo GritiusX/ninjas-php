@@ -94,12 +94,12 @@ class ReviewController extends Controller
     public function updateCopy(Request $request, ContentPiece $piece): RedirectResponse
     {
         $data = $request->validate([
-            'directo'      => ['required', 'string', 'max:1000'],
-            'storytelling' => ['required', 'string', 'max:1000'],
-            'educativo'    => ['required', 'string', 'max:1000'],
+            'directo'      => ['nullable', 'string', 'max:2000'],
+            'storytelling' => ['nullable', 'string', 'max:2000'],
+            'educativo'    => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $piece->update(['generated_copy' => $data]);
+        $piece->update(['generated_copy' => array_map(fn($v) => $v ?? '', $data)]);
 
         return back()->with('success', 'Copy guardado.');
     }
