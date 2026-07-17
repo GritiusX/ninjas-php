@@ -53,9 +53,9 @@ class MetricoolClient
         $url = $this->baseUrl . '/v2/scheduler/posts';
 
         $body = [
-            'blogId'          => $blogId,
+            'blogId'          => (string) $blogId,
             'userId'          => $this->userId,
-            'providers'       => $providers,
+            'providers'       => array_values($providers),
             'publicationDate' => ['dateTime' => $dateTime, 'timezone' => $timezone],
             'text'            => $text,
             'draft'           => $draft,
@@ -66,7 +66,17 @@ class MetricoolClient
             $body['saveExternalMediaFiles'] = true;
         }
 
+        Log::info('Metricool schedulePost request', [
+            'url'  => $url,
+            'body' => $body,
+        ]);
+
         $response = $this->http()->asJson()->post($url, $body);
+
+        Log::info('Metricool schedulePost response', [
+            'status' => $response->status(),
+            'body'   => mb_substr((string) $response->body(), 0, 500),
+        ]);
 
         if ($response->successful()) {
             $data = $response->json();

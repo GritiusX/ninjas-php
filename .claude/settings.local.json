@@ -52,7 +52,9 @@
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(cat storage/app/.gitignore)",
       "Bash(cat storage/app/private/.gitignore)",
-      "WebFetch(domain:claude.ai)"
+      "WebFetch(domain:claude.ai)",
+      "Bash(./vendor/bin/pest tests/Feature/ReviewApprovalTest.php --stop-on-failure)",
+      "Bash(grep -n 'in_array\\($response->status' tests/Feature/ClientReviewTest.php)"
     ]
   }
 }

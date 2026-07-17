@@ -20,7 +20,7 @@ import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import * as pmRoutes from '@/routes/pm';
 import * as reviewRoutes from '@/routes/pm/review';
@@ -602,25 +602,34 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
             />
 
             <Dialog open={approvedOpen} onOpenChange={setApprovedOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                            Pieza aprobada — lista para el cliente
-                        </DialogTitle>
-                    </DialogHeader>
+                <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+                    {/* Hero */}
+                    <div className="bg-green-500/10 border-b border-green-500/20 px-6 pt-8 pb-6 text-center">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20 ring-4 ring-green-500/10">
+                            <CheckCircle2 className="h-8 w-8 text-green-500" />
+                        </div>
+                        <h2 className="text-lg font-bold text-foreground">¡Pieza aprobada!</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            {piece.client?.name} — {piece.concept ?? piece.product ?? 'Lista para el cliente'}
+                        </p>
+                    </div>
 
-                    <div className="space-y-4">
+                    <div className="px-6 py-5 space-y-4">
                         {/* Link de revisión */}
                         {piece.review_token && (
-                            <div className="space-y-1.5">
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Link de revisión para el cliente</p>
-                                <div className="flex items-center gap-2">
-                                    <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs text-foreground">
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Link para el cliente
+                                </p>
+                                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2 pl-3">
+                                    <span className="flex-1 truncate text-xs text-foreground font-mono">
                                         {publicReviewUrl(piece.review_token)}
-                                    </code>
-                                    <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={copyLink}>
-                                        {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </span>
+                                    <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1.5 text-xs" onClick={copyLink}>
+                                        {copied
+                                            ? <><CheckCircle2 className="h-3 w-3 text-green-500" /> Copiado</>
+                                            : <><Copy className="h-3 w-3" /> Copiar</>
+                                        }
                                     </Button>
                                 </div>
                             </div>
@@ -628,35 +637,46 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
 
                         {/* WhatsApp */}
                         {piece.client?.whatsapp_number ? (
-                            <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-3 space-y-2">
-                                <p className="text-xs font-medium text-green-400 flex items-center gap-1.5">
-                                    <MessageCircle className="h-3.5 w-3.5" />
-                                    WhatsApp enviado a {piece.client.whatsapp_number}
-                                </p>
+                            <div className="rounded-lg border border-green-500/25 bg-green-500/8 p-4 space-y-2.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-500/20">
+                                        <MessageCircle className="h-3.5 w-3.5 text-green-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-foreground">WhatsApp listo para enviar</p>
+                                        <p className="text-xs text-muted-foreground">{piece.client.whatsapp_number}</p>
+                                    </div>
+                                </div>
                                 {piece.review_token && (
-                                    <a href={buildWhatsAppUrl(piece)} target="_blank" rel="noopener noreferrer"
-                                        className="text-xs text-green-400 hover:text-green-300 underline">
-                                        Reenviar mensaje manualmente →
+                                    <a
+                                        href={buildWhatsAppUrl(piece)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex w-full items-center justify-center gap-2 rounded-md bg-green-600 hover:bg-green-500 px-3 py-2 text-xs font-semibold text-white transition-colors"
+                                    >
+                                        <MessageCircle className="h-3.5 w-3.5" />
+                                        Abrir WhatsApp y enviar
+                                        <ExternalLink className="h-3 w-3 opacity-70" />
                                     </a>
                                 )}
                             </div>
                         ) : (
-                            <div className="space-y-2">
-                                <p className="text-sm text-muted-foreground">
-                                    El cliente no tiene número de WhatsApp. Agregalo para poder contactarlo directamente.
+                            <div className="rounded-lg border border-dashed border-border p-4 space-y-3">
+                                <p className="text-xs text-muted-foreground text-center">
+                                    Sin número de WhatsApp — agregalo para contactar al cliente
                                 </p>
                                 <div className="flex gap-2">
                                     <Input
                                         placeholder="+54 9 11 1234-5678"
                                         value={whatsappInput}
                                         onChange={(e) => setWhatsappInput(e.target.value)}
-                                        className="text-sm"
+                                        className="h-8 text-sm"
                                     />
                                     <Button
                                         size="sm"
+                                        className="h-8 shrink-0"
                                         disabled={!whatsappInput.trim() || whatsappSaving}
                                         onClick={saveWhatsapp}
-                                        className="shrink-0"
                                     >
                                         {whatsappSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Guardar'}
                                     </Button>
@@ -665,12 +685,14 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                         )}
                     </div>
 
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setApprovedOpen(false)}>Cerrar</Button>
+                    <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4 bg-muted/30">
+                        <Button variant="ghost" size="sm" onClick={() => setApprovedOpen(false)}>
+                            Cerrar
+                        </Button>
                         <Link href="/pm">
-                            <Button>Ir al dashboard</Button>
+                            <Button size="sm">Ir al dashboard</Button>
                         </Link>
-                    </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
         </>
