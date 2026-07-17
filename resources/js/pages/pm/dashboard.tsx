@@ -50,6 +50,7 @@ type Props = {
     reviewQueue: ContentPiece[];
     briefQueue: ContentPiece[];
     approvedQueue: ContentPiece[];
+    publishedQueue: ContentPiece[];
     clients: Client[];
     editors: Editor[];
 };
@@ -1403,12 +1404,59 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
     );
 }
 
+// ─── Published card ──────────────────────────────────────────────────────────
+
+function PublishedCard({ piece }: { piece: ContentPiece }) {
+    const publishedAt = new Date(piece.updated_at).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
+
+    return (
+        <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-800/40 dark:bg-emerald-950/20">
+            <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-semibold tracking-wide text-emerald-800 uppercase dark:text-emerald-400">
+                                {piece.client?.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                                Publicado el {publishedAt}
+                            </span>
+                        </div>
+                        <p className="truncate font-medium text-foreground">
+                            {piece.concept ?? piece.product ?? 'Sin concepto'}
+                        </p>
+                        {piece.final_video_link && (
+                            <a
+                                href={piece.final_video_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-0.5 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                                <ExternalLink className="h-3 w-3" />
+                                Ver video
+                            </a>
+                        )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                        <ViewReviewLink pieceId={piece.id} />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function PmDashboard({
     reviewQueue,
     briefQueue,
     approvedQueue,
+    publishedQueue,
     clients,
     editors,
 }: Props) {
@@ -1419,6 +1467,7 @@ export default function PmDashboard({
     const [pdfTo, setPdfTo] = useState('');
     const [pdfFilterBy, setPdfFilterBy] = useState<'deadline' | 'created_at'>('deadline');
     const [pdfPopover, setPdfPopover] = useState(false);
+    const [tab, setTab] = useState<'active' | 'published'>('active');
 
     const clientReview = briefQueue.filter((p) =>
         ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status),
@@ -1534,90 +1583,136 @@ export default function PmDashboard({
                     </div>
                 </div>
 
-                {/* Cola de revisión */}
-                {reviewQueue.length > 0 && (
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold tracking-wider text-amber-400 uppercase">
-                                Para revisar
-                            </h2>
-                            <Badge className="border-amber-500/30 bg-amber-500/20 text-amber-400">
-                                {reviewQueue.length}
+                {/* Tab switcher */}
+                <div className="flex gap-1 rounded-md border border-border p-0.5 text-sm w-fit">
+                    <button
+                        type="button"
+                        onClick={() => setTab('active')}
+                        className={`rounded px-3 py-1.5 transition-colors ${tab === 'active' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        En proceso
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setTab('published')}
+                        className={`flex items-center gap-1.5 rounded px-3 py-1.5 transition-colors ${tab === 'published' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        Programados / Publicados
+                        {publishedQueue.length > 0 && (
+                            <Badge className="bg-emerald-600 text-emerald-50 hover:bg-emerald-600">
+                                {publishedQueue.length}
                             </Badge>
-                        </div>
-                        {reviewQueue.map((p) => (
-                            <ReviewCard key={p.id} piece={p} />
-                        ))}
-                    </section>
+                        )}
+                    </button>
+                </div>
+
+                {tab === 'active' && (
+                    <>
+                        {/* Cola de revisión */}
+                        {reviewQueue.length > 0 && (
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-sm font-semibold tracking-wider text-amber-400 uppercase">
+                                        Para revisar
+                                    </h2>
+                                    <Badge className="border-amber-500/30 bg-amber-500/20 text-amber-400">
+                                        {reviewQueue.length}
+                                    </Badge>
+                                </div>
+                                {reviewQueue.map((p) => (
+                                    <ReviewCard key={p.id} piece={p} />
+                                ))}
+                            </section>
+                        )}
+
+                        {/* En proceso */}
+                        {inProgress.length > 0 && (
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
+                                        En proceso
+                                    </h2>
+                                    <Badge className="bg-secondary text-secondary-foreground">
+                                        {inProgress.length}
+                                    </Badge>
+                                </div>
+                                {inProgress.map((p) => (
+                                    <BriefCard key={p.id} piece={p} editors={editors} />
+                                ))}
+                            </section>
+                        )}
+
+                        {/* Con el cliente */}
+                        {clientReview.length > 0 && (
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-sm font-semibold tracking-wider text-purple-400 uppercase">
+                                        Con el cliente
+                                    </h2>
+                                    <Badge className="border-purple-500/30 bg-purple-500/20 text-purple-400">
+                                        {clientReview.length}
+                                    </Badge>
+                                </div>
+                                {clientReview.map((p) => (
+                                    <BriefCard key={p.id} piece={p} editors={editors} />
+                                ))}
+                            </section>
+                        )}
+
+                        {/* Listos para publicar */}
+                        {approvedQueue.length > 0 && (
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-sm font-semibold tracking-wider text-green-800 uppercase dark:text-green-400">
+                                        Listos para publicar
+                                    </h2>
+                                    <Badge className="border-green-200 bg-green-100 text-green-800 dark:border-green-500/30 dark:bg-green-500/20 dark:text-green-400">
+                                        {approvedQueue.length}
+                                    </Badge>
+                                </div>
+                                {approvedQueue.map((p) => (
+                                    <ApprovedCard key={p.id} piece={p} />
+                                ))}
+                            </section>
+                        )}
+
+                        {reviewQueue.length === 0 && briefQueue.length === 0 && approvedQueue.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-20 text-center">
+                                <p className="text-lg font-medium text-foreground">
+                                    Todo tranquilo por acá
+                                </p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    No hay piezas activas.
+                                </p>
+                                <Button
+                                    className="mt-4"
+                                    onClick={() => setBriefOpen(true)}
+                                >
+                                    <FilePlus className="mr-2 h-4 w-4" />
+                                    Crear el primer brief
+                                </Button>
+                            </div>
+                        )}
+                    </>
                 )}
 
-                {/* En proceso */}
-                {inProgress.length > 0 && (
+                {tab === 'published' && (
                     <section className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
-                                En proceso
-                            </h2>
-                            <Badge className="bg-secondary text-secondary-foreground">
-                                {inProgress.length}
-                            </Badge>
-                        </div>
-                        {inProgress.map((p) => (
-                            <BriefCard key={p.id} piece={p} editors={editors} />
-                        ))}
+                        {publishedQueue.length > 0 ? (
+                            publishedQueue.map((p) => (
+                                <PublishedCard key={p.id} piece={p} />
+                            ))
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-20 text-center">
+                                <p className="text-lg font-medium text-foreground">
+                                    Todavía no hay piezas publicadas
+                                </p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Van a aparecer acá una vez programadas en Metricool.
+                                </p>
+                            </div>
+                        )}
                     </section>
-                )}
-
-                {/* Con el cliente */}
-                {clientReview.length > 0 && (
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold tracking-wider text-purple-400 uppercase">
-                                Con el cliente
-                            </h2>
-                            <Badge className="border-purple-500/30 bg-purple-500/20 text-purple-400">
-                                {clientReview.length}
-                            </Badge>
-                        </div>
-                        {clientReview.map((p) => (
-                            <BriefCard key={p.id} piece={p} editors={editors} />
-                        ))}
-                    </section>
-                )}
-
-                {/* Listos para publicar */}
-                {approvedQueue.length > 0 && (
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold tracking-wider text-green-800 uppercase dark:text-green-400">
-                                Listos para publicar
-                            </h2>
-                            <Badge className="border-green-200 bg-green-100 text-green-800 dark:border-green-500/30 dark:bg-green-500/20 dark:text-green-400">
-                                {approvedQueue.length}
-                            </Badge>
-                        </div>
-                        {approvedQueue.map((p) => (
-                            <ApprovedCard key={p.id} piece={p} />
-                        ))}
-                    </section>
-                )}
-
-                {reviewQueue.length === 0 && briefQueue.length === 0 && approvedQueue.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <p className="text-lg font-medium text-foreground">
-                            Todo tranquilo por acá
-                        </p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            No hay piezas activas.
-                        </p>
-                        <Button
-                            className="mt-4"
-                            onClick={() => setBriefOpen(true)}
-                        >
-                            <FilePlus className="mr-2 h-4 w-4" />
-                            Crear el primer brief
-                        </Button>
-                    </div>
                 )}
             </div>
 
