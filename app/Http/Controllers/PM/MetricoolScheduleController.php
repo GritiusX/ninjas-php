@@ -80,6 +80,11 @@ class MetricoolScheduleController extends Controller
             return back()->with('error', 'Este cliente no tiene blogId de Metricool configurado.');
         }
 
+        $media = $request->input('media', []);
+        if (empty($media) && $piece->final_video_link && $piece->review_token) {
+            $media = [route('media.video', $piece->review_token)];
+        }
+
         try {
             $this->metricool->schedulePost(
                 blogId:   $blogId,
@@ -88,7 +93,7 @@ class MetricoolScheduleController extends Controller
                 timezone:  $request->input('timezone'),
                 text:      $request->input('text'),
                 draft:     (bool) $request->boolean('draft'),
-                media:     $request->input('media', []),
+                media:     $media,
             );
         } catch (RuntimeException $e) {
             Log::channel('errors')->error($e->getMessage(), [

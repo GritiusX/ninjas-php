@@ -18,6 +18,7 @@ import {
     Trash2,
     Upload,
     UserCheck,
+    Video,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CopyPublicReviewLink } from '@/components/copy-public-review-link';
@@ -1302,6 +1303,19 @@ function MetricoolScheduleModal({
                                 placeholder="Texto del post..."
                             />
                         </div>
+
+                        {/* Video attachment status */}
+                        {piece.final_video_link ? (
+                            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Video className="h-3.5 w-3.5" />
+                                Se adjuntará el video final (Drive) al post.
+                            </p>
+                        ) : (
+                            <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                <AlertCircle className="h-3.5 w-3.5" />
+                                Esta pieza no tiene video final cargado — se enviará sin video.
+                            </p>
+                        )}
 
                         {/* Draft toggle */}
                         <label className="flex cursor-pointer items-center gap-2 text-sm">

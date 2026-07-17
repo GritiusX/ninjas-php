@@ -19,6 +19,7 @@ use App\Http\Controllers\PM\MetricoolScheduleController;
 use App\Http\Controllers\PM\ReviewController;
 use App\Http\Controllers\PM\VideoStreamController;
 use App\Http\Controllers\ClientReviewController;
+use App\Http\Controllers\PublicMediaController;
 use App\Http\Controllers\Webhook\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -127,6 +128,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // --- Revisión pública del cliente (sin auth) ---
 Route::get('/review/{token}', [ClientReviewController::class, 'show'])->name('client-review.show');
 Route::post('/review/{token}/respond', [ClientReviewController::class, 'respond'])->name('client-review.respond');
+
+// --- Media pública (sin auth, gateada por review_token) ---
+Route::get('/media/{token}/video', [PublicMediaController::class, 'video'])
+    ->middleware('throttle:30,1')
+    ->name('media.video');
 
 // --- Webhook WhatsApp (público) ---
 Route::get('/webhook/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhook.whatsapp.verify');
