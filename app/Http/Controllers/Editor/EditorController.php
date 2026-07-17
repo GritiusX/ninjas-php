@@ -27,7 +27,7 @@ class EditorController extends Controller
 
         $pieces = ContentPiece::with('client')
             ->where('assigned_editor_id', $user->id)
-            ->whereNotIn('status', ['CLIENT_APPROVED'])
+            ->whereNotIn('status', ['CLIENT_APPROVED', 'PUBLISHED'])
             ->orderBy('priority')
             ->orderBy('deadline')
             ->get();

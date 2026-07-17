@@ -15,7 +15,7 @@ class PmController extends Controller
     public function tabla(): Response
     {
         $pieces = ContentPiece::with(['client', 'editor'])
-            ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED])
+            ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED, ContentPiece::STATUS_PUBLISHED])
             ->orderBy('priority')
             ->orderByRaw('deadline IS NULL, deadline ASC')
             ->get();

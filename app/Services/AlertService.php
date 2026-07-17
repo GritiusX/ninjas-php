@@ -111,12 +111,12 @@ class AlertService
         foreach ($editors as $editor) {
             $todayCount = ContentPiece::where('assigned_editor_id', $editor->id)
                 ->whereDate('deadline', $today)
-                ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED])
+                ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED, ContentPiece::STATUS_PUBLISHED])
                 ->count();
 
             $overdueYesterday = ContentPiece::where('assigned_editor_id', $editor->id)
                 ->whereDate('deadline', $yesterday)
-                ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED])
+                ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED, ContentPiece::STATUS_PUBLISHED])
                 ->with('client')
                 ->get(['id', 'concept', 'product', 'client_id']);
 
@@ -159,7 +159,7 @@ class AlertService
         $weekEnd   = now()->endOfWeek();
 
         $pending = ContentPiece::whereBetween('deadline', [$weekStart, $weekEnd])
-            ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED])
+            ->whereNotIn('status', [ContentPiece::STATUS_CLIENT_APPROVED, ContentPiece::STATUS_PUBLISHED])
             ->with('client', 'editor')
             ->orderBy('deadline')
             ->get();

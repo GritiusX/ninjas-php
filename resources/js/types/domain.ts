@@ -6,7 +6,8 @@ export type ContentStatus =
     | 'PM_APPROVED'
     | 'CLIENT_REVIEW'
     | 'CLIENT_REVISION'
-    | 'CLIENT_APPROVED';
+    | 'CLIENT_APPROVED'
+    | 'PUBLISHED';
 
 export type Priority = 1 | 2 | 3;
 

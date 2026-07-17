@@ -10,6 +10,7 @@ const STATUS_CONFIG: Record<ContentStatus, { label: string; className: string }>
     CLIENT_REVIEW: { label: 'Rev. Cliente', className: 'bg-purple-600 text-purple-100 hover:bg-purple-600' },
     CLIENT_REVISION: { label: 'Cambios Cliente', className: 'bg-rose-600 text-rose-100 hover:bg-rose-600' },
     CLIENT_APPROVED: { label: 'Aprobado', className: 'bg-green-600 text-green-100 hover:bg-green-600' },
+    PUBLISHED: { label: 'Publicado', className: 'bg-emerald-700 text-emerald-100 hover:bg-emerald-700' },
 };
 
 export function StatusBadge({ status }: { status: ContentStatus }) {
