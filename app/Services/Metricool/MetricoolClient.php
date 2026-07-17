@@ -50,11 +50,11 @@ class MetricoolClient
         bool $draft,
         array $media = [],
     ): array {
-        $url = $this->baseUrl . '/v2/scheduler/posts';
+        // Metricool v2: blogId goes in the URL path (same pattern as /v2/brands/{blogId}/reports)
+        // userId appended as query param since it's required by their API outside the JSON body
+        $url = $this->baseUrl . "/v2/brands/{$blogId}/scheduler/posts?userId={$this->userId}";
 
         $body = [
-            'blogId'          => (string) $blogId,
-            'userId'          => $this->userId,
             'providers'       => array_values($providers),
             'publicationDate' => ['dateTime' => $dateTime, 'timezone' => $timezone],
             'text'            => $text,
