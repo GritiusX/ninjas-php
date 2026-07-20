@@ -17,9 +17,11 @@
         "laravel/fortify": "^1.34",
         "laravel/framework": "^13.7",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14"
+        "laravel/wayfinder": "^0.1.14",
+        "symfony/panther": "^2.4"
     },
     "require-dev": {
+        "dbrekelmans/bdi": "^1.4",
         "fakerphp/faker": "^1.24",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",

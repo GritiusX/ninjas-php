@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ClientAdminController;
 use App\Http\Controllers\Admin\ErrorLogController;
 use App\Http\Controllers\Admin\GoogleAdsAuthController;
 use App\Http\Controllers\Admin\UserAdminController;
+use App\Http\Controllers\Metrics2Controller;
 use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\MetricsPdfController;
 use App\Http\Controllers\Editor\EditorController;
@@ -92,6 +93,9 @@ Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->gro
     Route::get('/{client}/metricool-report-download', [MetricsController::class, 'metricoolReportDownload'])->name('metricoolReportDownload');
     Route::post('/{client}/sync', [MetricsController::class, 'sync'])->name('sync');
 });
+
+// --- /metrics2: prueba de scraper Metricool (login + lectura de DOM), solo Aura Natural ---
+Route::middleware(['auth', 'role:pm'])->get('/metrics2', [Metrics2Controller::class, 'index'])->name('metrics2');
 
 // --- Notificaciones (todos los roles) ---
 Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {
