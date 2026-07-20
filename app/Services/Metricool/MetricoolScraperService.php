@@ -17,9 +17,8 @@ use Throwable;
  */
 class MetricoolScraperService
 {
-    private const SELECTOR_FOLLOWERS_GROWTH = '#app > div > div > div:nth-child(1) > main > div > div > div > div > div.evolution-facebookPage.base-grid.mt-4.px-2 > div:nth-child(3) > div:nth-child(2) > div > div.flex.items-start.flex-wrap.gap-3 > div.v-item-group.v-theme--black-and-white.flex.w-full.md\:w-auto.md\:ml-auto.gap-3.flex-col.md\:flex-row.flex-wrap.justify-end.pb-4 > div:nth-child(1) > div > div:nth-child(2) > div.flex.justify-center.items-center > div:nth-child(1) > div';
-
-    private const SELECTOR_VIEWS = '#app > div > div > div:nth-child(1) > main > div > div > div > div > div.evolution-facebookPage.base-grid.mt-4.px-2 > div:nth-child(3) > div:nth-child(2) > div > div.flex.items-start.flex-wrap.gap-3 > div.v-item-group.v-theme--black-and-white.flex.w-full.md\:w-auto.md\:ml-auto.gap-3.flex-col.md\:flex-row.flex-wrap.justify-end.pb-4 > div:nth-child(2) > div > div:nth-child(3) > div.text-sm.whitespace-nowrap';
+    private const SELECTOR_METRIC_BOX   = '[aria-label="Metric box value"]';
+    private const SELECTOR_METRIC_VALUE = '.text-3xl';
 
     private const LOGIN_FIELD_SELECTOR    = 'input[name="email"]';
     private const PASSWORD_FIELD_SELECTOR = 'input[name="password"]';
@@ -42,17 +41,17 @@ class MetricoolScraperService
             }
 
             $client->request('GET', $url);
-            $client->waitFor(self::SELECTOR_FOLLOWERS_GROWTH, 20);
+            $client->waitFor(self::SELECTOR_METRIC_BOX, 20);
 
             $crawler = $client->getCrawler();
+            $boxes   = $crawler->filter(self::SELECTOR_METRIC_BOX);
 
-            // Screenshot siempre (no solo en error) para poder confirmar a simple
-            // vista si el rango de fechas mostrado en pantalla es el pedido.
+            // Screenshot siempre para confirmar el rango de fechas mostrado en pantalla.
             $screenshotPath = $this->debugScreenshot($client, 'facebook-evolution-ok');
 
             return [
-                'followers_growth' => trim($crawler->filter(self::SELECTOR_FOLLOWERS_GROWTH)->text('')),
-                'views'            => trim($crawler->filter(self::SELECTOR_VIEWS)->text('')),
+                'followers_growth' => trim($boxes->eq(0)->filter(self::SELECTOR_METRIC_VALUE)->text('')),
+                'views'            => trim($boxes->eq(1)->filter(self::SELECTOR_METRIC_VALUE)->text('')),
                 'screenshot'       => $screenshotPath,
             ];
         } catch (Throwable $e) {
