@@ -75,7 +75,7 @@ class MetricoolScraperService
             throw new RuntimeException('Faltan credenciales de Metricool: cargalas en /admin/metricool-credentials o en METRICOOL_SCRAPE_EMAIL / METRICOOL_SCRAPE_PASSWORD (.env)');
         }
 
-        $driverBinary = env('PANTHER_CHROME_DRIVER_BINARY') ?: null;
+        $driverBinary = config('metricool.chrome_driver_binary') ?: null;
 
         $client = Client::createChromeClient($driverBinary, [
             '--no-sandbox',

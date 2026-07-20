@@ -8,7 +8,8 @@ return [
 
     // Login por navegador (Symfony Panther) usado solo por /metrics2 para
     // scrapear valores que hoy no expone la API oficial.
-    'scrape_email'    => env('METRICOOL_SCRAPE_EMAIL'),
-    'scrape_password' => env('METRICOOL_SCRAPE_PASSWORD'),
-    'login_url'       => env('METRICOOL_LOGIN_URL', 'https://app.metricool.com/login'),
+    'scrape_email'         => env('METRICOOL_SCRAPE_EMAIL'),
+    'scrape_password'      => env('METRICOOL_SCRAPE_PASSWORD'),
+    'login_url'            => env('METRICOOL_LOGIN_URL', 'https://app.metricool.com/login'),
+    'chrome_driver_binary' => env('PANTHER_CHROME_DRIVER_BINARY'),
 ];
