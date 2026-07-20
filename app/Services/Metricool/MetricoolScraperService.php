@@ -21,8 +21,8 @@ class MetricoolScraperService
 
     private const SELECTOR_VIEWS = '#app > div > div > div:nth-child(1) > main > div > div > div > div > div.evolution-facebookPage.base-grid.mt-4.px-2 > div:nth-child(3) > div:nth-child(2) > div > div.flex.items-start.flex-wrap.gap-3 > div.v-item-group.v-theme--black-and-white.flex.w-full.md\:w-auto.md\:ml-auto.gap-3.flex-col.md\:flex-row.flex-wrap.justify-end.pb-4 > div:nth-child(2) > div > div:nth-child(3) > div.text-sm.whitespace-nowrap';
 
-    private const LOGIN_FIELD_SELECTOR    = 'input[placeholder="Enter your email"]';
-    private const PASSWORD_FIELD_SELECTOR = 'input[type="password"]';
+    private const LOGIN_FIELD_SELECTOR    = 'input[name="email"]';
+    private const PASSWORD_FIELD_SELECTOR = 'input[name="password"]';
     private const SUBMIT_SELECTOR         = 'button';
 
     public function facebookEvolution(string $blogId, string $userId, ?CarbonInterface $start = null, ?CarbonInterface $end = null): array
