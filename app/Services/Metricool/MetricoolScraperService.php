@@ -2,6 +2,7 @@
 
 namespace App\Services\Metricool;
 
+use App\Models\MetricoolCredential;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -64,12 +65,14 @@ class MetricoolScraperService
 
     private function createLoggedInClient(): Client
     {
-        $email    = (string) config('metricool.scrape_email');
-        $password = (string) config('metricool.scrape_password');
+        // La DB (editable desde /admin/metricool-credentials) manda; el .env
+        // queda como fallback para no romper lo ya desplegado.
+        $email    = MetricoolCredential::getEmail() ?: (string) config('metricool.scrape_email');
+        $password = MetricoolCredential::getPassword() ?: (string) config('metricool.scrape_password');
         $loginUrl = (string) config('metricool.login_url');
 
-        if ($email === '' || $password === '') {
-            throw new RuntimeException('Faltan METRICOOL_SCRAPE_EMAIL / METRICOOL_SCRAPE_PASSWORD en .env');
+        if ($email === '' || $password === '' || $email === null || $password === null) {
+            throw new RuntimeException('Faltan credenciales de Metricool: cargalas en /admin/metricool-credentials o en METRICOOL_SCRAPE_EMAIL / METRICOOL_SCRAPE_PASSWORD (.env)');
         }
 
         $client = Client::createChromeClient(null, [

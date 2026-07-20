@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\ClientAdminController;
 use App\Http\Controllers\Admin\ErrorLogController;
 use App\Http\Controllers\Admin\GoogleAdsAuthController;
+use App\Http\Controllers\Admin\MetricoolCredentialController;
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\Metrics2Controller;
 use App\Http\Controllers\MetricsController;
@@ -127,6 +128,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/error-logs', [ErrorLogController::class, 'index'])->name('error-logs.index');
     Route::post('/ai-context/global', [AiContextController::class, 'updateGlobal'])->name('ai-context.global');
     Route::patch('/ai-context/client/{client}', [AiContextController::class, 'updateClient'])->name('ai-context.client');
+    Route::get('/metricool-credentials', [MetricoolCredentialController::class, 'index'])->name('metricool-credentials.index');
+    Route::post('/metricool-credentials', [MetricoolCredentialController::class, 'update'])->name('metricool-credentials.update');
 });
 
 // --- Revisión pública del cliente (sin auth) ---

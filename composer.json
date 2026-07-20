@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.3.0",
         "barryvdh/laravel-dompdf": "^3.1",
+        "dbrekelmans/bdi": "^1.4",
         "google/apiclient": "^2.15",
         "googleads/google-ads-php": "^33.4",
         "inertiajs/inertia-laravel": "^3.0",
@@ -21,7 +22,6 @@
         "symfony/panther": "^2.4"
     },
     "require-dev": {
-        "dbrekelmans/bdi": "^1.4",
         "fakerphp/faker": "^1.24",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
