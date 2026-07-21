@@ -22,12 +22,20 @@ class Metrics2Controller extends Controller
     {
     }
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         $client = Client::where('name', 'Aura Natural')->firstOrFail();
         $userId = (string) config('metricool.user_id');
         $start  = Carbon::parse(self::RANGE_START)->startOfDay();
         $end    = Carbon::parse(self::RANGE_END)->endOfDay();
+
+        // ?force=1 borra el cache de ambas redes para este rango y vuelve a scrapearlo.
+        if ($request->boolean('force')) {
+            MetricoolScrapeCache::where('client_id', $client->id)
+                ->where('range_start', self::RANGE_START)
+                ->where('range_end', self::RANGE_END)
+                ->delete();
+        }
 
         [$fbData, $fbError, $fbFromCache] = $this->resolve(
             clientId:  $client->id,

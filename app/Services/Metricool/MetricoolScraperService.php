@@ -38,15 +38,8 @@ class MetricoolScraperService
             $client->request('GET', $url);
             $client->waitFor(self::SELECTOR_METRIC_BOX, 20);
 
-            // Esperar a que los 9 boxes (3 arriba + 6 abajo) estén cargados.
-            // Si en 5s solo hay 3, seguimos igual y reportamos _boxes_count.
-            try {
-                $client->wait(5)->until(
-                    fn () => $client->getCrawler()->filter(self::SELECTOR_METRIC_BOX)->count() >= 9
-                );
-            } catch (\Throwable) {
-                // no pasa nada — algunos clientes pueden tener menos boxes
-            }
+            // Esperar a que la página termine de cargar todas las secciones.
+            sleep(3);
 
             $crawler = $client->getCrawler();
             $boxes   = $crawler->filter(self::SELECTOR_METRIC_BOX);
@@ -60,20 +53,29 @@ class MetricoolScraperService
                     : null;
             };
 
+            // Volcamos todos los boxes con su índice para poder mapear la estructura
+            // real de la página. Con el mapa completo se fijan los índices correctos.
+            $allBoxes = [];
+            for ($i = 0; $i < $count; $i++) {
+                $allBoxes[$i] = $val($i);
+            }
+
             return [
-                // Fila superior (3 boxes coloreados)
-                'followers_total'    => $val(0),   // Seguidores (total acumulado)
-                'following_total'    => $val(1),   // Siguiendo
-                'content_total'      => $val(2),   // Contenido total
-                // Fila inferior (6 boxes grises)
-                'followers_gained'   => $val(3),   // Seguidores (ganados en el período)
-                'followers_daily'    => $val(4),   // Seguidores diarios
-                'followers_per_post' => $val(5),   // Seguidores por publicación
-                'following_net'      => $val(6),   // Siguiendo (delta)
-                'posts_per_day'      => $val(7),   // Publicaciones por día
-                'posts_per_week'     => $val(8),   // Publicaciones por semana
+                // Fila superior (3 boxes coloreados) — índices confirmados
+                'followers_total'    => $val(0),
+                'following_total'    => $val(1),
+                'content_total'      => $val(2),
+                // Fila inferior (6 boxes grises) — índices PENDIENTES DE CONFIRMAR
+                // Se usa el mapa _all_boxes para identificar los índices correctos.
+                'followers_gained'   => $val(3),
+                'followers_daily'    => null,
+                'followers_per_post' => null,
+                'following_net'      => null,
+                'posts_per_day'      => null,
+                'posts_per_week'     => null,
                 'screenshot'         => $screenshotPath,
                 '_boxes_count'       => $count,
+                '_all_boxes'         => $allBoxes,
             ];
         } catch (Throwable $e) {
             $this->debugScreenshot($client, 'instagram-evolution-failed');
@@ -88,7 +90,7 @@ class MetricoolScraperService
         $client = $this->createLoggedInClient();
 
         try {
-            $url = "https://app.metricool.com/evolution/facebook?blogId={$blogId}&userId={$userId}";
+            $url = "https://app.metricool.com/evolution/facebookPage?blogId={$blogId}&userId={$userId}";
 
             // Intento de fijar el rango vía querystring, mismo formato (Ymd) que usa
             // la API oficial. La página es una SPA (Vuetify) — no está confirmado que
