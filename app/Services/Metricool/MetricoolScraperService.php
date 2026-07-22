@@ -76,12 +76,13 @@ class MetricoolScraperService
     {
         $url = "https://app.metricool.com/evolution/facebookPage?blogId={$blogId}&userId={$userId}";
 
-        if ($start && $end) {
-            $url .= '&from=' . $start->format('Ymd') . '&to=' . $end->format('Ymd');
-        }
-
         $chrome->request('GET', $url);
         $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+
+        if ($start && $end) {
+            $this->applyDateRange($chrome, $start, $end);
+            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+        }
 
         $boxes = $chrome->getCrawler()->filter(self::SELECTOR_METRIC_BOX);
 
@@ -97,19 +98,18 @@ class MetricoolScraperService
     {
         $url = "https://app.metricool.com/evolution/instagram?blogId={$blogId}&userId={$userId}";
 
-        if ($start && $end) {
-            $url .= '&from=' . $start->format('Ymd') . '&to=' . $end->format('Ymd');
-        }
-
         $chrome->request('GET', $url);
 
-        // La SPA de Metricool (Vue) mantiene estado del router entre navegaciones.
-        // Un reload forzado limpia ese estado y garantiza que los componentes
-        // de métricas se monten desde cero.
+        // Reload forzado para limpiar estado del router Vue entre navegaciones.
         sleep(1);
         $chrome->executeScript('location.reload()');
 
         $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
+
+        if ($start && $end) {
+            $this->applyDateRange($chrome, $start, $end);
+            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+        }
 
         // Dar tiempo a que carguen todas las secciones de la página.
         sleep(3);
@@ -155,6 +155,98 @@ class MetricoolScraperService
     // -------------------------------------------------------------------------
     // Login y utilidades
     // -------------------------------------------------------------------------
+
+    /**
+     * Abre el date picker de Metricool, navega al mes correcto y hace click
+     * en el día de inicio y de fin. Espera a que los datos se recarguen.
+     */
+    private function applyDateRange(Client $chrome, CarbonInterface $start, CarbonInterface $end): void
+    {
+        try {
+            // Buscar el botón de rango de fechas (contiene texto de mes en español)
+            $chrome->waitFor('button[aria-haspopup="menu"]', 10);
+
+            $dateBtn = $chrome->getCrawler()
+                ->filter('button[aria-haspopup="menu"]')
+                ->reduce(fn ($node) => (bool) preg_match(
+                    '/\d{1,2}\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)/i',
+                    $node->text()
+                ));
+
+            if ($dateBtn->count() === 0) {
+                Log::warning('Metricool scraper: no se encontró el botón de rango de fechas');
+                return;
+            }
+
+            $dateBtn->first()->click();
+            $chrome->waitFor('.vc-container', 10);
+            sleep(1);
+
+            // Seleccionar fecha de inicio
+            $this->navigateCalendarTo($chrome, $start);
+            $startSel = '.id-' . $start->format('Y-m-d') . ' .vc-day-content:not(.vc-disabled)';
+            $chrome->getCrawler()->filter($startSel)->first()->click();
+            sleep(1);
+
+            // Seleccionar fecha de fin
+            $this->navigateCalendarTo($chrome, $end);
+            $endSel = '.id-' . $end->format('Y-m-d') . ' .vc-day-content:not(.vc-disabled)';
+            $chrome->getCrawler()->filter($endSel)->first()->click();
+
+            // Esperar que el calendario cierre y que la API de Metricool recargue los datos.
+            sleep(4);
+
+            $this->debugScreenshot($chrome, 'after-date-selection');
+
+        } catch (Throwable $e) {
+            Log::warning('Metricool scraper: error al setear rango de fechas', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Navega el v-calendar mes a mes hasta que el día $date sea visible en el DOM.
+     */
+    private function navigateCalendarTo(Client $chrome, CarbonInterface $date): void
+    {
+        $daySelector = '.id-' . $date->format('Y-m-d');
+
+        $monthNames = [
+            'enero' => 1, 'febrero' => 2, 'marzo' => 3, 'abril' => 4,
+            'mayo'  => 5, 'junio'   => 6, 'julio' => 7, 'agosto' => 8,
+            'septiembre' => 9, 'octubre' => 10, 'noviembre' => 11, 'diciembre' => 12,
+        ];
+
+        for ($i = 0; $i < 12; $i++) {
+            $crawler = $chrome->getCrawler();
+
+            if ($crawler->filter($daySelector)->count() > 0) {
+                return; // el mes ya está visible
+            }
+
+            // Leer el último título de mes visible (columna derecha del calendario de 2 paneles)
+            $titleText  = strtolower(trim($crawler->filter('.vc-title span')->last()->text('')));
+            preg_match('/(\d{4})/', $titleText, $m);
+            $visibleYear  = (int) ($m[1] ?? 0);
+            $monthStr     = trim(preg_replace('/\s*\d{4}/', '', $titleText));
+            $visibleMonth = $monthNames[$monthStr] ?? 0;
+
+            $targetMonth = (int) $date->format('m');
+            $targetYear  = (int) $date->format('Y');
+
+            $goBack = $targetYear < $visibleYear
+                || ($targetYear === $visibleYear && $targetMonth < $visibleMonth);
+
+            $navBtn = $crawler->filter($goBack ? '.vc-arrow.vc-prev' : '.vc-arrow.vc-next')
+                ->reduce(fn ($node) => !$node->attr('disabled'));
+
+            if ($navBtn->count() === 0) {
+                break;
+            }
+
+            $navBtn->first()->click();
+            sleep(0.5);
+        }
+    }
 
     /**
      * Extrae el valor numérico de un metric box probando varias clases de texto.
