@@ -157,43 +157,34 @@ class MetricoolScraperService
     // -------------------------------------------------------------------------
 
     /**
-     * Abre el date picker de Metricool, navega al mes correcto y hace click
-     * en el día de inicio y de fin. Espera a que los datos se recarguen.
+     * Abre el date picker de Metricool y selecciona el rango usando JavaScript
+     * para garantizar que los eventos de Vue/v-calendar se disparen correctamente.
      */
     private function applyDateRange(Client $chrome, CarbonInterface $start, CarbonInterface $end): void
     {
         try {
-            // Buscar el botón de rango de fechas (contiene texto de mes en español)
-            $chrome->waitFor('button[aria-haspopup="menu"]', 10);
+            // Abrir el date picker via JS (busca el botón con texto de mes en español)
+            $chrome->executeScript("
+                const buttons = document.querySelectorAll('button[aria-haspopup=\"menu\"]');
+                for (const btn of buttons) {
+                    if (/\\d{1,2}\\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)/i.test(btn.textContent)) {
+                        btn.click();
+                        break;
+                    }
+                }
+            ");
 
-            $dateBtn = $chrome->getCrawler()
-                ->filter('button[aria-haspopup="menu"]')
-                ->reduce(fn ($node) => (bool) preg_match(
-                    '/\d{1,2}\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)/i',
-                    $node->text()
-                ));
-
-            if ($dateBtn->count() === 0) {
-                Log::warning('Metricool scraper: no se encontró el botón de rango de fechas');
-                return;
-            }
-
-            $dateBtn->first()->click();
             $chrome->waitFor('.vc-container', 10);
             sleep(1);
 
-            // Seleccionar fecha de inicio
-            $this->navigateCalendarTo($chrome, $start);
-            $startSel = '.id-' . $start->format('Y-m-d') . ' .vc-day-content:not(.vc-disabled)';
-            $chrome->getCrawler()->filter($startSel)->first()->click();
+            // Click en la fecha de inicio, navegando meses si es necesario
+            $this->clickCalendarDay($chrome, $start);
             sleep(1);
 
-            // Seleccionar fecha de fin
-            $this->navigateCalendarTo($chrome, $end);
-            $endSel = '.id-' . $end->format('Y-m-d') . ' .vc-day-content:not(.vc-disabled)';
-            $chrome->getCrawler()->filter($endSel)->first()->click();
+            // Click en la fecha de fin, navegando meses si es necesario
+            $this->clickCalendarDay($chrome, $end);
 
-            // Esperar que el calendario cierre y que la API de Metricool recargue los datos.
+            // Esperar que el calendario cierre y Metricool recargue los datos
             sleep(4);
 
             $this->debugScreenshot($chrome, 'after-date-selection');
@@ -204,11 +195,12 @@ class MetricoolScraperService
     }
 
     /**
-     * Navega el v-calendar mes a mes hasta que el día $date sea visible en el DOM.
+     * Navega el v-calendar hasta que el día sea visible, luego hace click via JS.
      */
-    private function navigateCalendarTo(Client $chrome, CarbonInterface $date): void
+    private function clickCalendarDay(Client $chrome, CarbonInterface $date): void
     {
-        $daySelector = '.id-' . $date->format('Y-m-d');
+        $dayId   = $date->format('Y-m-d');
+        $sel     = ".id-{$dayId} .vc-day-content:not(.vc-disabled)";
 
         $monthNames = [
             'enero' => 1, 'febrero' => 2, 'marzo' => 3, 'abril' => 4,
@@ -216,36 +208,43 @@ class MetricoolScraperService
             'septiembre' => 9, 'octubre' => 10, 'noviembre' => 11, 'diciembre' => 12,
         ];
 
-        for ($i = 0; $i < 12; $i++) {
-            $crawler = $chrome->getCrawler();
+        for ($attempt = 0; $attempt < 12; $attempt++) {
+            $found = (bool) $chrome->executeScript(
+                "return !!document.querySelector('{$sel}')"
+            );
 
-            if ($crawler->filter($daySelector)->count() > 0) {
-                return; // el mes ya está visible
+            if ($found) {
+                $chrome->executeScript("document.querySelector('{$sel}')?.click()");
+                return;
             }
 
-            // Leer el último título de mes visible (columna derecha del calendario de 2 paneles)
-            $titleText  = strtolower(trim($crawler->filter('.vc-title span')->last()->text('')));
+            // Determinar dirección de navegación comparando con el mes visible (panel derecho)
+            $titleText   = strtolower((string) $chrome->executeScript(
+                "return document.querySelectorAll('.vc-title span')[1]?.textContent ?? ''"
+            ));
             preg_match('/(\d{4})/', $titleText, $m);
             $visibleYear  = (int) ($m[1] ?? 0);
             $monthStr     = trim(preg_replace('/\s*\d{4}/', '', $titleText));
             $visibleMonth = $monthNames[$monthStr] ?? 0;
 
-            $targetMonth = (int) $date->format('m');
-            $targetYear  = (int) $date->format('Y');
+            $goBack = $date->year < $visibleYear
+                || ($date->year === $visibleYear && $date->month < $visibleMonth);
 
-            $goBack = $targetYear < $visibleYear
-                || ($targetYear === $visibleYear && $targetMonth < $visibleMonth);
+            $navSel = $goBack ? '.vc-arrow.vc-prev' : '.vc-arrow.vc-next';
+            $moved  = (bool) $chrome->executeScript("
+                const btn = document.querySelector('{$navSel}:not([disabled])');
+                if (btn) { btn.click(); return true; }
+                return false;
+            ");
 
-            $navBtn = $crawler->filter($goBack ? '.vc-arrow.vc-prev' : '.vc-arrow.vc-next')
-                ->reduce(fn ($node) => !$node->attr('disabled'));
-
-            if ($navBtn->count() === 0) {
+            if (!$moved) {
                 break;
             }
 
-            $navBtn->first()->click();
             sleep(0.5);
         }
+
+        Log::warning("Metricool scraper: no se pudo clickear el día {$dayId} en el calendario");
     }
 
     /**
