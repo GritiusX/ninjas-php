@@ -248,6 +248,20 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
         };
     }, [hasPending]);
 
+    async function handleCancel() {
+        try {
+            await fetch('/metrics2/cancel', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                },
+            });
+        } catch {
+            // ignorar error, navegar igual
+        }
+        router.get('/metrics2');
+    }
+
     function handleRefresh() {
         setPollError(null);
         setNavigating(true);
@@ -259,7 +273,7 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
     return (
         <>
             <Head title={`${client.name} — Scraper Metricool`} />
-            <ScrapingOverlay visible={showOverlay} error={pollError} onRetry={pollError ? handleRefresh : undefined} />
+            <ScrapingOverlay visible={showOverlay} error={pollError} onRetry={pollError ? handleRefresh : undefined} onCancel={!pollError && !navigating ? handleCancel : undefined} />
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">

@@ -14,9 +14,10 @@ type Props = {
     visible: boolean;
     error?: string | null;
     onRetry?: () => void;
+    onCancel?: () => void;
 };
 
-export function ScrapingOverlay({ visible, error, onRetry }: Props) {
+export function ScrapingOverlay({ visible, error, onRetry, onCancel }: Props) {
     const [msgIndex, setMsgIndex] = useState(0);
 
     useEffect(() => {
@@ -50,6 +51,14 @@ export function ScrapingOverlay({ visible, error, onRetry }: Props) {
                     <>
                         <Loader2 className="h-9 w-9 animate-spin text-blue-500" />
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{MESSAGES[msgIndex]}</p>
+                        {onCancel && (
+                            <button
+                                onClick={onCancel}
+                                className="mt-1 text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                                Volver atrás
+                            </button>
+                        )}
                     </>
                 )}
             </div>

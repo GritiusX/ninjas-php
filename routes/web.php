@@ -98,6 +98,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->gro
 // --- /metrics2: scraper Metricool por cliente ---
 Route::middleware(['auth', 'role:pm'])->prefix('metrics2')->name('metrics2.')->group(function () {
     Route::get('/', [Metrics2Controller::class, 'list'])->name('index');
+    Route::post('/cancel', [Metrics2Controller::class, 'cancel'])->name('cancel');
     Route::get('/{client}/status', [Metrics2Controller::class, 'status'])->name('status');
     Route::get('/{client}', [Metrics2Controller::class, 'show'])->name('show');
 });

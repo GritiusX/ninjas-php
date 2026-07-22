@@ -87,6 +87,13 @@ class Metrics2Controller extends Controller
         ]);
     }
 
+    public function cancel(): JsonResponse
+    {
+        // Mata procesos de Chrome/chromedriver que hayan quedado colgados
+        exec('pkill -f chromedriver 2>/dev/null; pkill -f "chrome --" 2>/dev/null');
+        return response()->json(['ok' => true]);
+    }
+
     public function status(Client $client): JsonResponse
     {
         $networks = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
