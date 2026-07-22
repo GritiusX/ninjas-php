@@ -99,7 +99,14 @@ class MetricoolScraperService
         }
 
         $chrome->request('GET', $url);
-        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+
+        // La SPA de Metricool (Vue) mantiene estado del router entre navegaciones.
+        // Un reload forzado limpia ese estado y garantiza que los componentes
+        // de métricas se monten desde cero.
+        sleep(1);
+        $chrome->executeScript('location.reload()');
+
+        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
 
         // Dar tiempo a que carguen todas las secciones de la página.
         sleep(3);
