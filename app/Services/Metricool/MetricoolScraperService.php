@@ -54,9 +54,9 @@ class MetricoolScraperService
                     $results[$network] = match ($network) {
                         'facebook'  => $this->doFacebookEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
                         'instagram' => $this->doInstagramEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
-                        'tiktok'    => $this->doGenericEvolution($chrome, "https://app.metricool.com/evolution/tiktok?blogId={$cfg['blogId']}&userId={$cfg['userId']}", 'tiktok', $start, $end),
-                        'youtube'   => $this->doGenericEvolution($chrome, "https://app.metricool.com/evolution/youtube?blogId={$cfg['blogId']}&userId={$cfg['userId']}", 'youtube', $start, $end),
-                        'googleAds' => $this->doGenericEvolution($chrome, "https://app.metricool.com/evolution/googleAds?blogId={$cfg['blogId']}&userId={$cfg['userId']}", 'googleAds', $start, $end),
+                        'tiktok'    => $this->doTiktokEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
+                        'youtube'   => $this->doYoutubeEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
+                        'googleAds' => $this->doGoogleAdsEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
                         default     => throw new RuntimeException("Red no soportada: {$network}"),
                     };
                 } catch (Throwable $e) {
@@ -155,13 +155,9 @@ class MetricoolScraperService
         ];
     }
 
-    /**
-     * Scraper genérico: lee todos los metric boxes por índice (box_0, box_1, …).
-     * Se usa para redes cuya estructura de DOM no está mapeada aún (TikTok, YouTube, Google Ads).
-     * Una vez conocidos los labels reales, reemplazar con un método específico.
-     */
-    private function doGenericEvolution(Client $chrome, string $url, string $network, ?CarbonInterface $start, ?CarbonInterface $end): array
+    private function doTiktokEvolution(Client $chrome, string $blogId, string $userId, ?CarbonInterface $start, ?CarbonInterface $end): array
     {
+        $url = "https://app.metricool.com/evolution/tiktok?blogId={$blogId}&userId={$userId}";
         $chrome->request('GET', $url);
         sleep(1);
         $chrome->executeScript('location.reload()');
@@ -173,16 +169,101 @@ class MetricoolScraperService
         }
 
         sleep(2);
+        $boxes = $this->readLabeledBoxes($chrome->getCrawler());
+        $this->debugScreenshot($chrome, 'tiktok-evolution-ok');
 
-        $boxes  = $chrome->getCrawler()->filter(self::SELECTOR_METRIC_BOX);
-        $result = [];
+        return [
+            'followers'        => $boxes['Seguidores'] ?? null,
+            'posts'            => $boxes['Posts'] ?? null,
+            'followers_gained' => $boxes['Adquiridos'] ?? null,
+            'followers_lost'   => $boxes['Perdidos'] ?? null,
+            '_raw'             => $boxes,
+        ];
+    }
 
-        for ($i = 0; $i < $boxes->count(); $i++) {
-            $result["box_{$i}"] = $this->boxValue($boxes, $i);
+    private function doYoutubeEvolution(Client $chrome, string $blogId, string $userId, ?CarbonInterface $start, ?CarbonInterface $end): array
+    {
+        $url = "https://app.metricool.com/evolution/youtube?blogId={$blogId}&userId={$userId}";
+        $chrome->request('GET', $url);
+        sleep(1);
+        $chrome->executeScript('location.reload()');
+        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
+
+        if ($start && $end) {
+            $this->applyDateRange($chrome, $start, $end);
+            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
         }
 
-        $this->debugScreenshot($chrome, "{$network}-evolution-ok");
+        sleep(2);
+        $boxes = $this->readLabeledBoxes($chrome->getCrawler());
+        $this->debugScreenshot($chrome, 'youtube-evolution-ok');
 
+        return [
+            'subscribers'      => $boxes['Suscriptores'] ?? null,
+            'views'            => $boxes['Reproducciones'] ?? null,
+            'revenue'          => $boxes['Revenue'] ?? null,
+            'videos'           => $boxes['Vídeos'] ?? null,
+            'subscribers_gained' => $boxes['Ganados'] ?? null,
+            'subscribers_lost'   => $boxes['Perdidos'] ?? null,
+            '_raw'             => $boxes,
+        ];
+    }
+
+    private function doGoogleAdsEvolution(Client $chrome, string $blogId, string $userId, ?CarbonInterface $start, ?CarbonInterface $end): array
+    {
+        $url = "https://app.metricool.com/evolution/googleAds?blogId={$blogId}&userId={$userId}";
+        $chrome->request('GET', $url);
+        sleep(1);
+        $chrome->executeScript('location.reload()');
+        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
+
+        if ($start && $end) {
+            $this->applyDateRange($chrome, $start, $end);
+            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+        }
+
+        sleep(2);
+        $boxes = $this->readLabeledBoxes($chrome->getCrawler());
+        $this->debugScreenshot($chrome, 'googleAds-evolution-ok');
+
+        return [
+            'impressions'  => $boxes['Impresiones'] ?? null,
+            'spend'        => $boxes['Gasto'] ?? null,
+            'clicks'       => $boxes['Clics'] ?? null,
+            'conversions'  => $boxes['Conversiones'] ?? null,
+            'cpm'          => $boxes['CPM'] ?? null,
+            'cpc'          => $boxes['CPC'] ?? null,
+            'ctr'          => $boxes['CTR'] ?? null,
+            '_raw'         => $boxes,
+        ];
+    }
+
+    /**
+     * Lee todos los [aria-label="Analysis Metric Box"] de la página y devuelve
+     * un array label → valor. Para labels duplicados conserva la primera ocurrencia.
+     */
+    private function readLabeledBoxes(\Symfony\Component\DomCrawler\Crawler $crawler): array
+    {
+        $result = [];
+        $crawler->filter('[aria-label="Analysis Metric Box"]')->each(function ($card) use (&$result) {
+            $labelEl = $card->filter('.text-sm.whitespace-nowrap');
+            if ($labelEl->count() === 0) {
+                return;
+            }
+            $label = trim($labelEl->first()->text(''));
+            if ($label === '' || array_key_exists($label, $result)) {
+                return;
+            }
+            foreach (self::VALUE_CLASSES as $cls) {
+                $valueEl = $card->filter('[aria-label="Metric box value"] ' . $cls);
+                if ($valueEl->count() > 0) {
+                    $val = trim($valueEl->first()->text(''));
+                    $result[$label] = ($val !== '' && $val !== '-') ? $val : null;
+                    return;
+                }
+            }
+            $result[$label] = null;
+        });
         return $result;
     }
 

@@ -74,6 +74,51 @@ function InstagramSection({ data, start, end }: { data: NetworkData; start: stri
     );
 }
 
+function TiktokSection({ data }: { data: NetworkData }) {
+    return (
+        <>
+            <SectionHeader label="Crecimiento" />
+            <DataRow label="Seguidores" value={data.followers} />
+            <DataRow label="Posts" value={data.posts} />
+            <SectionHeader label="Balance de seguidores" />
+            <DataRow label="Adquiridos" value={data.followers_gained} />
+            <DataRow label="Perdidos" value={data.followers_lost} />
+        </>
+    );
+}
+
+function YoutubeSection({ data }: { data: NetworkData }) {
+    return (
+        <>
+            <SectionHeader label="Crecimiento" />
+            <DataRow label="Suscriptores" value={data.subscribers} />
+            <DataRow label="Reproducciones" value={data.views} />
+            <DataRow label="Revenue" value={data.revenue} />
+            <DataRow label="Videos" value={data.videos} />
+            <SectionHeader label="Balance de suscriptores" />
+            <DataRow label="Ganados" value={data.subscribers_gained} />
+            <DataRow label="Perdidos" value={data.subscribers_lost} />
+        </>
+    );
+}
+
+function GoogleAdsSection({ data }: { data: NetworkData }) {
+    return (
+        <>
+            <SectionHeader label="Alcance" />
+            <DataRow label="Impresiones" value={data.impressions} />
+            <DataRow label="Gasto" value={data.spend} />
+            <SectionHeader label="Resultados" />
+            <DataRow label="Clics" value={data.clicks} />
+            <DataRow label="Conversiones" value={data.conversions} />
+            <SectionHeader label="Rendimiento" />
+            <DataRow label="CPM" value={data.cpm} />
+            <DataRow label="CPC" value={data.cpc} />
+            <DataRow label="CTR" value={data.ctr} />
+        </>
+    );
+}
+
 function GenericSection({ data }: { data: NetworkData }) {
     const entries = Object.entries(data).filter(([k]) => !k.startsWith('_'));
     return (
@@ -130,6 +175,12 @@ function NetworkCard({
                         <FacebookSection data={result.data} />
                     ) : network === 'instagram' ? (
                         <InstagramSection data={result.data} start={start} end={end} />
+                    ) : network === 'tiktok' ? (
+                        <TiktokSection data={result.data} />
+                    ) : network === 'youtube' ? (
+                        <YoutubeSection data={result.data} />
+                    ) : network === 'googleAds' ? (
+                        <GoogleAdsSection data={result.data} />
                     ) : (
                         <GenericSection data={result.data} />
                     )
