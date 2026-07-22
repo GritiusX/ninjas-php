@@ -163,22 +163,20 @@ class MetricoolScraperService
     private function applyDateRange(Client $chrome, CarbonInterface $start, CarbonInterface $end): void
     {
         try {
-            $this->debugScreenshot($chrome, 'before-datepicker');
+            // Esperar que el botón del date picker sea interactivo (los metric boxes
+            // cargan antes que el picker button quede listo).
+            sleep(2);
 
             // Abrir el date picker via JS (busca el botón con texto de mes en español)
-            $clicked = (bool) $chrome->executeScript("
+            $chrome->executeScript("
                 const buttons = document.querySelectorAll('button[aria-haspopup=\"menu\"]');
                 for (const btn of buttons) {
                     if (/\\d{1,2}\\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)/i.test(btn.textContent)) {
                         btn.click();
-                        return true;
+                        break;
                     }
                 }
-                return false;
             ");
-
-            Log::info('Metricool scraper: date picker button clicked=' . ($clicked ? 'true' : 'false'));
-            $this->debugScreenshot($chrome, 'after-picker-click');
 
             $chrome->waitFor('.vc-container', 10);
             sleep(1);
@@ -196,7 +194,6 @@ class MetricoolScraperService
             $this->debugScreenshot($chrome, 'after-date-selection');
 
         } catch (Throwable $e) {
-            $this->debugScreenshot($chrome, 'datepicker-error');
             Log::warning('Metricool scraper: error al setear rango de fechas', ['error' => $e->getMessage()]);
         }
     }
