@@ -202,10 +202,12 @@ function NetworkCard({
 export default function Metrics2Show({ client, networkResults: initialResults, start, end }: Props) {
     const [networkResults, setNetworkResults] = useState(initialResults);
     const [navigating, setNavigating] = useState(false);
+    const [pollError, setPollError] = useState<string | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const failCountRef = useRef(0);
 
     const hasPending = Object.values(networkResults).some((r) => r.pending);
-    const showOverlay = hasPending || navigating;
+    const showOverlay = hasPending || navigating || pollError !== null;
 
     // Sync cuando Inertia actualiza las props (ej: después de force refresh)
     useEffect(() => {
@@ -222,13 +224,22 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
             return;
         }
 
+        failCountRef.current = 0;
+
         pollRef.current = setInterval(async () => {
             try {
-                const res  = await fetch(`/metrics2/${client.id}/status`);
+                const res = await fetch(`/metrics2/${client.id}/status`);
+                if (!res.ok) throw new Error(`Error ${res.status}`);
                 const json = await res.json() as { networkResults: Record<string, NetworkResult> };
+                failCountRef.current = 0;
                 setNetworkResults(json.networkResults);
-            } catch {
-                // ignorar errores de red, seguir polling
+            } catch (e) {
+                failCountRef.current += 1;
+                if (failCountRef.current >= 3) {
+                    clearInterval(pollRef.current!);
+                    pollRef.current = null;
+                    setPollError(e instanceof Error ? e.message : 'Error de conexión con el servidor');
+                }
             }
         }, 3000);
 
@@ -238,6 +249,7 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
     }, [hasPending]);
 
     function handleRefresh() {
+        setPollError(null);
         setNavigating(true);
         router.get(`/metrics2/${client.id}`, { force: '1' }, {
             onFinish: () => setNavigating(false),
@@ -247,7 +259,7 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
     return (
         <>
             <Head title={`${client.name} — Scraper Metricool`} />
-            <ScrapingOverlay visible={showOverlay} />
+            <ScrapingOverlay visible={showOverlay} error={pollError} onRetry={pollError ? handleRefresh : undefined} />
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
