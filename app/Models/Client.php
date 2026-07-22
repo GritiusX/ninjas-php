@@ -19,14 +19,16 @@ class Client extends Model
         'meta_ad_account_id',
         'meta_access_token',
         'metricool_blog_id',
+        'metricool_networks',
         'google_ads_customer_id',
     ];
 
     protected function casts(): array
     {
         return [
-            'roas_goal'         => 'decimal:2',
-            'meta_access_token' => 'encrypted',
+            'roas_goal'          => 'decimal:2',
+            'meta_access_token'  => 'encrypted',
+            'metricool_networks' => 'array',
         ];
     }
 

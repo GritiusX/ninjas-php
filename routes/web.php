@@ -95,8 +95,8 @@ Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->gro
     Route::post('/{client}/sync', [MetricsController::class, 'sync'])->name('sync');
 });
 
-// --- /metrics2: prueba de scraper Metricool (login + lectura de DOM), solo Aura Natural ---
-Route::middleware(['auth', 'role:pm'])->get('/metrics2', [Metrics2Controller::class, 'index'])->name('metrics2');
+// --- /metrics2/{client}: scraper Metricool por cliente ---
+Route::middleware(['auth', 'role:pm'])->get('/metrics2/{client}', [Metrics2Controller::class, 'index'])->name('metrics2');
 
 // --- Notificaciones (todos los roles) ---
 Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {

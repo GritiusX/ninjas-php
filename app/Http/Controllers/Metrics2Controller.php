@@ -13,22 +13,20 @@ class Metrics2Controller extends Controller
     private const RANGE_START = '2026-06-20';
     private const RANGE_END   = '2026-07-19';
 
-    // blogId de Instagram de Aura Natural en Metricool (distinto al de Facebook).
-    // TODO: guardar como columna metricool_ig_blog_id en clients cuando se extienda a otros clientes.
-    private const AURA_NATURAL_IG_BLOG_ID = '5580785';
+    private const DEFAULT_NETWORKS = ['facebook', 'instagram'];
 
     public function __construct(private readonly MetricoolScraperService $scraper)
     {
     }
 
-    public function index(Request $request)
+    public function index(Request $request, Client $client)
     {
-        $client = Client::where('name', 'Aura Natural')->firstOrFail();
-        $userId = (string) config('metricool.user_id');
-        $start  = Carbon::parse(self::RANGE_START)->startOfDay();
-        $end    = Carbon::parse(self::RANGE_END)->endOfDay();
+        $userId   = (string) config('metricool.user_id');
+        $start    = Carbon::parse(self::RANGE_START)->startOfDay();
+        $end      = Carbon::parse(self::RANGE_END)->endOfDay();
+        $networks = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
+        $blogId   = (string) $client->metricool_blog_id;
 
-        // ?force=1 invalida el cache de ambas redes para este rango y vuelve a scrapearlo.
         if ($request->boolean('force')) {
             MetricoolScrapeCache::where('client_id', $client->id)
                 ->where('range_start', self::RANGE_START)
@@ -36,23 +34,23 @@ class Metrics2Controller extends Controller
                 ->delete();
         }
 
-        $fbCached = MetricoolScrapeCache::findCached($client->id, 'facebook', self::RANGE_START, self::RANGE_END);
-        $igCached = MetricoolScrapeCache::findCached($client->id, 'instagram', self::RANGE_START, self::RANGE_END);
-
-        $fbData      = $fbCached?->data;
-        $fbFromCache = $fbCached !== null;
-        $igData      = $igCached?->data;
-        $igFromCache = $igCached !== null;
-        $fbError     = null;
-        $igError     = null;
-
-        // Solo abre Chrome si falta al menos una de las dos redes en cache.
-        $missing = [];
-        if (!$fbCached) {
-            $missing['facebook'] = ['blogId' => (string) $client->metricool_blog_id, 'userId' => $userId];
+        // Leer cache para cada red
+        $networkResults = [];
+        foreach ($networks as $network) {
+            $cached = MetricoolScrapeCache::findCached($client->id, $network, self::RANGE_START, self::RANGE_END);
+            $networkResults[$network] = [
+                'data'      => $cached?->data,
+                'fromCache' => $cached !== null,
+                'error'     => null,
+            ];
         }
-        if (!$igCached) {
-            $missing['instagram'] = ['blogId' => self::AURA_NATURAL_IG_BLOG_ID, 'userId' => $userId];
+
+        // Abrir Chrome solo si hay redes sin cache
+        $missing = [];
+        foreach ($networks as $network) {
+            if ($networkResults[$network]['data'] === null) {
+                $missing[$network] = ['blogId' => $blogId, 'userId' => $userId];
+            }
         }
 
         if (!empty($missing)) {
@@ -62,34 +60,21 @@ class Metrics2Controller extends Controller
                 $error = $result['_error'] ?? null;
 
                 if ($error) {
-                    match ($network) {
-                        'facebook'  => $fbError = $error,
-                        'instagram' => $igError = $error,
-                        default     => null,
-                    };
+                    $networkResults[$network]['error'] = $error;
                     continue;
                 }
 
                 MetricoolScrapeCache::store($client->id, $network, self::RANGE_START, self::RANGE_END, $result);
-
-                match ($network) {
-                    'facebook'  => [$fbData, $fbFromCache] = [$result, false],
-                    'instagram' => [$igData, $igFromCache] = [$result, false],
-                    default     => null,
-                };
+                $networkResults[$network]['data']      = $result;
+                $networkResults[$network]['fromCache'] = false;
             }
         }
 
         return view('metrics2', [
-            'client'      => $client,
-            'fbData'      => $fbData,
-            'fbError'     => $fbError,
-            'fbFromCache' => $fbFromCache,
-            'igData'      => $igData,
-            'igError'     => $igError,
-            'igFromCache' => $igFromCache,
-            'start'       => self::RANGE_START,
-            'end'         => self::RANGE_END,
+            'client'         => $client,
+            'networkResults' => $networkResults,
+            'start'          => self::RANGE_START,
+            'end'            => self::RANGE_END,
         ]);
     }
 }

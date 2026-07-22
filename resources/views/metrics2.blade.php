@@ -15,93 +15,111 @@
         .section { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
         .section-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
         .badge { font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 9999px; font-weight: 600; }
-        .badge-fb { background: #dbeafe; color: #1d4ed8; }
-        .badge-ig { background: #fce7f3; color: #9d174d; }
+        .badge-fb  { background: #dbeafe; color: #1d4ed8; }
+        .badge-ig  { background: #fce7f3; color: #9d174d; }
+        .badge-tt  { background: #f3e8ff; color: #6b21a8; }
+        .badge-yt  { background: #fee2e2; color: #991b1b; }
+        .badge-ga  { background: #d1fae5; color: #065f46; }
+        .badge-gen { background: #f1f5f9; color: #374151; }
         .error { color: #b91c1c; background: #fee2e2; padding: 0.75rem 1rem; border-radius: 0.5rem; white-space: pre-wrap; font-size: 0.85rem; }
         .debug { font-size: 0.75rem; color: #9ca3af; margin-top: 0.75rem; }
         .cache-badge { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 9999px; background: #d1fae5; color: #065f46; font-weight: 500; }
         .live-badge  { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 9999px; background: #fef3c7; color: #92400e; font-weight: 500; }
-        .separator { border: none; border-top: 1px dashed #e5e7eb; margin: 0.25rem 0; }
         .sub-header td { font-weight: 600; color: #111827; font-size: 0.8rem; background: #f9fafb; padding-top: 0.6rem; }
-        .box-map { font-size: 0.75rem; font-family: monospace; background: #f1f5f9; padding: 0.75rem; border-radius: 0.375rem; margin-top: 0.5rem; line-height: 1.8; }
-        .box-map span.idx { color: #6b7280; }
     </style>
 </head>
 <body>
     <h1>{{ $client->name }} — scraper Metricool</h1>
     <p class="range">Rango: {{ \Carbon\Carbon::parse($start)->format('d/m/Y') }} — {{ \Carbon\Carbon::parse($end)->format('d/m/Y') }}</p>
 
-    {{-- FACEBOOK --}}
-    <div class="section">
-        <div class="section-title">
-            <span class="badge badge-fb">FB</span> Facebook · Evolución
-            @if ($fbFromCache)
-                <span class="cache-badge">desde cache</span>
-            @elseif ($fbData)
-                <span class="live-badge">scrapeado ahora</span>
+    @foreach ($networkResults as $network => $result)
+        @php
+            $data      = $result['data'];
+            $fromCache = $result['fromCache'];
+            $error     = $result['error'];
+
+            $badgeClass = match($network) {
+                'facebook'  => 'badge-fb',
+                'instagram' => 'badge-ig',
+                'tiktok'    => 'badge-tt',
+                'youtube'   => 'badge-yt',
+                'googleAds' => 'badge-ga',
+                default     => 'badge-gen',
+            };
+            $label = match($network) {
+                'facebook'  => 'Facebook · Evolución',
+                'instagram' => 'Instagram · Evolución',
+                'tiktok'    => 'TikTok · Evolución',
+                'youtube'   => 'YouTube · Evolución',
+                'googleAds' => 'Google Ads · Evolución',
+                default     => ucfirst($network) . ' · Evolución',
+            };
+            $badgeName = match($network) {
+                'facebook'  => 'FB',
+                'instagram' => 'IG',
+                'tiktok'    => 'TT',
+                'youtube'   => 'YT',
+                'googleAds' => 'GA',
+                default     => strtoupper(substr($network, 0, 2)),
+            };
+        @endphp
+
+        <div class="section">
+            <div class="section-title">
+                <span class="badge {{ $badgeClass }}">{{ $badgeName }}</span> {{ $label }}
+                @if ($fromCache)
+                    <span class="cache-badge">desde cache</span>
+                @elseif ($data)
+                    <span class="live-badge">scrapeado ahora</span>
+                @endif
+            </div>
+
+            @if ($error)
+                <p class="error">{{ $error }}</p>
+
+            @elseif ($network === 'facebook' && $data)
+                <table>
+                    <tr><th>Crecimiento de seguidores</th><td class="{{ $data['followers_growth'] ? 'val' : 'empty' }}">{{ $data['followers_growth'] ?? '—' }}</td></tr>
+                    <tr><th>Visualizaciones</th><td class="{{ $data['views'] ? 'val' : 'empty' }}">{{ $data['views'] ?? '—' }}</td></tr>
+                </table>
+
+            @elseif ($network === 'instagram' && $data)
+                @php $igVal = fn($key) => $data[$key] ?? null; @endphp
+                <table>
+                    <tr class="sub-header"><td colspan="2">Totales acumulados</td></tr>
+                    <tr><th>Seguidores (total)</th><td class="{{ $igVal('followers_total') ? 'val' : 'empty' }}">{{ $igVal('followers_total') ?? '—' }}</td></tr>
+                    <tr><th>Siguiendo (total)</th><td class="{{ $igVal('following_total') ? 'val' : 'empty' }}">{{ $igVal('following_total') ?? '—' }}</td></tr>
+                    <tr><th>Contenido total</th><td class="{{ $igVal('content_total') ? 'val' : 'empty' }}">{{ $igVal('content_total') ?? '—' }}</td></tr>
+
+                    <tr class="sub-header"><td colspan="2">Período ({{ \Carbon\Carbon::parse($start)->format('d/m') }} – {{ \Carbon\Carbon::parse($end)->format('d/m') }})</td></tr>
+                    <tr><th>Seguidores ganados</th><td class="{{ $igVal('followers_gained') ? 'val' : 'empty' }}">{{ $igVal('followers_gained') ?? '—' }}</td></tr>
+                    <tr><th>Seguidores diarios</th><td class="{{ $igVal('followers_daily') ? 'val' : 'empty' }}">{{ $igVal('followers_daily') ?? '—' }}</td></tr>
+                    <tr><th>Seguidores por publicación</th><td class="{{ $igVal('followers_per_post') ? 'val' : 'empty' }}">{{ $igVal('followers_per_post') ?? '—' }}</td></tr>
+                    <tr><th>Siguiendo (delta)</th><td class="{{ $igVal('following_net') !== null ? 'val' : 'empty' }}">{{ $igVal('following_net') ?? '—' }}</td></tr>
+                    <tr><th>Publicaciones por día</th><td class="{{ $igVal('posts_per_day') ? 'val' : 'empty' }}">{{ $igVal('posts_per_day') ?? '—' }}</td></tr>
+                    <tr><th>Publicaciones por semana</th><td class="{{ $igVal('posts_per_week') ? 'val' : 'empty' }}">{{ $igVal('posts_per_week') ?? '—' }}</td></tr>
+                </table>
+                @if (!empty($data['_delta_boxes']))
+                    <div class="debug">Delta boxes: {{ collect($data['_delta_boxes'])->map(fn($v,$k) => "{$k}: {$v}")->implode(' · ') }}</div>
+                @endif
+
+            @elseif ($data)
+                {{-- Redes genéricas (TikTok, YouTube, Google Ads): mostramos todos los boxes por índice --}}
+                <table>
+                    @foreach ($data as $key => $value)
+                        @if (!str_starts_with($key, '_'))
+                            <tr>
+                                <th>{{ $key }}</th>
+                                <td class="{{ $value ? 'val' : 'empty' }}">{{ $value ?? '—' }}</td>
+                            </tr>
+                        @endif
+                    @endforeach
+                </table>
+
+            @else
+                <p class="debug">Sin datos</p>
             @endif
         </div>
-
-        @if ($fbError)
-            <p class="error">{{ $fbError }}</p>
-        @elseif ($fbData)
-            <table>
-                <tr><th>Crecimiento de seguidores</th><td class="{{ $fbData['followers_growth'] ? 'val' : 'empty' }}">{{ $fbData['followers_growth'] ?? '—' }}</td></tr>
-                <tr><th>Visualizaciones</th><td class="{{ $fbData['views'] ? 'val' : 'empty' }}">{{ $fbData['views'] ?? '—' }}</td></tr>
-            </table>
-            @if ($fbData['screenshot'] ?? null)
-                <p class="debug">Screenshot: {{ $fbData['screenshot'] }}</p>
-            @endif
-        @else
-            <p class="debug">Sin datos</p>
-        @endif
-    </div>
-
-    {{-- INSTAGRAM --}}
-    <div class="section">
-        <div class="section-title">
-            <span class="badge badge-ig">IG</span> Instagram · Evolución (Comunidad)
-            @if ($igFromCache)
-                <span class="cache-badge">desde cache</span>
-            @elseif ($igData)
-                <span class="live-badge">scrapeado ahora</span>
-            @endif
-        </div>
-
-        @if ($igError)
-            <p class="error">{{ $igError }}</p>
-        @elseif ($igData)
-            @php
-                $igVal = fn($key) => $igData[$key] ?? null;
-            @endphp
-            <table>
-                <tr class="sub-header"><td colspan="2">Totales acumulados</td></tr>
-                <tr><th>Seguidores (total)</th><td class="{{ $igVal('followers_total') ? 'val' : 'empty' }}">{{ $igVal('followers_total') ?? '—' }}</td></tr>
-                <tr><th>Siguiendo (total)</th><td class="{{ $igVal('following_total') ? 'val' : 'empty' }}">{{ $igVal('following_total') ?? '—' }}</td></tr>
-                <tr><th>Contenido total</th><td class="{{ $igVal('content_total') ? 'val' : 'empty' }}">{{ $igVal('content_total') ?? '—' }}</td></tr>
-
-                <tr class="sub-header"><td colspan="2">Período ({{ \Carbon\Carbon::parse($start)->format('d/m') }} – {{ \Carbon\Carbon::parse($end)->format('d/m') }})</td></tr>
-                <tr><th>Seguidores ganados</th><td class="{{ $igVal('followers_gained') ? 'val' : 'empty' }}">{{ $igVal('followers_gained') ?? '—' }}</td></tr>
-                <tr><th>Seguidores diarios</th><td class="{{ $igVal('followers_daily') ? 'val' : 'empty' }}">{{ $igVal('followers_daily') ?? '—' }}</td></tr>
-                <tr><th>Seguidores por publicación</th><td class="{{ $igVal('followers_per_post') ? 'val' : 'empty' }}">{{ $igVal('followers_per_post') ?? '—' }}</td></tr>
-                <tr><th>Siguiendo (delta)</th><td class="{{ $igVal('following_net') !== null ? 'val' : 'empty' }}">{{ $igVal('following_net') ?? '—' }}</td></tr>
-                <tr><th>Publicaciones por día</th><td class="{{ $igVal('posts_per_day') ? 'val' : 'empty' }}">{{ $igVal('posts_per_day') ?? '—' }}</td></tr>
-                <tr><th>Publicaciones por semana</th><td class="{{ $igVal('posts_per_week') ? 'val' : 'empty' }}">{{ $igVal('posts_per_week') ?? '—' }}</td></tr>
-            </table>
-
-            {{-- Debug: delta boxes encontrados (se puede sacar cuando esté estable) --}}
-            @if (!empty($igData['_delta_boxes']))
-                <div class="debug">
-                    Delta boxes: {{ collect($igData['_delta_boxes'])->map(fn($v,$k) => "{$k}: {$v}")->implode(' · ') }}
-                </div>
-            @endif
-
-            @if ($igData['screenshot'] ?? null)
-                <p class="debug">Screenshot: {{ $igData['screenshot'] }}</p>
-            @endif
-        @else
-            <p class="debug">Sin datos</p>
-        @endif
-    </div>
+    @endforeach
 </body>
 </html>

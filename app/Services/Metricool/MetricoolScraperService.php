@@ -54,6 +54,9 @@ class MetricoolScraperService
                     $results[$network] = match ($network) {
                         'facebook'  => $this->doFacebookEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
                         'instagram' => $this->doInstagramEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
+                        'tiktok'    => $this->doGenericEvolution($chrome, "https://app.metricool.com/evolution/tiktok?blogId={$cfg['blogId']}&userId={$cfg['userId']}", 'tiktok', $start, $end),
+                        'youtube'   => $this->doGenericEvolution($chrome, "https://app.metricool.com/evolution/youtube?blogId={$cfg['blogId']}&userId={$cfg['userId']}", 'youtube', $start, $end),
+                        'googleAds' => $this->doGenericEvolution($chrome, "https://app.metricool.com/evolution/googleAds?blogId={$cfg['blogId']}&userId={$cfg['userId']}", 'googleAds', $start, $end),
                         default     => throw new RuntimeException("Red no soportada: {$network}"),
                     };
                 } catch (Throwable $e) {
@@ -150,6 +153,37 @@ class MetricoolScraperService
             'posts_per_week'     => $deltaBoxes['Publicaciones por semana'] ?? null,
             '_delta_boxes'       => $deltaBoxes, // debug: labels y valores encontrados
         ];
+    }
+
+    /**
+     * Scraper genérico: lee todos los metric boxes por índice (box_0, box_1, …).
+     * Se usa para redes cuya estructura de DOM no está mapeada aún (TikTok, YouTube, Google Ads).
+     * Una vez conocidos los labels reales, reemplazar con un método específico.
+     */
+    private function doGenericEvolution(Client $chrome, string $url, string $network, ?CarbonInterface $start, ?CarbonInterface $end): array
+    {
+        $chrome->request('GET', $url);
+        sleep(1);
+        $chrome->executeScript('location.reload()');
+        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
+
+        if ($start && $end) {
+            $this->applyDateRange($chrome, $start, $end);
+            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+        }
+
+        sleep(2);
+
+        $boxes  = $chrome->getCrawler()->filter(self::SELECTOR_METRIC_BOX);
+        $result = [];
+
+        for ($i = 0; $i < $boxes->count(); $i++) {
+            $result["box_{$i}"] = $this->boxValue($boxes, $i);
+        }
+
+        $this->debugScreenshot($chrome, "{$network}-evolution-ok");
+
+        return $result;
     }
 
     // -------------------------------------------------------------------------
