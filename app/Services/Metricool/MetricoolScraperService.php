@@ -20,8 +20,11 @@ use Throwable;
  */
 class MetricoolScraperService
 {
-    private const SELECTOR_METRIC_BOX   = '[aria-label="Metric box value"]';
-    private const SELECTOR_METRIC_VALUE = '.text-3xl';
+    private const SELECTOR_METRIC_BOX = '[aria-label="Metric box value"]';
+
+    // Los boxes grandes (coloreados) usan .text-3xl; los grises pequeños usan .text-2xl o .text-xl.
+    // Se prueban en orden de mayor a menor para capturar el valor numérico principal del box.
+    private const VALUE_CLASSES = ['.text-3xl', '.text-4xl', '.text-2xl', '.text-xl', '.text-lg'];
 
     private const LOGIN_FIELD_SELECTOR    = 'input[name="email"]';
     private const PASSWORD_FIELD_SELECTOR = 'input[name="password"]';
@@ -85,8 +88,8 @@ class MetricoolScraperService
         $this->debugScreenshot($chrome, 'facebook-evolution-ok');
 
         return [
-            'followers_growth' => trim($boxes->eq(0)->filter(self::SELECTOR_METRIC_VALUE)->text('')),
-            'views'            => trim($boxes->eq(1)->filter(self::SELECTOR_METRIC_VALUE)->text('')),
+            'followers_growth' => $this->boxValue($boxes, 0),
+            'views'            => $this->boxValue($boxes, 1),
         ];
     }
 
@@ -117,30 +120,24 @@ class MetricoolScraperService
 
         $this->debugScreenshot($chrome, 'instagram-evolution-ok');
 
-        $val = function (int $i) use ($boxes, $count): ?string {
-            return $count > $i
-                ? trim($boxes->eq($i)->filter(self::SELECTOR_METRIC_VALUE)->text('')) ?: null
-                : null;
-        };
-
-        // Mapa completo de todos los boxes para poder identificar los índices correctos.
+        // Mapa completo de todos los boxes con multi-clase para identificar índices correctos.
         $allBoxes = [];
         for ($i = 0; $i < $count; $i++) {
-            $allBoxes[$i] = $val($i);
+            $allBoxes[$i] = $this->boxValue($boxes, $i);
         }
 
         return [
             // Fila superior (3 boxes coloreados) — índices confirmados
-            'followers_total'    => $val(0),
-            'following_total'    => $val(1),
-            'content_total'      => $val(2),
+            'followers_total'    => $allBoxes[0] ?? null,
+            'following_total'    => $allBoxes[1] ?? null,
+            'content_total'      => $allBoxes[2] ?? null,
             // Fila inferior (6 boxes grises) — índices por confirmar con _all_boxes
-            'followers_gained'   => $val(3),
-            'followers_daily'    => null,
-            'followers_per_post' => null,
-            'following_net'      => null,
-            'posts_per_day'      => null,
-            'posts_per_week'     => null,
+            'followers_gained'   => $allBoxes[3] ?? null,
+            'followers_daily'    => null,  // pendiente
+            'followers_per_post' => null,  // pendiente
+            'following_net'      => null,  // pendiente
+            'posts_per_day'      => null,  // pendiente
+            'posts_per_week'     => null,  // pendiente
             '_boxes_count'       => $count,
             '_all_boxes'         => $allBoxes,
         ];
@@ -149,6 +146,28 @@ class MetricoolScraperService
     // -------------------------------------------------------------------------
     // Login y utilidades
     // -------------------------------------------------------------------------
+
+    /**
+     * Extrae el valor numérico de un metric box probando varias clases de texto.
+     * Los boxes grandes (coloreados) usan .text-3xl; los grises pequeños usan .text-2xl/.text-xl.
+     */
+    private function boxValue(\Symfony\Component\DomCrawler\Crawler $boxes, int $index): ?string
+    {
+        if ($boxes->count() <= $index) {
+            return null;
+        }
+        $box = $boxes->eq($index);
+        foreach (self::VALUE_CLASSES as $cls) {
+            $el = $box->filter($cls);
+            if ($el->count() > 0) {
+                $text = trim($el->first()->text(''));
+                if ($text !== '' && $text !== '-') {
+                    return $text;
+                }
+            }
+        }
+        return null;
+    }
 
     private function createLoggedInClient(): Client
     {
