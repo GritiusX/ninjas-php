@@ -95,8 +95,11 @@ Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->gro
     Route::post('/{client}/sync', [MetricsController::class, 'sync'])->name('sync');
 });
 
-// --- /metrics2/{client}: scraper Metricool por cliente ---
-Route::middleware(['auth', 'role:pm'])->get('/metrics2/{client}', [Metrics2Controller::class, 'index'])->name('metrics2');
+// --- /metrics2: scraper Metricool por cliente ---
+Route::middleware(['auth', 'role:pm'])->prefix('metrics2')->name('metrics2.')->group(function () {
+    Route::get('/', [Metrics2Controller::class, 'list'])->name('index');
+    Route::get('/{client}', [Metrics2Controller::class, 'show'])->name('show');
+});
 
 // --- Notificaciones (todos los roles) ---
 Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {

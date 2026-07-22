@@ -54,7 +54,8 @@
       "Bash(cat storage/app/private/.gitignore)",
       "WebFetch(domain:claude.ai)",
       "Bash(./vendor/bin/pest tests/Feature/ReviewApprovalTest.php --stop-on-failure)",
-      "Bash(grep -n 'in_array\\($response->status' tests/Feature/ClientReviewTest.php)"
+      "Bash(grep -n 'in_array\\($response->status' tests/Feature/ClientReviewTest.php)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
     ]
   }
 }

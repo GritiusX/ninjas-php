@@ -7,6 +7,8 @@ use App\Models\MetricoolScrapeCache;
 use App\Services\Metricool\MetricoolScraperService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class Metrics2Controller extends Controller
 {
@@ -19,7 +21,36 @@ class Metrics2Controller extends Controller
     {
     }
 
-    public function index(Request $request, Client $client)
+    public function list(): Response
+    {
+        $clients = Client::whereNotNull('metricool_blog_id')
+            ->orderBy('name')
+            ->get(['id', 'name', 'metricool_networks'])
+            ->map(function (Client $client) {
+                $networks    = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
+                $cachedCount = MetricoolScrapeCache::where('client_id', $client->id)
+                    ->where('range_start', self::RANGE_START)
+                    ->where('range_end', self::RANGE_END)
+                    ->whereIn('network', $networks)
+                    ->count();
+
+                return [
+                    'id'             => $client->id,
+                    'name'           => $client->name,
+                    'networks'       => $networks,
+                    'cachedCount'    => $cachedCount,
+                    'totalNetworks'  => count($networks),
+                ];
+            });
+
+        return Inertia::render('metrics2/index', [
+            'clients' => $clients,
+            'start'   => self::RANGE_START,
+            'end'     => self::RANGE_END,
+        ]);
+    }
+
+    public function show(Request $request, Client $client): Response
     {
         $userId   = (string) config('metricool.user_id');
         $start    = Carbon::parse(self::RANGE_START)->startOfDay();
@@ -34,7 +65,6 @@ class Metrics2Controller extends Controller
                 ->delete();
         }
 
-        // Leer cache para cada red
         $networkResults = [];
         foreach ($networks as $network) {
             $cached = MetricoolScrapeCache::findCached($client->id, $network, self::RANGE_START, self::RANGE_END);
@@ -45,7 +75,6 @@ class Metrics2Controller extends Controller
             ];
         }
 
-        // Abrir Chrome solo si hay redes sin cache
         $missing = [];
         foreach ($networks as $network) {
             if ($networkResults[$network]['data'] === null) {
@@ -70,8 +99,8 @@ class Metrics2Controller extends Controller
             }
         }
 
-        return view('metrics2', [
-            'client'         => $client,
+        return Inertia::render('metrics2/show', [
+            'client'         => ['id' => $client->id, 'name' => $client->name],
             'networkResults' => $networkResults,
             'start'          => self::RANGE_START,
             'end'            => self::RANGE_END,

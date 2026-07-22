@@ -21,6 +21,7 @@ export type Client = {
     meta_ad_account_id: string | null;
     meta_access_token: string | null;
     metricool_blog_id: string | null;
+    metricool_networks: string[] | null;
     google_ads_customer_id: string | null;
 };
 
