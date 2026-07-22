@@ -120,36 +120,35 @@ class MetricoolScraperService
 
         $this->debugScreenshot($chrome, 'instagram-evolution-ok');
 
-        // Mapa completo de los "Metric box value" conocidos.
-        $allBoxes = [];
-        for ($i = 0; $i < $count; $i++) {
-            $allBoxes[$i] = $this->boxValue($boxes, $i);
-        }
-
-        // Dump de TODOS los elementos con aria-label para descubrir el selector
-        // correcto de los boxes grises (Seguidores diarios, Pub/día, etc.).
-        $ariaMap = [];
-        $crawler->filter('[aria-label]')->each(function ($node) use (&$ariaMap) {
-            $label = $node->attr('aria-label') ?? '';
-            $text  = trim($node->text(''));
-            if ($text !== '' && mb_strlen($text) < 80) {
-                $ariaMap[] = "[{$label}] → {$text}";
+        // Boxes grises (delta boxes) dentro de #growth: tienen .delta-box-wrapper,
+        // el valor en .text-2xl y el label en .text-xs. Se mapean por label text
+        // para no depender de índices que cambian con el layout.
+        $deltaBoxes = [];
+        $crawler->filter('#growth .delta-box-wrapper')->each(function ($wrapper) use (&$deltaBoxes) {
+            $valueEl = $wrapper->filter('.text-2xl');
+            $labelEl = $wrapper->filter('.text-xs');
+            if ($valueEl->count() > 0 && $labelEl->count() > 0) {
+                $label = trim($labelEl->first()->text(''));
+                $value = trim($valueEl->first()->text(''));
+                if ($label !== '') {
+                    $deltaBoxes[$label] = $value !== '' ? $value : null;
+                }
             }
         });
 
         return [
-            'followers_total'    => $allBoxes[0] ?? null,
-            'following_total'    => $allBoxes[1] ?? null,
-            'content_total'      => $allBoxes[2] ?? null,
-            'followers_gained'   => $allBoxes[3] ?? null,
-            'followers_daily'    => null,
-            'followers_per_post' => null,
-            'following_net'      => null,
-            'posts_per_day'      => null,
-            'posts_per_week'     => null,
-            '_boxes_count'       => $count,
-            '_all_boxes'         => $allBoxes,
-            '_aria_map'          => $ariaMap,
+            // Top 3 boxes coloreados (aria-label="Metric box value", índices 0-2)
+            'followers_total'    => $this->boxValue($boxes, 0),
+            'following_total'    => $this->boxValue($boxes, 1),
+            'content_total'      => $this->boxValue($boxes, 2),
+            // 6 boxes grises de #growth — mapeados por label text
+            'followers_gained'   => $deltaBoxes['Seguidores'] ?? null,
+            'followers_daily'    => $deltaBoxes['Seguidores diarios'] ?? null,
+            'followers_per_post' => $deltaBoxes['Seguidores por publicación'] ?? null,
+            'following_net'      => $deltaBoxes['Siguiendo'] ?? null,
+            'posts_per_day'      => $deltaBoxes['Publicaciones por día'] ?? null,
+            'posts_per_week'     => $deltaBoxes['Publicaciones por semana'] ?? null,
+            '_delta_boxes'       => $deltaBoxes, // debug: labels y valores encontrados
         ];
     }
 

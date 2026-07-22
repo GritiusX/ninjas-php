@@ -89,27 +89,10 @@
                 <tr><th>Publicaciones por semana</th><td class="{{ $igVal('posts_per_week') ? 'val' : 'empty' }}">{{ $igVal('posts_per_week') ?? '—' }}</td></tr>
             </table>
 
-            {{-- Mapa de boxes --}}
-            @if (!empty($igData['_all_boxes']))
+            {{-- Debug: delta boxes encontrados (se puede sacar cuando esté estable) --}}
+            @if (!empty($igData['_delta_boxes']))
                 <div class="debug">
-                    Metric boxes ({{ $igData['_boxes_count'] }}):
-                    <div class="box-map">
-                        @foreach ($igData['_all_boxes'] as $idx => $boxVal)
-                            <span class="idx">[{{ $idx }}]</span> {{ $boxVal ?? '(vacío)' }}<br>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
-            {{-- Dump de aria-labels para encontrar selector de boxes grises --}}
-            @if (!empty($igData['_aria_map']))
-                <div class="debug" style="margin-top:0.75rem">
-                    Todos los aria-label con valor ({{ count($igData['_aria_map']) }}):
-                    <div class="box-map">
-                        @foreach ($igData['_aria_map'] as $entry)
-                            {{ $entry }}<br>
-                        @endforeach
-                    </div>
+                    Delta boxes: {{ collect($igData['_delta_boxes'])->map(fn($v,$k) => "{$k}: {$v}")->implode(' · ') }}
                 </div>
             @endif
 
