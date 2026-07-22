@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
+import { ScrapingOverlay } from '@/components/scraping-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -205,6 +206,7 @@ export default function Metrics2Show({ client, networkResults, start, end }: Pro
     return (
         <>
             <Head title={`${client.name} — Scraper Metricool`} />
+            <ScrapingOverlay visible={refreshing} />
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">

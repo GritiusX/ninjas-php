@@ -1,7 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { ArrowRight, CheckCircle2, Circle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrapingOverlay } from '@/components/scraping-overlay';
 
 type ClientRow = {
     id: number;
@@ -38,9 +39,19 @@ function formatDate(iso: string) {
 }
 
 export default function Metrics2Index({ clients, start, end }: Props) {
+    const [loading, setLoading] = useState(false);
+
+    function handleClientClick(clientId: number) {
+        setLoading(true);
+        router.get(`/metrics2/${clientId}`, {}, {
+            onFinish: () => setLoading(false),
+        });
+    }
+
     return (
         <>
             <Head title="Scraper Metricool" />
+            <ScrapingOverlay visible={loading} />
 
             <div className="flex flex-col gap-6 p-6">
                 <div>
@@ -56,37 +67,39 @@ export default function Metrics2Index({ clients, start, end }: Props) {
                         const someCached = client.cachedCount > 0 && !allCached;
 
                         return (
-                            <Link key={client.id} href={`/metrics2/${client.id}`}>
-                                <Card className="hover:border-primary/50 cursor-pointer transition-colors">
-                                    <CardHeader className="pb-2">
-                                        <div className="flex items-center justify-between">
-                                            <CardTitle className="text-base">{client.name}</CardTitle>
-                                            <ArrowRight className="text-muted-foreground h-4 w-4" />
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="flex items-center justify-between">
-                                        <div className="flex flex-wrap gap-1">
-                                            {client.networks.map((net) => (
-                                                <span
-                                                    key={net}
-                                                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${NETWORK_COLORS[net] ?? 'bg-gray-100 text-gray-600'}`}
-                                                >
-                                                    {NETWORK_LABELS[net] ?? net}
-                                                </span>
-                                            ))}
-                                        </div>
-                                        <div className="flex items-center gap-1 text-xs">
-                                            {allCached ? (
-                                                <><CheckCircle2 className="h-3.5 w-3.5 text-green-500" /><span className="text-green-600">en cache</span></>
-                                            ) : someCached ? (
-                                                <><Circle className="h-3.5 w-3.5 text-yellow-500" /><span className="text-yellow-600">{client.cachedCount}/{client.totalNetworks}</span></>
-                                            ) : (
-                                                <><Circle className="text-muted-foreground h-3.5 w-3.5" /><span className="text-muted-foreground">sin datos</span></>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </Link>
+                            <Card
+                                key={client.id}
+                                className="hover:border-primary/50 cursor-pointer transition-colors"
+                                onClick={() => handleClientClick(client.id)}
+                            >
+                                <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-base">{client.name}</CardTitle>
+                                        <ArrowRight className="text-muted-foreground h-4 w-4" />
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex items-center justify-between">
+                                    <div className="flex flex-wrap gap-1">
+                                        {client.networks.map((net) => (
+                                            <span
+                                                key={net}
+                                                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${NETWORK_COLORS[net] ?? 'bg-gray-100 text-gray-600'}`}
+                                            >
+                                                {NETWORK_LABELS[net] ?? net}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs">
+                                        {allCached ? (
+                                            <><CheckCircle2 className="h-3.5 w-3.5 text-green-500" /><span className="text-green-600">en cache</span></>
+                                        ) : someCached ? (
+                                            <><Circle className="h-3.5 w-3.5 text-yellow-500" /><span className="text-yellow-600">{client.cachedCount}/{client.totalNetworks}</span></>
+                                        ) : (
+                                            <><Circle className="text-muted-foreground h-3.5 w-3.5" /><span className="text-muted-foreground">sin datos</span></>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
                         );
                     })}
                 </div>
