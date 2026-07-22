@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrapingOverlay } from '@/components/scraping-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ type NetworkResult = {
     data: NetworkData | null;
     fromCache: boolean;
     error: string | null;
+    pending: boolean;
 };
 
 type Props = {
@@ -169,7 +170,12 @@ function NetworkCard({
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                {result.error ? (
+                {result.pending ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Scrapeando...
+                    </div>
+                ) : result.error ? (
                     <p className="rounded bg-red-50 p-3 text-xs text-red-700 whitespace-pre-wrap">{result.error}</p>
                 ) : result.data ? (
                     network === 'facebook' ? (
@@ -193,20 +199,55 @@ function NetworkCard({
     );
 }
 
-export default function Metrics2Show({ client, networkResults, start, end }: Props) {
-    const [refreshing, setRefreshing] = useState(false);
+export default function Metrics2Show({ client, networkResults: initialResults, start, end }: Props) {
+    const [networkResults, setNetworkResults] = useState(initialResults);
+    const [navigating, setNavigating] = useState(false);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const hasPending = Object.values(networkResults).some((r) => r.pending);
+    const showOverlay = hasPending || navigating;
+
+    // Sync cuando Inertia actualiza las props (ej: después de force refresh)
+    useEffect(() => {
+        setNetworkResults(initialResults);
+    }, [initialResults]);
+
+    // Polling: cada 3 segundos mientras haya redes pendientes
+    useEffect(() => {
+        if (!hasPending) {
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
+            return;
+        }
+
+        pollRef.current = setInterval(async () => {
+            try {
+                const res  = await fetch(`/metrics2/${client.id}/status`);
+                const json = await res.json() as { networkResults: Record<string, NetworkResult> };
+                setNetworkResults(json.networkResults);
+            } catch {
+                // ignorar errores de red, seguir polling
+            }
+        }, 3000);
+
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+        };
+    }, [hasPending]);
 
     function handleRefresh() {
-        setRefreshing(true);
+        setNavigating(true);
         router.get(`/metrics2/${client.id}`, { force: '1' }, {
-            onFinish: () => setRefreshing(false),
+            onFinish: () => setNavigating(false),
         });
     }
 
     return (
         <>
             <Head title={`${client.name} — Scraper Metricool`} />
-            <ScrapingOverlay visible={refreshing} />
+            <ScrapingOverlay visible={showOverlay} />
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
