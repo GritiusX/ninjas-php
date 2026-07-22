@@ -37,7 +37,7 @@ function DataRow({ label, value }: { label: string; value: string | null | undef
     return (
         <div className="flex justify-between border-b py-2 text-sm last:border-0">
             <span className="text-muted-foreground">{label}</span>
-            <span className={value ? 'font-semibold text-gray-900' : 'text-gray-300 italic'}>
+            <span className={value ? 'font-semibold text-foreground' : 'text-muted-foreground/40 italic'}>
                 {value ?? '—'}
             </span>
         </div>
@@ -45,7 +45,7 @@ function DataRow({ label, value }: { label: string; value: string | null | undef
 }
 
 function SectionHeader({ label }: { label: string }) {
-    return <p className="bg-muted/50 -mx-1 mb-1 mt-3 rounded px-1 py-1 text-xs font-semibold text-gray-700 first:mt-0">{label}</p>;
+    return <p className="bg-muted -mx-1 mb-1 mt-3 rounded px-1 py-1 text-xs font-semibold text-muted-foreground first:mt-0">{label}</p>;
 }
 
 function FacebookSection({ data }: { data: NetworkData }) {
