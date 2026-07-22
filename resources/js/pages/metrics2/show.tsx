@@ -263,8 +263,8 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
                         </div>
                     </div>
 
-                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-                        <RefreshCw className={`mr-2 h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={navigating || hasPending}>
+                        <RefreshCw className={`mr-2 h-3.5 w-3.5 ${navigating ? 'animate-spin' : ''}`} />
                         Actualizar
                     </Button>
                 </div>
