@@ -120,26 +120,36 @@ class MetricoolScraperService
 
         $this->debugScreenshot($chrome, 'instagram-evolution-ok');
 
-        // Mapa completo de todos los boxes con multi-clase para identificar índices correctos.
+        // Mapa completo de los "Metric box value" conocidos.
         $allBoxes = [];
         for ($i = 0; $i < $count; $i++) {
             $allBoxes[$i] = $this->boxValue($boxes, $i);
         }
 
+        // Dump de TODOS los elementos con aria-label para descubrir el selector
+        // correcto de los boxes grises (Seguidores diarios, Pub/día, etc.).
+        $ariaMap = [];
+        $crawler->filter('[aria-label]')->each(function ($node) use (&$ariaMap) {
+            $label = $node->attr('aria-label') ?? '';
+            $text  = trim($node->text(''));
+            if ($text !== '' && mb_strlen($text) < 80) {
+                $ariaMap[] = "[{$label}] → {$text}";
+            }
+        });
+
         return [
-            // Fila superior (3 boxes coloreados) — índices confirmados
             'followers_total'    => $allBoxes[0] ?? null,
             'following_total'    => $allBoxes[1] ?? null,
             'content_total'      => $allBoxes[2] ?? null,
-            // Fila inferior (6 boxes grises) — índices por confirmar con _all_boxes
             'followers_gained'   => $allBoxes[3] ?? null,
-            'followers_daily'    => null,  // pendiente
-            'followers_per_post' => null,  // pendiente
-            'following_net'      => null,  // pendiente
-            'posts_per_day'      => null,  // pendiente
-            'posts_per_week'     => null,  // pendiente
+            'followers_daily'    => null,
+            'followers_per_post' => null,
+            'following_net'      => null,
+            'posts_per_day'      => null,
+            'posts_per_week'     => null,
             '_boxes_count'       => $count,
             '_all_boxes'         => $allBoxes,
+            '_aria_map'          => $ariaMap,
         ];
     }
 
