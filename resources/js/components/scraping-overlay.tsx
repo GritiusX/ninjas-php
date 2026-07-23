@@ -13,11 +13,12 @@ const MESSAGES = [
 type Props = {
     visible: boolean;
     error?: string | null;
+    progress?: number; // 0–100
     onRetry?: () => void;
     onCancel?: () => void;
 };
 
-export function ScrapingOverlay({ visible, error, onRetry, onCancel }: Props) {
+export function ScrapingOverlay({ visible, error, progress, onRetry, onCancel }: Props) {
     const [msgIndex, setMsgIndex] = useState(0);
 
     useEffect(() => {
@@ -51,6 +52,20 @@ export function ScrapingOverlay({ visible, error, onRetry, onCancel }: Props) {
                     <>
                         <Loader2 className="h-9 w-9 animate-spin text-blue-500" />
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{MESSAGES[msgIndex]}</p>
+                        {progress !== undefined && (
+                            <div className="w-full">
+                                <div className="mb-1 flex justify-between text-xs text-gray-400 dark:text-gray-500">
+                                    <span>Progreso</span>
+                                    <span>{Math.round(progress)}%</span>
+                                </div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
+                                    <div
+                                        className="h-full rounded-full bg-blue-500 transition-all duration-700 ease-out"
+                                        style={{ width: `${progress}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
                         {onCancel && (
                             <button
                                 onClick={onCancel}

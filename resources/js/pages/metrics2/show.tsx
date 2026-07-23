@@ -206,8 +206,12 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const failCountRef = useRef(0);
 
-    const hasPending = Object.values(networkResults).some((r) => r.pending);
+    const allResults = Object.values(networkResults);
+    const totalNetworks = allResults.length;
+    const completedNetworks = allResults.filter((r) => !r.pending).length;
+    const hasPending = completedNetworks < totalNetworks;
     const showOverlay = hasPending || navigating || pollError !== null;
+    const progress = navigating || totalNetworks === 0 ? undefined : (completedNetworks / totalNetworks) * 100;
 
     // Sync cuando Inertia actualiza las props (ej: después de force refresh)
     useEffect(() => {
@@ -273,7 +277,7 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
     return (
         <>
             <Head title={`${client.name} — Scraper Metricool`} />
-            <ScrapingOverlay visible={showOverlay} error={pollError} onRetry={pollError ? handleRefresh : undefined} onCancel={!pollError && !navigating ? handleCancel : undefined} />
+            <ScrapingOverlay visible={showOverlay} error={pollError} progress={progress} onRetry={pollError ? handleRefresh : undefined} onCancel={!pollError && !navigating ? handleCancel : undefined} />
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
