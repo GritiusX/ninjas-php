@@ -80,11 +80,13 @@ class MetricoolScraperService
         $url = "https://app.metricool.com/evolution/facebookPage?blogId={$blogId}&userId={$userId}";
 
         $chrome->request('GET', $url);
-        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+        sleep(0.3);
+        $chrome->executeScript('location.reload()');
+        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
 
         if ($start && $end) {
             $this->applyDateRange($chrome, $start, $end);
-            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
         }
 
         $boxes = $chrome->getCrawler()->filter(self::SELECTOR_METRIC_BOX);
