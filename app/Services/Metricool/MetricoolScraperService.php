@@ -104,7 +104,7 @@ class MetricoolScraperService
         $chrome->request('GET', $url);
 
         // Reload forzado para limpiar estado del router Vue entre navegaciones.
-        sleep(1);
+        sleep(0.3);
         $chrome->executeScript('location.reload()');
 
         $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
@@ -115,7 +115,7 @@ class MetricoolScraperService
         }
 
         // Dar tiempo a que carguen todas las secciones de la página.
-        sleep(3);
+        sleep(1.5);
 
         $crawler = $chrome->getCrawler();
         $boxes   = $crawler->filter(self::SELECTOR_METRIC_BOX);
@@ -159,7 +159,7 @@ class MetricoolScraperService
     {
         $url = "https://app.metricool.com/evolution/tiktok?blogId={$blogId}&userId={$userId}";
         $chrome->request('GET', $url);
-        sleep(1);
+        sleep(0.3);
         $chrome->executeScript('location.reload()');
         $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
 
@@ -168,7 +168,7 @@ class MetricoolScraperService
             $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
         }
 
-        sleep(2);
+        sleep(1);
         $boxes = $this->readLabeledBoxes($chrome->getCrawler());
         $this->debugScreenshot($chrome, 'tiktok-evolution-ok');
 
@@ -185,7 +185,7 @@ class MetricoolScraperService
     {
         $url = "https://app.metricool.com/evolution/youtube?blogId={$blogId}&userId={$userId}";
         $chrome->request('GET', $url);
-        sleep(1);
+        sleep(0.3);
         $chrome->executeScript('location.reload()');
         $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
 
@@ -194,7 +194,7 @@ class MetricoolScraperService
             $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
         }
 
-        sleep(2);
+        sleep(1);
         $boxes = $this->readLabeledBoxes($chrome->getCrawler());
         $this->debugScreenshot($chrome, 'youtube-evolution-ok');
 
@@ -213,7 +213,7 @@ class MetricoolScraperService
     {
         $url = "https://app.metricool.com/evolution/googleAds?blogId={$blogId}&userId={$userId}";
         $chrome->request('GET', $url);
-        sleep(1);
+        sleep(0.3);
         $chrome->executeScript('location.reload()');
         $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
 
@@ -222,7 +222,7 @@ class MetricoolScraperService
             $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
         }
 
-        sleep(2);
+        sleep(1);
         $boxes = $this->readLabeledBoxes($chrome->getCrawler());
         $this->debugScreenshot($chrome, 'googleAds-evolution-ok');
 
@@ -280,7 +280,7 @@ class MetricoolScraperService
         try {
             // Esperar que el botón del date picker sea interactivo (los metric boxes
             // cargan antes que el picker button quede listo).
-            sleep(2);
+            sleep(0.5);
 
             // Abrir el date picker via JS (busca el botón con texto de mes en español)
             $chrome->executeScript("
@@ -294,17 +294,17 @@ class MetricoolScraperService
             ");
 
             $chrome->waitFor('.vc-container', 10);
-            sleep(1);
+            sleep(0.5);
 
             // Click en la fecha de inicio, navegando meses si es necesario
             $this->clickCalendarDay($chrome, $start);
-            sleep(1);
+            sleep(0.5);
 
             // Click en la fecha de fin, navegando meses si es necesario
             $this->clickCalendarDay($chrome, $end);
 
             // Esperar que el calendario cierre y Metricool recargue los datos
-            sleep(4);
+            sleep(2);
 
             $this->debugScreenshot($chrome, 'after-date-selection');
 
@@ -360,7 +360,7 @@ class MetricoolScraperService
                 break;
             }
 
-            sleep(0.5);
+            sleep(0.3);
         }
 
         Log::warning("Metricool scraper: no se pudo clickear el día {$dayId} en el calendario");
