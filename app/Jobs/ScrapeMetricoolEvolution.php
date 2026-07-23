@@ -32,6 +32,29 @@ class ScrapeMetricoolEvolution implements ShouldQueue
         $this->onQueue('scraping');
     }
 
+    public function failed(\Throwable $e): void
+    {
+        Log::error('ScrapeMetricoolEvolution falló definitivamente', [
+            'client_id' => $this->clientId,
+            'networks'  => $this->networks,
+            'error'     => $e->getMessage(),
+        ]);
+
+        // Guardar error en cache para que el polling del frontend lo detecte
+        // en lugar de quedar girando infinitamente.
+        foreach ($this->networks as $network) {
+            if (!MetricoolScrapeCache::findCached($this->clientId, $network, $this->rangeStart, $this->rangeEnd)) {
+                MetricoolScrapeCache::store(
+                    $this->clientId,
+                    $network,
+                    $this->rangeStart,
+                    $this->rangeEnd,
+                    ['_error' => 'El scraping falló o tardó demasiado. Intentá de nuevo.'],
+                );
+            }
+        }
+    }
+
     public function handle(MetricoolScraperService $scraper): void
     {
         // Solo scrapeamos redes que siguen sin cache (puede que ya llegaron de otro job)
