@@ -402,16 +402,30 @@ class MetricoolScraperService
 
         $driverBinary = config('metricool.chrome_driver_binary') ?: null;
 
+        // Persistir el perfil de Chrome entre ejecuciones: en la segunda corrida
+        // Chrome ya tiene el JS/CSS de Metricool en disco y no los vuelve a bajar.
+        $profileDir = storage_path('app/private/chrome-profile');
+        if (!is_dir($profileDir)) {
+            mkdir($profileDir, 0755, recursive: true);
+        }
+
         $client = Client::createChromeClient($driverBinary, [
             '--no-sandbox',
             '--disable-dev-shm-usage',
             '--disable-gpu',
             '--window-size=1440,1000',
             '--headless',
+            "--user-data-dir={$profileDir}",
         ]);
 
         try {
             $client->request('GET', $loginUrl);
+
+            // Si la sesión persiste del run anterior, el login ya está hecho
+            if (!str_contains($client->getCurrentURL(), '/login')) {
+                return $client;
+            }
+
             $client->waitFor(self::LOGIN_FIELD_SELECTOR, 15);
 
             $crawler = $client->getCrawler();
