@@ -14,8 +14,8 @@ use Inertia\Response;
 
 class Metrics2Controller extends Controller
 {
-    private const RANGE_START = '2026-06-20';
-    private const RANGE_END   = '2026-07-19';
+    private const RANGE_START = '2026-06-19';
+    private const RANGE_END   = '2026-07-18';
 
     private const DEFAULT_NETWORKS = ['facebook', 'instagram'];
 

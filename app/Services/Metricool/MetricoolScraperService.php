@@ -296,6 +296,9 @@ class MetricoolScraperService
             ");
 
             $chrome->waitFor('.vc-container', 10);
+            // Esperar a que el grid de días esté realmente renderizado (el
+            // container puede montarse antes de que Vue pinte las celdas).
+            $chrome->waitFor('.vc-day-content', 10);
             sleep(0.5);
 
             // Click en la fecha de inicio, navegando meses si es necesario
@@ -348,6 +351,13 @@ class MetricoolScraperService
             $monthStr     = trim(preg_replace('/\s*\d{4}/', '', $titleText));
             $visibleMonth = $monthNames[$monthStr] ?? 0;
 
+            // El calendario todavía no terminó de pintar el título del mes;
+            // esperar en vez de navegar a ciegas.
+            if ($visibleYear === 0) {
+                sleep(0.3);
+                continue;
+            }
+
             $goBack = $date->year < $visibleYear
                 || ($date->year === $visibleYear && $date->month < $visibleMonth);
 
@@ -365,6 +375,7 @@ class MetricoolScraperService
             sleep(0.3);
         }
 
+        $this->debugScreenshot($chrome, "calendar-click-failed-{$dayId}");
         Log::warning("Metricool scraper: no se pudo clickear el día {$dayId} en el calendario");
     }
 
