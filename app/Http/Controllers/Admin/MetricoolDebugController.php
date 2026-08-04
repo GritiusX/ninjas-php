@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -12,11 +11,9 @@ class MetricoolDebugController extends Controller
 {
     public function index(): \Inertia\Response
     {
-        $disk  = Storage::disk('local');
-        $files = $disk->files('private/metricool-debug');
+        $files = glob(storage_path('app/private/metricool-debug') . '/*.png') ?: [];
 
         $screenshots = collect($files)
-            ->filter(fn($f) => str_ends_with($f, '.png'))
             ->map(function ($file) {
                 $filename = basename($file);
                 // filename: label-YYYYMMDD-HHmmss.png
