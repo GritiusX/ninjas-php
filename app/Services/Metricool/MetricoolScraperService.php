@@ -409,6 +409,9 @@ class MetricoolScraperService
             ");
 
             if ($visible) {
+                Log::info('Metricool scraper: día visible, clickeando', [
+                    'dia' => $dayId, 'intento' => $attempt,
+                ]);
                 // Un click sintético vía dispatchEvent() no es "trusted" (isTrusted:
                 // false) — si v-calendar escucha pointerdown/pointerup (en vez de
                 // mouse events) o algo en Metricool filtra eventos no confiables,
@@ -418,8 +421,7 @@ class MetricoolScraperService
                     $chrome->findElement(WebDriverBy::cssSelector($sel))->click();
                 } catch (Throwable $e) {
                     Log::warning('Metricool scraper: click nativo falló, usando fallback JS', [
-                        'selector' => $sel,
-                        'error'    => $e->getMessage(),
+                        'dia' => $dayId, 'selector' => $sel, 'error' => $e->getMessage(),
                     ]);
                     $chrome->executeScript("document.querySelector('{$sel}')?.click()");
                 }
@@ -464,6 +466,9 @@ class MetricoolScraperService
             if ($dateValue >= $minPanel && $dateValue <= $maxPanel) {
                 // El mes pedido ya está entre los paneles visibles pero el día
                 // no renderizó como visible todavía (lag de animación/pintado).
+                Log::info('Metricool scraper: mes visible pero día aún no renderizado', [
+                    'dia' => $dayId, 'intento' => $attempt, 'titulos' => $titles,
+                ]);
                 sleep(0.3);
                 continue;
             }
@@ -475,6 +480,11 @@ class MetricoolScraperService
                 if (btn) { btn.click(); return true; }
                 return false;
             ");
+
+            Log::info('Metricool scraper: navegando calendario', [
+                'dia' => $dayId, 'intento' => $attempt, 'titulos' => $titles,
+                'direccion' => $goBack ? 'prev' : 'next', 'movio' => $moved,
+            ]);
 
             if (!$moved) {
                 break;
