@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
 type Screenshot = {
@@ -33,6 +33,12 @@ function labelColor(label: string): string {
 export default function MetricoolDebug({ screenshots }: Props) {
     const [selected, setSelected] = useState<Screenshot | null>(null);
     const [filter, setFilter] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
+
+    function handleRefresh() {
+        setRefreshing(true);
+        router.reload({ onFinish: () => setRefreshing(false) });
+    }
 
     const filtered = filter
         ? screenshots.filter(s => s.label.toLowerCase().includes(filter.toLowerCase()))
@@ -52,13 +58,22 @@ export default function MetricoolDebug({ screenshots }: Props) {
                             <h1 className="text-xl font-semibold">Metricool Debug Screenshots</h1>
                             <p className="text-sm text-neutral-400 mt-0.5">{screenshots.length} imágenes — más recientes primero</p>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Filtrar por label..."
-                            value={filter}
-                            onChange={e => setFilter(e.target.value)}
-                            className="bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm w-56 focus:outline-none focus:border-neutral-500"
-                        />
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="text"
+                                placeholder="Filtrar por label..."
+                                value={filter}
+                                onChange={e => setFilter(e.target.value)}
+                                className="bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm w-56 focus:outline-none focus:border-neutral-500"
+                            />
+                            <button
+                                onClick={handleRefresh}
+                                disabled={refreshing}
+                                className="bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm hover:border-neutral-500 disabled:opacity-50 transition-colors"
+                            >
+                                {refreshing ? 'Actualizando...' : 'Actualizar'}
+                            </button>
+                        </div>
                     </div>
 
                     {filtered.length === 0 && (

@@ -18,6 +18,11 @@ type Props = {
     onCancel?: () => void;
 };
 
+function messageIndexForProgress(progress: number) {
+    const bucket = Math.floor((progress / 100) * MESSAGES.length);
+    return Math.min(Math.max(bucket, 0), MESSAGES.length - 1);
+}
+
 export function ScrapingOverlay({ visible, error, progress, onRetry, onCancel }: Props) {
     const [msgIndex, setMsgIndex] = useState(0);
 
@@ -26,11 +31,10 @@ export function ScrapingOverlay({ visible, error, progress, onRetry, onCancel }:
             setMsgIndex(0);
             return;
         }
-        const interval = setInterval(() => {
-            setMsgIndex((i) => Math.min(i + 1, MESSAGES.length - 1));
-        }, 15000);
-        return () => clearInterval(interval);
-    }, [visible, error]);
+        if (progress !== undefined) {
+            setMsgIndex(messageIndexForProgress(progress));
+        }
+    }, [visible, error, progress]);
 
     if (!visible) return null;
 

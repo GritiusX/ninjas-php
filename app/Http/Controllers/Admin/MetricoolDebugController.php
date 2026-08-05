@@ -13,7 +13,7 @@ class MetricoolDebugController extends Controller
     public function index(): \Inertia\Response
     {
         $disk  = Storage::disk('local');
-        $files = $disk->files('private/metricool-debug');
+        $files = $disk->files('metricool-debug');
 
         $screenshots = collect($files)
             ->filter(fn($f) => str_ends_with($f, '.png'))
