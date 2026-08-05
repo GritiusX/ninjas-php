@@ -4,6 +4,7 @@ namespace App\Services\Metricool;
 
 use App\Models\MetricoolCredential;
 use Carbon\CarbonInterface;
+use Facebook\WebDriver\WebDriverBy;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Symfony\Component\Panther\Client;
@@ -395,20 +396,20 @@ class MetricoolScraperService
             );
 
             if ($found) {
-                // v-calendar arma el rango con mousedown/mouseup (selección tipo drag),
-                // no con un evento 'click' sintético simple — hay que disparar la
-                // secuencia completa para que el componente Vue registre la selección.
-                $chrome->executeScript("
-                    const el = document.querySelector('{$sel}');
-                    if (el) {
-                        const opts = { bubbles: true, cancelable: true, view: window };
-                        el.dispatchEvent(new MouseEvent('mouseenter', opts));
-                        el.dispatchEvent(new MouseEvent('mouseover', opts));
-                        el.dispatchEvent(new MouseEvent('mousedown', opts));
-                        el.dispatchEvent(new MouseEvent('mouseup', opts));
-                        el.dispatchEvent(new MouseEvent('click', opts));
-                    }
-                ");
+                // Un click sintético vía dispatchEvent() no es "trusted" (isTrusted:
+                // false) — si v-calendar escucha pointerdown/pointerup (en vez de
+                // mouse events) o algo en Metricool filtra eventos no confiables,
+                // el click no registra la selección aunque no tire error. Usamos el
+                // click nativo de WebDriver (evento real de SO) para evitar esa duda.
+                try {
+                    $chrome->findElement(WebDriverBy::cssSelector($sel))->click();
+                } catch (Throwable $e) {
+                    Log::warning('Metricool scraper: click nativo falló, usando fallback JS', [
+                        'selector' => $sel,
+                        'error'    => $e->getMessage(),
+                    ]);
+                    $chrome->executeScript("document.querySelector('{$sel}')?.click()");
+                }
                 return;
             }
 
