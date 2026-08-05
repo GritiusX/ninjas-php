@@ -397,20 +397,24 @@ class MetricoolScraperService
         $dateValue = $date->year * 12 + $date->month;
 
         for ($attempt = 0; $attempt < 12; $attempt++) {
-            // v-calendar pre-renderiza meses fuera de pantalla para animar la
-            // transición — que el selector matchee en el DOM NO significa que
-            // el día esté realmente visible/clickeable en el panel actual.
-            // Por eso chequeamos bounding box, no solo existencia.
-            $visible = (bool) $chrome->executeScript("
-                const el = document.querySelector('{$sel}');
-                if (!el) return false;
-                const rect = el.getBoundingClientRect();
-                return el.offsetParent !== null && rect.width > 0 && rect.height > 0;
-            ");
+            // v-calendar deja en el DOM clones ocultos de días y títulos de mes
+            // mientras anima la transición entre meses (se vieron 4 títulos —
+            // "junio julio julio agosto" — para solo 2 paneles realmente
+            // visibles). querySelector() devuelve el primer match del DOM, que
+            // puede ser justo el clon oculto — por eso hay que pedir TODOS los
+            // matches y quedarnos con el que WebDriver considera isDisplayed().
+            $dayElements = $chrome->findElements(WebDriverBy::cssSelector($sel));
+            $visibleDay  = null;
+            foreach ($dayElements as $el) {
+                if ($el->isDisplayed()) {
+                    $visibleDay = $el;
+                    break;
+                }
+            }
 
-            if ($visible) {
+            if ($visibleDay !== null) {
                 Log::info('Metricool scraper: día visible, clickeando', [
-                    'dia' => $dayId, 'intento' => $attempt,
+                    'dia' => $dayId, 'intento' => $attempt, 'matches' => count($dayElements),
                 ]);
                 // Un click sintético vía dispatchEvent() no es "trusted" (isTrusted:
                 // false) — si v-calendar escucha pointerdown/pointerup (en vez de
@@ -418,7 +422,7 @@ class MetricoolScraperService
                 // el click no registra la selección aunque no tire error. Usamos el
                 // click nativo de WebDriver (evento real de SO) para evitar esa duda.
                 try {
-                    $chrome->findElement(WebDriverBy::cssSelector($sel))->click();
+                    $visibleDay->click();
                 } catch (Throwable $e) {
                     Log::warning('Metricool scraper: click nativo falló, usando fallback JS', [
                         'dia' => $dayId, 'selector' => $sel, 'error' => $e->getMessage(),
@@ -428,18 +432,20 @@ class MetricoolScraperService
                 return;
             }
 
-            // El picker muestra 2 meses lado a lado (.vc-title span por panel).
-            // Leemos ambos para saber si el día pedido cae antes del panel
-            // izquierdo (retroceder) o después del derecho (avanzar) — comparar
-            // solo contra el panel derecho hacía que un mes ya visible en el
-            // panel izquierdo disparara una navegación innecesaria.
-            $titles = (array) $chrome->executeScript(
-                "return Array.from(document.querySelectorAll('.vc-title span')).map(s => s.textContent || '')"
-            );
-
-            $panelValues = [];
-            foreach ($titles as $titleText) {
-                $titleText = strtolower((string) $titleText);
+            // El picker muestra 2 meses lado a lado (.vc-title span por panel),
+            // pero por la misma razón de arriba puede haber títulos clonados
+            // ocultos en el DOM — nos quedamos solo con los realmente visibles
+            // para no calcular un rango de meses "visible" inflado que nunca
+            // dispare la navegación por flechas.
+            $titleElements = $chrome->findElements(WebDriverBy::cssSelector('.vc-title span'));
+            $titles        = [];
+            $panelValues   = [];
+            foreach ($titleElements as $el) {
+                if (!$el->isDisplayed()) {
+                    continue;
+                }
+                $titleText = strtolower(trim($el->getText()));
+                $titles[]  = $titleText;
                 preg_match('/(\d{4})/', $titleText, $m);
                 $year = (int) ($m[1] ?? 0);
                 if ($year === 0) {
