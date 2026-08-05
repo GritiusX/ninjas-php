@@ -63,6 +63,7 @@ class MetricoolScraperService
                         'tiktok'    => $this->doTiktokEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
                         'youtube'   => $this->doYoutubeEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
                         'googleAds' => $this->doGoogleAdsEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
+                        'metaAds'   => $this->doMetaAdsEvolution($chrome, $cfg['blogId'], $cfg['userId'], $start, $end),
                         default     => throw new RuntimeException("Red no soportada: {$network}"),
                     };
                 } catch (Throwable $e) {
@@ -254,6 +255,35 @@ class MetricoolScraperService
             'cpc'          => $boxes['CPC'] ?? null,
             'ctr'          => $boxes['CTR'] ?? null,
             '_raw'         => $boxes,
+        ];
+    }
+
+    private function doMetaAdsEvolution(Client $chrome, string $blogId, string $userId, ?CarbonInterface $start, ?CarbonInterface $end): array
+    {
+        $url = "https://app.metricool.com/evolution/facebookAds?blogId={$blogId}&userId={$userId}";
+        $chrome->request('GET', $url);
+        sleep(0.3);
+        $chrome->executeScript('location.reload()');
+        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 60);
+
+        if ($start && $end) {
+            $this->applyDateRange($chrome, $start, $end);
+            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 20);
+        }
+
+        sleep(1);
+        $boxes = $this->readLabeledBoxes($chrome->getCrawler());
+        $this->debugScreenshot($chrome, 'metaAds-evolution-ok');
+
+        return [
+            'impressions' => $boxes['Impresiones'] ?? null,
+            'spend'       => $boxes['Gasto'] ?? null,
+            'clicks'      => $boxes['Clics'] ?? null,
+            'conversions' => $boxes['Conversiones'] ?? null,
+            'cpm'         => $boxes['CPM'] ?? null,
+            'cpc'         => $boxes['CPC'] ?? null,
+            'ctr'         => $boxes['CTR'] ?? null,
+            '_raw'        => $boxes,
         ];
     }
 
