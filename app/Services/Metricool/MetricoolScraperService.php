@@ -314,6 +314,32 @@ class MetricoolScraperService
             $this->clickCalendarDay($chrome, $start);
             sleep(0.5);
 
+            // Diagnóstico: confirmar que el calendario sigue abierto (esperando
+            // la fecha de fin) y no se cerró/reseteó con un solo click.
+            $stillOpenAfterStart = (bool) $chrome->executeScript("return !!document.querySelector('.vc-container')");
+            $this->debugScreenshot($chrome, 'after-start-click');
+            Log::info('Metricool scraper: estado tras click de inicio', [
+                'fecha_inicio'   => $start->format('Y-m-d'),
+                'calendario_abierto' => $stillOpenAfterStart,
+            ]);
+
+            if (!$stillOpenAfterStart) {
+                // El click de inicio cerró el calendario solo (probablemente lo
+                // tomó como selección de un día único) — reabrir antes de
+                // intentar clickear la fecha de fin.
+                $chrome->executeScript("
+                    const buttons = document.querySelectorAll('button[aria-haspopup=\"menu\"]');
+                    for (const btn of buttons) {
+                        if (/\\d{1,2}\\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)/i.test(btn.textContent)) {
+                            btn.click();
+                            break;
+                        }
+                    }
+                ");
+                $chrome->waitFor('.vc-day-content', 10);
+                sleep(0.5);
+            }
+
             // Click en la fecha de fin, navegando meses si es necesario
             $this->clickCalendarDay($chrome, $end);
 
