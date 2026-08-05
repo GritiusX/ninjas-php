@@ -92,11 +92,14 @@ class MetricoolScraperService
         $chrome->request('GET', $url);
         sleep(0.3);
         $chrome->executeScript('location.reload()');
-        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
+        // Mismo timing flojo que se vio en Instagram (ver doInstagramEvolution) —
+        // 30s a veces no alcanza, y desde que applyDateRange reintenta más
+        // (referencias stale, flechas duplicadas) tarda más en total.
+        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 60);
 
         if ($start && $end) {
             $this->applyDateRange($chrome, $start, $end);
-            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
+            $chrome->waitFor(self::SELECTOR_METRIC_BOX, 60);
         }
 
         $boxes = $chrome->getCrawler()->filter(self::SELECTOR_METRIC_BOX);
