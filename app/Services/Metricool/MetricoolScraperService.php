@@ -480,17 +480,34 @@ class MetricoolScraperService
                 continue;
             }
 
-            $goBack = $dateValue < $minPanel;
-            $navSel = $goBack ? '.vc-arrow.vc-prev' : '.vc-arrow.vc-next';
-            $moved  = (bool) $chrome->executeScript("
-                const btn = document.querySelector('{$navSel}:not([disabled])');
-                if (btn) { btn.click(); return true; }
-                return false;
-            ");
+            // La página tiene 2 selectores de rango (Periodo principal y Periodo
+            // de comparación), cada uno con su propio v-calendar — ambos pueden
+            // matchear '.vc-arrow.vc-prev/next' en el DOM aunque solo uno esté
+            // visible. querySelector() sin filtrar puede pegarle a la flecha del
+            // picker equivocado (por eso "movio: true" pero el título nunca
+            // cambiaba). Igual que con días y títulos, nos quedamos con la
+            // flecha que WebDriver ve realmente visible.
+            $goBack   = $dateValue < $minPanel;
+            $navClass = $goBack ? 'vc-prev' : 'vc-next';
+            $navElements = $chrome->findElements(WebDriverBy::cssSelector(".vc-arrow.{$navClass}:not([disabled])"));
+            $navBtn      = null;
+            foreach ($navElements as $el) {
+                if ($el->isDisplayed()) {
+                    $navBtn = $el;
+                    break;
+                }
+            }
+
+            $moved = false;
+            if ($navBtn !== null) {
+                $navBtn->click();
+                $moved = true;
+            }
 
             Log::info('Metricool scraper: navegando calendario', [
                 'dia' => $dayId, 'intento' => $attempt, 'titulos' => $titles,
                 'direccion' => $goBack ? 'prev' : 'next', 'movio' => $moved,
+                'matches' => count($navElements),
             ]);
 
             if (!$moved) {
