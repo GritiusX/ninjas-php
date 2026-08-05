@@ -397,6 +397,7 @@ class MetricoolScraperService
         $dateValue = $date->year * 12 + $date->month;
 
         for ($attempt = 0; $attempt < 12; $attempt++) {
+            try {
             // v-calendar deja en el DOM clones ocultos de días y títulos de mes
             // mientras anima la transición entre meses (se vieron 4 títulos —
             // "junio julio julio agosto" — para solo 2 paneles realmente
@@ -497,6 +498,17 @@ class MetricoolScraperService
             }
 
             sleep(0.3);
+            } catch (Throwable $e) {
+                // "stale element reference" es esperable: v-calendar reemplaza
+                // los nodos del panel apenas termina la transición de mes, así
+                // que un elemento leído justo antes de eso puede quedar viejo
+                // a mitad de esta misma iteración. Reintentar en vez de abortar
+                // todo applyDateRange por una carrera de renderizado.
+                Log::info('Metricool scraper: referencia stale, reintentando', [
+                    'dia' => $dayId, 'intento' => $attempt, 'error' => $e->getMessage(),
+                ]);
+                sleep(0.3);
+            }
         }
 
         $this->debugScreenshot($chrome, "calendar-click-failed-{$dayId}");
