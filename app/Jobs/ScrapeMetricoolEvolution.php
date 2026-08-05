@@ -71,9 +71,9 @@ class ScrapeMetricoolEvolution implements ShouldQueue
 
         $start   = Carbon::parse($this->rangeStart)->startOfDay();
         $end     = Carbon::parse($this->rangeEnd)->endOfDay();
-        $results = $scraper->scrapeEvolutions($targets, $start, $end);
-
-        foreach ($results as $network => $result) {
+        $results = $scraper->scrapeEvolutions($targets, $start, $end, function (string $network, array $result): void {
+            // Persistir apenas termina cada red para que el polling del frontend
+            // vea el progreso incremental en vez de saltar de 0% a 100% al final.
             MetricoolScrapeCache::store(
                 $this->clientId,
                 $network,
@@ -81,7 +81,7 @@ class ScrapeMetricoolEvolution implements ShouldQueue
                 $this->rangeEnd,
                 $result,   // guarda incluso si tiene _error, para que el status endpoint lo detecte
             );
-        }
+        });
 
         Log::info('ScrapeMetricoolEvolution completado', [
             'client_id' => $this->clientId,

@@ -38,12 +38,17 @@ class MetricoolScraperService
      *
      * Devuelve un array con la misma estructura de claves y el resultado (o excepción) de cada red.
      *
+     * $onNetworkComplete, si se pasa, se invoca apenas termina cada red (éxito o error)
+     * con (string $network, array $result) — permite persistir resultados parciales
+     * para que el polling del frontend refleje el progreso real en vez de saltar de 0% a 100%.
+     *
      * @param  array<string, array{blogId: string, userId: string}>  $targets
      * @param  CarbonInterface|null  $start
      * @param  CarbonInterface|null  $end
+     * @param  callable(string, array): void|null  $onNetworkComplete
      * @return array<string, array>   keyed by network name
      */
-    public function scrapeEvolutions(array $targets, ?CarbonInterface $start = null, ?CarbonInterface $end = null): array
+    public function scrapeEvolutions(array $targets, ?CarbonInterface $start = null, ?CarbonInterface $end = null, ?callable $onNetworkComplete = null): array
     {
         $chrome = $this->createLoggedInClient();
         $results = [];
@@ -62,6 +67,10 @@ class MetricoolScraperService
                 } catch (Throwable $e) {
                     $this->debugScreenshot($chrome, "{$network}-evolution-failed");
                     $results[$network] = ['_error' => $e->getMessage()];
+                }
+
+                if ($onNetworkComplete !== null) {
+                    $onNetworkComplete($network, $results[$network]);
                 }
             }
         } finally {
@@ -313,6 +322,28 @@ class MetricoolScraperService
 
             $this->debugScreenshot($chrome, 'after-date-selection');
 
+            // Verificar que el rango realmente haya quedado aplicado, comparando
+            // el texto del botón del picker contra las fechas pedidas. Si no
+            // coincide, lo dejamos en el log en vez de asumir que funcionó.
+            $appliedText = strtolower((string) $chrome->executeScript("
+                const buttons = document.querySelectorAll('button[aria-haspopup=\"menu\"]');
+                for (const btn of buttons) {
+                    if (/\\d{1,2}\\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)/i.test(btn.textContent)) {
+                        return btn.textContent;
+                    }
+                }
+                return '';
+            "));
+
+            $startDay = (int) $start->format('j');
+            $endDay   = (int) $end->format('j');
+            if (!str_contains($appliedText, (string) $startDay) || !str_contains($appliedText, (string) $endDay)) {
+                Log::warning('Metricool scraper: el rango aplicado no coincide con el pedido', [
+                    'esperado' => $start->format('Y-m-d') . ' - ' . $end->format('Y-m-d'),
+                    'boton'    => trim($appliedText),
+                ]);
+            }
+
         } catch (Throwable $e) {
             Log::warning('Metricool scraper: error al setear rango de fechas', ['error' => $e->getMessage()]);
         }
@@ -338,7 +369,20 @@ class MetricoolScraperService
             );
 
             if ($found) {
-                $chrome->executeScript("document.querySelector('{$sel}')?.click()");
+                // v-calendar arma el rango con mousedown/mouseup (selección tipo drag),
+                // no con un evento 'click' sintético simple — hay que disparar la
+                // secuencia completa para que el componente Vue registre la selección.
+                $chrome->executeScript("
+                    const el = document.querySelector('{$sel}');
+                    if (el) {
+                        const opts = { bubbles: true, cancelable: true, view: window };
+                        el.dispatchEvent(new MouseEvent('mouseenter', opts));
+                        el.dispatchEvent(new MouseEvent('mouseover', opts));
+                        el.dispatchEvent(new MouseEvent('mousedown', opts));
+                        el.dispatchEvent(new MouseEvent('mouseup', opts));
+                        el.dispatchEvent(new MouseEvent('click', opts));
+                    }
+                ");
                 return;
             }
 
