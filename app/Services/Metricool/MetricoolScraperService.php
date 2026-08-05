@@ -119,7 +119,11 @@ class MetricoolScraperService
         sleep(0.3);
         $chrome->executeScript('location.reload()');
 
-        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 30);
+        // La página de Instagram tarda más que las otras redes en pintar los
+        // metric boxes (más widgets) — 30s a veces no alcanza: se vio el error
+        // "not found within 30 seconds" mientras el screenshot inmediatamente
+        // posterior (tomado en el catch) ya mostraba los datos cargados.
+        $chrome->waitFor(self::SELECTOR_METRIC_BOX, 60);
 
         if ($start && $end) {
             $this->applyDateRange($chrome, $start, $end);
@@ -390,12 +394,21 @@ class MetricoolScraperService
             'septiembre' => 9, 'octubre' => 10, 'noviembre' => 11, 'diciembre' => 12,
         ];
 
-        for ($attempt = 0; $attempt < 12; $attempt++) {
-            $found = (bool) $chrome->executeScript(
-                "return !!document.querySelector('{$sel}')"
-            );
+        $dateValue = $date->year * 12 + $date->month;
 
-            if ($found) {
+        for ($attempt = 0; $attempt < 12; $attempt++) {
+            // v-calendar pre-renderiza meses fuera de pantalla para animar la
+            // transición — que el selector matchee en el DOM NO significa que
+            // el día esté realmente visible/clickeable en el panel actual.
+            // Por eso chequeamos bounding box, no solo existencia.
+            $visible = (bool) $chrome->executeScript("
+                const el = document.querySelector('{$sel}');
+                if (!el) return false;
+                const rect = el.getBoundingClientRect();
+                return el.offsetParent !== null && rect.width > 0 && rect.height > 0;
+            ");
+
+            if ($visible) {
                 // Un click sintético vía dispatchEvent() no es "trusted" (isTrusted:
                 // false) — si v-calendar escucha pointerdown/pointerup (en vez de
                 // mouse events) o algo en Metricool filtra eventos no confiables,
@@ -413,25 +426,49 @@ class MetricoolScraperService
                 return;
             }
 
-            // Determinar dirección de navegación comparando con el mes visible (panel derecho)
-            $titleText   = strtolower((string) $chrome->executeScript(
-                "return document.querySelectorAll('.vc-title span')[1]?.textContent ?? ''"
-            ));
-            preg_match('/(\d{4})/', $titleText, $m);
-            $visibleYear  = (int) ($m[1] ?? 0);
-            $monthStr     = trim(preg_replace('/\s*\d{4}/', '', $titleText));
-            $visibleMonth = $monthNames[$monthStr] ?? 0;
+            // El picker muestra 2 meses lado a lado (.vc-title span por panel).
+            // Leemos ambos para saber si el día pedido cae antes del panel
+            // izquierdo (retroceder) o después del derecho (avanzar) — comparar
+            // solo contra el panel derecho hacía que un mes ya visible en el
+            // panel izquierdo disparara una navegación innecesaria.
+            $titles = (array) $chrome->executeScript(
+                "return Array.from(document.querySelectorAll('.vc-title span')).map(s => s.textContent || '')"
+            );
 
-            // El calendario todavía no terminó de pintar el título del mes;
+            $panelValues = [];
+            foreach ($titles as $titleText) {
+                $titleText = strtolower((string) $titleText);
+                preg_match('/(\d{4})/', $titleText, $m);
+                $year = (int) ($m[1] ?? 0);
+                if ($year === 0) {
+                    continue;
+                }
+                $monthStr = trim(preg_replace('/\s*\d{4}/', '', $titleText));
+                $month    = $monthNames[$monthStr] ?? 0;
+                if ($month === 0) {
+                    continue;
+                }
+                $panelValues[] = $year * 12 + $month;
+            }
+
+            // El calendario todavía no terminó de pintar los títulos de mes;
             // esperar en vez de navegar a ciegas.
-            if ($visibleYear === 0) {
+            if (empty($panelValues)) {
                 sleep(0.3);
                 continue;
             }
 
-            $goBack = $date->year < $visibleYear
-                || ($date->year === $visibleYear && $date->month < $visibleMonth);
+            $minPanel = min($panelValues);
+            $maxPanel = max($panelValues);
 
+            if ($dateValue >= $minPanel && $dateValue <= $maxPanel) {
+                // El mes pedido ya está entre los paneles visibles pero el día
+                // no renderizó como visible todavía (lag de animación/pintado).
+                sleep(0.3);
+                continue;
+            }
+
+            $goBack = $dateValue < $minPanel;
             $navSel = $goBack ? '.vc-arrow.vc-prev' : '.vc-arrow.vc-next';
             $moved  = (bool) $chrome->executeScript("
                 const btn = document.querySelector('{$navSel}:not([disabled])');
