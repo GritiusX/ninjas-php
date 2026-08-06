@@ -27,6 +27,7 @@ const NETWORK_META: Record<string, { label: string; badge: string; badgeClass: s
     tiktok:    { label: 'TikTok · Evolución',      badge: 'TT', badgeClass: 'bg-purple-100 text-purple-700' },
     youtube:   { label: 'YouTube · Evolución',     badge: 'YT', badgeClass: 'bg-red-100 text-red-700' },
     googleAds: { label: 'Google Ads · Evolución',  badge: 'GA', badgeClass: 'bg-green-100 text-green-700' },
+    metaAds:   { label: 'Meta Ads · Evolución',    badge: 'MA', badgeClass: 'bg-indigo-100 text-indigo-700' },
 };
 
 function formatDate(iso: string) {
@@ -104,7 +105,7 @@ function YoutubeSection({ data }: { data: NetworkData }) {
     );
 }
 
-function GoogleAdsSection({ data }: { data: NetworkData }) {
+function AdsSection({ data }: { data: NetworkData }) {
     return (
         <>
             <SectionHeader label="Alcance" />
@@ -186,8 +187,8 @@ function NetworkCard({
                         <TiktokSection data={result.data} />
                     ) : network === 'youtube' ? (
                         <YoutubeSection data={result.data} />
-                    ) : network === 'googleAds' ? (
-                        <GoogleAdsSection data={result.data} />
+                    ) : network === 'googleAds' || network === 'metaAds' ? (
+                        <AdsSection data={result.data} />
                     ) : (
                         <GenericSection data={result.data} />
                     )
@@ -232,7 +233,7 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
 
         pollRef.current = setInterval(async () => {
             try {
-                const res = await fetch(`/metrics2/${client.id}/status`);
+                const res = await fetch(`/metrics2/${client.id}/status?start=${start}&end=${end}`);
                 if (!res.ok) throw new Error(`Error ${res.status}`);
                 const json = await res.json() as { networkResults: Record<string, NetworkResult> };
                 failCountRef.current = 0;
@@ -263,13 +264,13 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
         } catch {
             // ignorar error, navegar igual
         }
-        router.get('/metrics2');
+        router.get('/metrics2', { start, end });
     }
 
     function handleRefresh() {
         setPollError(null);
         setNavigating(true);
-        router.get(`/metrics2/${client.id}`, { force: '1' }, {
+        router.get(`/metrics2/${client.id}`, { start, end, force: '1' }, {
             onFinish: () => setNavigating(false),
         });
     }
@@ -282,7 +283,7 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Link href="/metrics2" className="text-muted-foreground hover:text-foreground">
+                        <Link href={`/metrics2?start=${start}&end=${end}`} className="text-muted-foreground hover:text-foreground">
                             <ArrowLeft className="h-4 w-4" />
                         </Link>
                         <div>

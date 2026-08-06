@@ -14,25 +14,24 @@ use Inertia\Response;
 
 class Metrics2Controller extends Controller
 {
-    private const RANGE_START = '2026-06-19';
-    private const RANGE_END   = '2026-07-18';
-
     private const DEFAULT_NETWORKS = ['facebook', 'instagram'];
 
     public function __construct(private readonly MetricoolScraperService $scraper)
     {
     }
 
-    public function list(): Response
+    public function list(Request $request): Response
     {
+        [$start, $end] = $this->resolveRange($request);
+
         $clients = Client::whereNotNull('metricool_blog_id')
             ->orderBy('name')
             ->get(['id', 'name', 'metricool_networks'])
-            ->map(function (Client $client) {
+            ->map(function (Client $client) use ($start, $end) {
                 $networks    = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
                 $cachedCount = MetricoolScrapeCache::where('client_id', $client->id)
-                    ->where('range_start', self::RANGE_START)
-                    ->where('range_end', self::RANGE_END)
+                    ->where('range_start', $start)
+                    ->where('range_end', $end)
                     ->whereIn('network', $networks)
                     ->count();
 
@@ -47,21 +46,23 @@ class Metrics2Controller extends Controller
 
         return Inertia::render('metrics2/index', [
             'clients' => $clients,
-            'start'   => self::RANGE_START,
-            'end'     => self::RANGE_END,
+            'start'   => $start,
+            'end'     => $end,
         ]);
     }
 
     public function show(Request $request, Client $client): Response
     {
+        [$start, $end] = $this->resolveRange($request);
+
         $networks = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
         $blogId   = (string) $client->metricool_blog_id;
         $userId   = (string) config('metricool.user_id');
 
         if ($request->boolean('force')) {
             MetricoolScrapeCache::where('client_id', $client->id)
-                ->where('range_start', self::RANGE_START)
-                ->where('range_end', self::RANGE_END)
+                ->where('range_start', $start)
+                ->where('range_end', $end)
                 ->delete();
 
             // Por si el chrome-profile quedó con locks de una corrida anterior
@@ -70,7 +71,7 @@ class Metrics2Controller extends Controller
             $this->killStrayChromeProcesses();
         }
 
-        $networkResults = $this->buildNetworkResults($client->id, $networks);
+        $networkResults = $this->buildNetworkResults($client->id, $networks, $start, $end);
         $missing        = array_keys(array_filter($networkResults, fn ($r) => $r['pending']));
 
         if (!empty($missing)) {
@@ -79,16 +80,16 @@ class Metrics2Controller extends Controller
                 $missing,
                 $blogId,
                 $userId,
-                self::RANGE_START,
-                self::RANGE_END,
+                $start,
+                $end,
             );
         }
 
         return Inertia::render('metrics2/show', [
             'client'         => ['id' => $client->id, 'name' => $client->name],
             'networkResults' => $networkResults,
-            'start'          => self::RANGE_START,
-            'end'            => self::RANGE_END,
+            'start'          => $start,
+            'end'            => $end,
         ]);
     }
 
@@ -98,12 +99,13 @@ class Metrics2Controller extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function status(Client $client): JsonResponse
+    public function status(Request $request, Client $client): JsonResponse
     {
+        [$start, $end] = $this->resolveRange($request);
         $networks = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
 
         return response()->json([
-            'networkResults' => $this->buildNetworkResults($client->id, $networks),
+            'networkResults' => $this->buildNetworkResults($client->id, $networks, $start, $end),
         ]);
     }
 
@@ -130,11 +132,38 @@ class Metrics2Controller extends Controller
         }
     }
 
-    private function buildNetworkResults(int $clientId, array $networks): array
+    /**
+     * Lee 'start'/'end' de la query string (formato Y-m-d, start <= end).
+     * Si faltan o son inválidos, usa como default los últimos 30 días.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function resolveRange(Request $request): array
+    {
+        $start = $request->query('start');
+        $end   = $request->query('end');
+
+        if (is_string($start) && is_string($end)) {
+            try {
+                $startDate = Carbon::parse($start)->startOfDay();
+                $endDate   = Carbon::parse($end)->startOfDay();
+
+                if ($startDate->lte($endDate)) {
+                    return [$startDate->toDateString(), $endDate->toDateString()];
+                }
+            } catch (\Exception) {
+                // rango inválido, cae al default
+            }
+        }
+
+        return [now()->subDays(29)->toDateString(), now()->toDateString()];
+    }
+
+    private function buildNetworkResults(int $clientId, array $networks, string $start, string $end): array
     {
         $results = [];
         foreach ($networks as $network) {
-            $cached = MetricoolScrapeCache::findCached($clientId, $network, self::RANGE_START, self::RANGE_END);
+            $cached = MetricoolScrapeCache::findCached($clientId, $network, $start, $end);
 
             if ($cached === null) {
                 $results[$network] = ['data' => null, 'fromCache' => false, 'error' => null, 'pending' => true];

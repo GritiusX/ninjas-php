@@ -55,7 +55,9 @@
       "WebFetch(domain:claude.ai)",
       "Bash(./vendor/bin/pest tests/Feature/ReviewApprovalTest.php --stop-on-failure)",
       "Bash(grep -n 'in_array\\($response->status' tests/Feature/ClientReviewTest.php)",
-      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "PowerShell(php -l app\\\\Http\\\\Controllers\\\\Metrics2Controller.php)",
+      "PowerShell(php -l app\\\\Console\\\\Commands\\\\MetricoolChromeDiagnose.php)"
     ]
   }
 }

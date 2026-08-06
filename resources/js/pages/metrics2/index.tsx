@@ -2,6 +2,9 @@ import { Head, router } from '@inertiajs/react';
 import { ArrowRight, CheckCircle2, Circle } from 'lucide-react';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { ScrapingOverlay } from '@/components/scraping-overlay';
 
 type ClientRow = {
@@ -24,6 +27,7 @@ const NETWORK_LABELS: Record<string, string> = {
     tiktok: 'TT',
     youtube: 'YT',
     googleAds: 'GA',
+    metaAds: 'MA',
 };
 
 const NETWORK_COLORS: Record<string, string> = {
@@ -32,18 +36,36 @@ const NETWORK_COLORS: Record<string, string> = {
     tiktok:    'bg-purple-100 text-purple-700',
     youtube:   'bg-red-100 text-red-700',
     googleAds: 'bg-green-100 text-green-700',
+    metaAds:   'bg-indigo-100 text-indigo-700',
 };
 
 function formatDate(iso: string) {
-    return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
+    return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso + 'T00:00:00'));
 }
 
 export default function Metrics2Index({ clients, start, end }: Props) {
     const [loading, setLoading] = useState(false);
+    const [desde, setDesde] = useState(start);
+    const [hasta, setHasta] = useState(end);
+
+    const rangeChanged = desde !== start || hasta !== end;
+    const rangeValid = desde !== '' && hasta !== '' && desde <= hasta;
+    // Si el usuario dejó los inputs en un estado inválido (vacíos o desde > hasta),
+    // navegamos con el último rango aplicado en vez de mandar algo inconsistente.
+    const effectiveStart = rangeValid ? desde : start;
+    const effectiveEnd = rangeValid ? hasta : end;
 
     function handleClientClick(clientId: number) {
         setLoading(true);
-        router.get(`/metrics2/${clientId}`, {}, {
+        router.get(`/metrics2/${clientId}`, { start: effectiveStart, end: effectiveEnd }, {
+            onFinish: () => setLoading(false),
+        });
+    }
+
+    function handleApplyRange() {
+        if (!rangeValid) return;
+        setLoading(true);
+        router.get('/metrics2', { start: desde, end: hasta }, {
             onFinish: () => setLoading(false),
         });
     }
@@ -59,6 +81,38 @@ export default function Metrics2Index({ clients, start, end }: Props) {
                     <p className="text-muted-foreground mt-1 text-sm">
                         Rango activo: {formatDate(start)} — {formatDate(end)}
                     </p>
+                </div>
+
+                <div className="flex flex-wrap items-end gap-3">
+                    <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="desde" className="text-xs">Desde</Label>
+                        <Input
+                            id="desde"
+                            type="date"
+                            value={desde}
+                            max={hasta}
+                            onChange={(e) => setDesde(e.target.value)}
+                            className="w-40"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="hasta" className="text-xs">Hasta</Label>
+                        <Input
+                            id="hasta"
+                            type="date"
+                            value={hasta}
+                            min={desde}
+                            onChange={(e) => setHasta(e.target.value)}
+                            className="w-40"
+                        />
+                    </div>
+                    <Button
+                        size="sm"
+                        onClick={handleApplyRange}
+                        disabled={!rangeValid || !rangeChanged || loading}
+                    >
+                        Aplicar rango
+                    </Button>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
