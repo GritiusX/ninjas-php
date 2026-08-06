@@ -63,6 +63,11 @@ class Metrics2Controller extends Controller
                 ->where('range_start', self::RANGE_START)
                 ->where('range_end', self::RANGE_END)
                 ->delete();
+
+            // Por si el chrome-profile quedó con locks de una corrida anterior
+            // que no cerró limpio (job matado, timeout, deploy): sin esto, el
+            // próximo intento de Selenium falla siempre igual, no solo a veces.
+            $this->killStrayChromeProcesses();
         }
 
         $networkResults = $this->buildNetworkResults($client->id, $networks);
@@ -89,8 +94,7 @@ class Metrics2Controller extends Controller
 
     public function cancel(): JsonResponse
     {
-        // Mata procesos de Chrome/chromedriver que hayan quedado colgados
-        exec('pkill -f chromedriver 2>/dev/null; pkill -f "chrome --" 2>/dev/null');
+        $this->killStrayChromeProcesses();
         return response()->json(['ok' => true]);
     }
 
@@ -104,6 +108,27 @@ class Metrics2Controller extends Controller
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * Mata procesos de Chrome/chromedriver colgados y borra los locks del
+     * perfil persistido (storage/app/private/chrome-profile). Sin esto, un
+     * Chrome que quedó huérfano (job matado, timeout, deploy) hace que TODO
+     * intento futuro de Selenium falle con "session not created: Chrome
+     * instance exited", siempre, no solo a veces.
+     */
+    private function killStrayChromeProcesses(): void
+    {
+        exec('pkill -f chromedriver 2>/dev/null');
+        exec('pkill -f "chrome --" 2>/dev/null');
+
+        $profileDir = storage_path('app/private/chrome-profile');
+        foreach (['SingletonLock', 'SingletonCookie', 'SingletonSocket'] as $lockFile) {
+            $path = $profileDir . DIRECTORY_SEPARATOR . $lockFile;
+            if (file_exists($path) || is_link($path)) {
+                @unlink($path);
+            }
+        }
+    }
 
     private function buildNetworkResults(int $clientId, array $networks): array
     {
