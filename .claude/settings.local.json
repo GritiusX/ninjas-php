@@ -57,7 +57,8 @@
       "Bash(grep -n 'in_array\\($response->status' tests/Feature/ClientReviewTest.php)",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "PowerShell(php -l app\\\\Http\\\\Controllers\\\\Metrics2Controller.php)",
-      "PowerShell(php -l app\\\\Console\\\\Commands\\\\MetricoolChromeDiagnose.php)"
+      "PowerShell(php -l app\\\\Console\\\\Commands\\\\MetricoolChromeDiagnose.php)",
+      "PowerShell(php -l app\\\\Http\\\\Controllers\\\\Metrics2Controller.php; php -l app\\\\Jobs\\\\ScrapeMetricoolEvolution.php; php -l app\\\\Models\\\\MetricoolScrapeCache.php)"
     ]
   }
 }

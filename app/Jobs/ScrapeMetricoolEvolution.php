@@ -27,6 +27,11 @@ class ScrapeMetricoolEvolution implements ShouldQueue
         private readonly string $userId,
         private readonly string $rangeStart,
         private readonly string $rangeEnd,
+        // Si es false, no le forzamos fecha a Metricool (deja que muestre su
+        // propio período por defecto) — evita el código frágil de selección
+        // de fechas en el navegador. $rangeStart/$rangeEnd igual se usan para
+        // el bookkeeping de la cache, aunque no sean el período real mostrado.
+        private readonly bool   $forceDateRange = true,
     ) {
         // Queue dedicada con 1 worker para evitar conflictos de puerto de Chrome
         $this->onQueue('scraping');
@@ -69,8 +74,9 @@ class ScrapeMetricoolEvolution implements ShouldQueue
             return;
         }
 
-        $start   = Carbon::parse($this->rangeStart)->startOfDay();
-        $end     = Carbon::parse($this->rangeEnd)->endOfDay();
+        $start = $this->forceDateRange ? Carbon::parse($this->rangeStart)->startOfDay() : null;
+        $end   = $this->forceDateRange ? Carbon::parse($this->rangeEnd)->endOfDay() : null;
+
         $results = $scraper->scrapeEvolutions($targets, $start, $end, function (string $network, array $result): void {
             // Persistir apenas termina cada red para que el polling del frontend
             // vea el progreso incremental en vez de saltar de 0% a 100% al final.

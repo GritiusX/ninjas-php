@@ -39,6 +39,21 @@ class MetricoolScrapeCache extends Model
             ->first();
     }
 
+    /**
+     * Última fila para este cliente/red que se haya scrapeado hace como mucho
+     * $maxAgeDays días, sin importar qué range_start/range_end tenga guardado.
+     * Se usa para no re-scrapear todos los días solo porque el rango "últimos
+     * N días" se corre día a día y deja de matchear exacto con lo cacheado.
+     */
+    public static function findRecent(int $clientId, string $network, int $maxAgeDays): ?self
+    {
+        return self::where('client_id', $clientId)
+            ->where('network', $network)
+            ->where('scraped_at', '>=', now()->subDays($maxAgeDays))
+            ->orderByDesc('scraped_at')
+            ->first();
+    }
+
     public static function store(int $clientId, string $network, string $start, string $end, array $data): self
     {
         return self::updateOrCreate(

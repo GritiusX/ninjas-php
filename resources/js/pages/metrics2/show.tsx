@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrapingOverlay } from '@/components/scraping-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type NetworkData = Record<string, string | null>;
 
@@ -12,6 +14,8 @@ type NetworkResult = {
     fromCache: boolean;
     error: string | null;
     pending: boolean;
+    rangeStart: string | null;
+    rangeEnd: string | null;
 };
 
 type Props = {
@@ -19,6 +23,7 @@ type Props = {
     networkResults: Record<string, NetworkResult>;
     start: string;
     end: string;
+    isDefault: boolean;
 };
 
 const NETWORK_META: Record<string, { label: string; badge: string; badgeClass: string }> = {
@@ -150,6 +155,13 @@ function NetworkCard({
         badgeClass: 'bg-gray-100 text-gray-600',
     };
 
+    // El rango real de la fila cacheada (rangeStart/rangeEnd) puede ser
+    // distinto del rango de la página si vino del fallback "cualquier scrape
+    // reciente" (ver Metrics2Controller::findFreshCache) — usamos ese en vez
+    // del de la página para no etiquetar mal el período mostrado.
+    const periodStart = result.rangeStart ?? start;
+    const periodEnd = result.rangeEnd ?? end;
+
     return (
         <Card>
             <CardHeader className="pb-3">
@@ -182,7 +194,7 @@ function NetworkCard({
                     network === 'facebook' ? (
                         <FacebookSection data={result.data} />
                     ) : network === 'instagram' ? (
-                        <InstagramSection data={result.data} start={start} end={end} />
+                        <InstagramSection data={result.data} start={periodStart} end={periodEnd} />
                     ) : network === 'tiktok' ? (
                         <TiktokSection data={result.data} />
                     ) : network === 'youtube' ? (
@@ -200,10 +212,12 @@ function NetworkCard({
     );
 }
 
-export default function Metrics2Show({ client, networkResults: initialResults, start, end }: Props) {
+export default function Metrics2Show({ client, networkResults: initialResults, start, end, isDefault }: Props) {
     const [networkResults, setNetworkResults] = useState(initialResults);
     const [navigating, setNavigating] = useState(false);
     const [pollError, setPollError] = useState<string | null>(null);
+    const [desde, setDesde] = useState(start);
+    const [hasta, setHasta] = useState(end);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const failCountRef = useRef(0);
 
@@ -214,10 +228,20 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
     const showOverlay = hasPending || navigating || pollError !== null;
     const progress = navigating || totalNetworks === 0 ? undefined : (completedNetworks / totalNetworks) * 100;
 
+    const rangeChanged = desde !== start || hasta !== end;
+    const rangeValid = desde !== '' && hasta !== '' && desde <= hasta;
+
     // Sync cuando Inertia actualiza las props (ej: después de force refresh)
     useEffect(() => {
         setNetworkResults(initialResults);
     }, [initialResults]);
+
+    // Sync los inputs de fecha cuando cambia el rango resuelto por el server
+    // (aplicar rango, volver al automático, o navegación directa con query params)
+    useEffect(() => {
+        setDesde(start);
+        setHasta(end);
+    }, [start, end]);
 
     // Polling: cada 3 segundos mientras haya redes pendientes
     useEffect(() => {
@@ -264,13 +288,28 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
         } catch {
             // ignorar error, navegar igual
         }
-        router.get('/metrics2', { start, end });
+        router.get('/metrics2');
     }
 
     function handleRefresh() {
         setPollError(null);
         setNavigating(true);
         router.get(`/metrics2/${client.id}`, { start, end, force: '1' }, {
+            onFinish: () => setNavigating(false),
+        });
+    }
+
+    function handleApplyRange() {
+        if (!rangeValid || !rangeChanged) return;
+        setNavigating(true);
+        router.get(`/metrics2/${client.id}`, { start: desde, end: hasta }, {
+            onFinish: () => setNavigating(false),
+        });
+    }
+
+    function handleResetRange() {
+        setNavigating(true);
+        router.get(`/metrics2/${client.id}`, {}, {
             onFinish: () => setNavigating(false),
         });
     }
@@ -283,13 +322,14 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Link href={`/metrics2?start=${start}&end=${end}`} className="text-muted-foreground hover:text-foreground">
+                        <Link href="/metrics2" className="text-muted-foreground hover:text-foreground">
                             <ArrowLeft className="h-4 w-4" />
                         </Link>
                         <div>
                             <h1 className="text-xl font-semibold">{client.name}</h1>
                             <p className="text-muted-foreground text-sm">
                                 {formatDate(start)} — {formatDate(end)}
+                                {isDefault && <span className="ml-1">(automático — Metricool decide el período real por red)</span>}
                             </p>
                         </div>
                     </div>
@@ -298,6 +338,39 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
                         <RefreshCw className={`mr-2 h-3.5 w-3.5 ${navigating ? 'animate-spin' : ''}`} />
                         Actualizar
                     </Button>
+                </div>
+
+                <div className="flex flex-wrap items-end gap-3">
+                    <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="desde" className="text-xs">Desde</Label>
+                        <Input
+                            id="desde"
+                            type="date"
+                            value={desde}
+                            max={hasta}
+                            onChange={(e) => setDesde(e.target.value)}
+                            className="w-40"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="hasta" className="text-xs">Hasta</Label>
+                        <Input
+                            id="hasta"
+                            type="date"
+                            value={hasta}
+                            min={desde}
+                            onChange={(e) => setHasta(e.target.value)}
+                            className="w-40"
+                        />
+                    </div>
+                    <Button size="sm" onClick={handleApplyRange} disabled={!rangeValid || !rangeChanged || navigating}>
+                        Aplicar rango
+                    </Button>
+                    {!isDefault && (
+                        <Button size="sm" variant="ghost" onClick={handleResetRange} disabled={navigating}>
+                            Volver al automático
+                        </Button>
+                    )}
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">

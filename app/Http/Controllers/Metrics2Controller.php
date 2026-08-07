@@ -16,23 +16,25 @@ class Metrics2Controller extends Controller
 {
     private const DEFAULT_NETWORKS = ['facebook', 'instagram'];
 
+    // Si ya hay un scrape de los últimos N días para un cliente/red, no se
+    // vuelve a disparar automáticamente hasta que pasen esos N días.
+    private const AUTO_RESCRAPE_AFTER_DAYS = 30;
+
     public function __construct(private readonly MetricoolScraperService $scraper)
     {
     }
 
-    public function list(Request $request): Response
+    public function list(): Response
     {
-        [$start, $end] = $this->resolveRange($request);
+        [$start, $end] = $this->defaultRange();
 
         $clients = Client::whereNotNull('metricool_blog_id')
             ->orderBy('name')
             ->get(['id', 'name', 'metricool_networks'])
             ->map(function (Client $client) use ($start, $end) {
                 $networks    = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
-                $cachedCount = MetricoolScrapeCache::where('client_id', $client->id)
-                    ->where('range_start', $start)
-                    ->where('range_end', $end)
-                    ->whereIn('network', $networks)
+                $cachedCount = collect($networks)
+                    ->filter(fn (string $network) => $this->findFreshCache($client->id, $network, $start, $end, isDefault: true) !== null)
                     ->count();
 
                 return [
@@ -46,24 +48,23 @@ class Metrics2Controller extends Controller
 
         return Inertia::render('metrics2/index', [
             'clients' => $clients,
-            'start'   => $start,
-            'end'     => $end,
         ]);
     }
 
     public function show(Request $request, Client $client): Response
     {
         [$start, $end] = $this->resolveRange($request);
+        $isDefault = [$start, $end] === $this->defaultRange();
 
         $networks = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
         $blogId   = (string) $client->metricool_blog_id;
         $userId   = (string) config('metricool.user_id');
 
         if ($request->boolean('force')) {
-            MetricoolScrapeCache::where('client_id', $client->id)
-                ->where('range_start', $start)
-                ->where('range_end', $end)
-                ->delete();
+            // Borramos TODO el cache de este cliente (no solo el rango exacto)
+            // para que ningún registro "reciente" de otro rango tape el refresh
+            // forzado vía el fallback de abajo.
+            MetricoolScrapeCache::where('client_id', $client->id)->delete();
 
             // Por si el chrome-profile quedó con locks de una corrida anterior
             // que no cerró limpio (job matado, timeout, deploy): sin esto, el
@@ -71,7 +72,7 @@ class Metrics2Controller extends Controller
             $this->killStrayChromeProcesses();
         }
 
-        $networkResults = $this->buildNetworkResults($client->id, $networks, $start, $end);
+        $networkResults = $this->buildNetworkResults($client->id, $networks, $start, $end, $isDefault);
         $missing        = array_keys(array_filter($networkResults, fn ($r) => $r['pending']));
 
         if (!empty($missing)) {
@@ -82,6 +83,7 @@ class Metrics2Controller extends Controller
                 $userId,
                 $start,
                 $end,
+                forceDateRange: !$isDefault,
             );
         }
 
@@ -90,6 +92,7 @@ class Metrics2Controller extends Controller
             'networkResults' => $networkResults,
             'start'          => $start,
             'end'            => $end,
+            'isDefault'      => $isDefault,
         ]);
     }
 
@@ -102,10 +105,11 @@ class Metrics2Controller extends Controller
     public function status(Request $request, Client $client): JsonResponse
     {
         [$start, $end] = $this->resolveRange($request);
-        $networks = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
+        $isDefault = [$start, $end] === $this->defaultRange();
+        $networks  = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
 
         return response()->json([
-            'networkResults' => $this->buildNetworkResults($client->id, $networks, $start, $end),
+            'networkResults' => $this->buildNetworkResults($client->id, $networks, $start, $end, $isDefault),
         ]);
     }
 
@@ -133,8 +137,20 @@ class Metrics2Controller extends Controller
     }
 
     /**
+     * Rango "automático": últimos AUTO_RESCRAPE_AFTER_DAYS días terminando hoy.
+     * Se recalcula en cada request — por diseño se corre un día cada día, por
+     * eso NO se usa para matchear cache exacto (ver findFreshCache).
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function defaultRange(): array
+    {
+        return [now()->subDays(self::AUTO_RESCRAPE_AFTER_DAYS - 1)->toDateString(), now()->toDateString()];
+    }
+
+    /**
      * Lee 'start'/'end' de la query string (formato Y-m-d, start <= end).
-     * Si faltan o son inválidos, usa como default los últimos 30 días.
+     * Si faltan o son inválidos, cae al rango automático.
      *
      * @return array{0: string, 1: string}
      */
@@ -156,17 +172,44 @@ class Metrics2Controller extends Controller
             }
         }
 
-        return [now()->subDays(29)->toDateString(), now()->toDateString()];
+        return $this->defaultRange();
     }
 
-    private function buildNetworkResults(int $clientId, array $networks, string $start, string $end): array
+    /**
+     * Busca cache para client_id/network. Si $isDefault es true (el usuario no
+     * eligió un rango custom) y no hay match exacto para $start/$end, cae a
+     * "cualquier scrape de los últimos AUTO_RESCRAPE_AFTER_DAYS días" en vez de
+     * exigir que coincida el rango exacto — así no se re-scrapea todos los días
+     * solo porque el rango automático se corrió un día. Si el usuario eligió un
+     * rango custom ($isDefault = false), se exige coincidencia exacta: no
+     * queremos mostrar datos de otro período distinto al que pidió.
+     */
+    private function findFreshCache(int $clientId, string $network, string $start, string $end, bool $isDefault): ?MetricoolScrapeCache
+    {
+        $cached = MetricoolScrapeCache::findCached($clientId, $network, $start, $end);
+
+        if ($cached === null && $isDefault) {
+            $cached = MetricoolScrapeCache::findRecent($clientId, $network, self::AUTO_RESCRAPE_AFTER_DAYS);
+        }
+
+        return $cached;
+    }
+
+    private function buildNetworkResults(int $clientId, array $networks, string $start, string $end, bool $isDefault): array
     {
         $results = [];
         foreach ($networks as $network) {
-            $cached = MetricoolScrapeCache::findCached($clientId, $network, $start, $end);
+            $cached = $this->findFreshCache($clientId, $network, $start, $end, $isDefault);
 
             if ($cached === null) {
-                $results[$network] = ['data' => null, 'fromCache' => false, 'error' => null, 'pending' => true];
+                $results[$network] = [
+                    'data'       => null,
+                    'fromCache'  => false,
+                    'error'      => null,
+                    'pending'    => true,
+                    'rangeStart' => null,
+                    'rangeEnd'   => null,
+                ];
                 continue;
             }
 
@@ -174,10 +217,12 @@ class Metrics2Controller extends Controller
             $error = $data['_error'] ?? null;
 
             $results[$network] = [
-                'data'      => $error ? null : $data,
-                'fromCache' => true,
-                'error'     => $error,
-                'pending'   => false,
+                'data'       => $error ? null : $data,
+                'fromCache'  => true,
+                'error'      => $error,
+                'pending'    => false,
+                'rangeStart' => $cached->range_start->toDateString(),
+                'rangeEnd'   => $cached->range_end->toDateString(),
             ];
         }
         return $results;
