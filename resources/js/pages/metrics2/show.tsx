@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, Minus, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { MetricoolReportsButton } from '@/components/metricool-reports-button';
 import { ScrapingOverlay } from '@/components/scraping-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,11 +55,71 @@ function SectionHeader({ label }: { label: string }) {
     return <p className="bg-muted -mx-1 mb-1 mt-3 rounded px-1 py-1 text-xs font-semibold text-muted-foreground first:mt-0">{label}</p>;
 }
 
+// Metricool reporta el % de cambio como string con coma decimal (ej "-10,49%").
+function parseSignedNumber(raw: string | null | undefined): number | null {
+    if (!raw) return null;
+    const n = parseFloat(raw.replace('%', '').replace(',', '.').trim());
+    return Number.isNaN(n) ? null : n;
+}
+
+function deltaColor(pct: number | null): string {
+    if (pct === null) return 'text-muted-foreground';
+    if (pct > 1) return 'text-green-600';
+    if (pct < -1) return 'text-red-600';
+    return 'text-yellow-600';
+}
+
+function deltaIcon(pct: number | null) {
+    if (pct === null) return Minus;
+    if (pct > 1) return TrendingUp;
+    if (pct < -1) return TrendingDown;
+    return Minus;
+}
+
+// Igual que DataRow pero además muestra la flecha (sube/baja/estable) y el %
+// de cambio vs. el período de comparación, tal como lo muestra el hover de
+// Metricool — así "88" y "-88" no se ven idénticos en la card.
+function DataRowWithDelta({
+    label,
+    value,
+    delta,
+    deltaPct,
+}: {
+    label: string;
+    value: string | null | undefined;
+    delta?: string | null;
+    deltaPct?: string | null;
+}) {
+    const pct = parseSignedNumber(deltaPct);
+    const DeltaIcon = deltaIcon(pct);
+    const hasDelta = Boolean(delta || deltaPct);
+
+    return (
+        <div className="flex items-center justify-between border-b py-2 text-sm last:border-0">
+            <span className="text-muted-foreground">{label}</span>
+            <span className="flex items-center gap-1.5">
+                <span className={value ? 'font-semibold text-foreground' : 'text-muted-foreground/40 italic'}>
+                    {value ?? '—'}
+                </span>
+                {hasDelta && (
+                    <span
+                        className={`flex items-center gap-0.5 text-xs ${deltaColor(pct)}`}
+                        title={delta && deltaPct ? `${delta} (${deltaPct})` : (deltaPct ?? delta ?? undefined)}
+                    >
+                        <DeltaIcon className="h-3 w-3" />
+                        {deltaPct ?? delta}
+                    </span>
+                )}
+            </span>
+        </div>
+    );
+}
+
 function FacebookSection({ data }: { data: NetworkData }) {
     return (
         <>
-            <DataRow label="Crecimiento de seguidores" value={data.followers_growth} />
-            <DataRow label="Visualizaciones" value={data.views} />
+            <DataRowWithDelta label="Crecimiento de seguidores" value={data.followers_growth} delta={data.followers_growth_delta} deltaPct={data.followers_growth_delta_pct} />
+            <DataRowWithDelta label="Visualizaciones" value={data.views} delta={data.views_delta} deltaPct={data.views_delta_pct} />
         </>
     );
 }
@@ -67,9 +128,9 @@ function InstagramSection({ data, start, end }: { data: NetworkData; start: stri
     return (
         <>
             <SectionHeader label="Totales acumulados" />
-            <DataRow label="Seguidores (total)" value={data.followers_total} />
-            <DataRow label="Siguiendo (total)" value={data.following_total} />
-            <DataRow label="Contenido total" value={data.content_total} />
+            <DataRowWithDelta label="Seguidores (total)" value={data.followers_total} delta={data.followers_total_delta} deltaPct={data.followers_total_delta_pct} />
+            <DataRowWithDelta label="Siguiendo (total)" value={data.following_total} delta={data.following_total_delta} deltaPct={data.following_total_delta_pct} />
+            <DataRowWithDelta label="Contenido total" value={data.content_total} delta={data.content_total_delta} deltaPct={data.content_total_delta_pct} />
 
             <SectionHeader label={`Período (${formatDate(start)} – ${formatDate(end)})`} />
             <DataRow label="Seguidores ganados" value={data.followers_gained} />
@@ -86,11 +147,11 @@ function TiktokSection({ data }: { data: NetworkData }) {
     return (
         <>
             <SectionHeader label="Crecimiento" />
-            <DataRow label="Seguidores" value={data.followers} />
-            <DataRow label="Posts" value={data.posts} />
+            <DataRowWithDelta label="Seguidores" value={data.followers} delta={data.followers_delta} deltaPct={data.followers_delta_pct} />
+            <DataRowWithDelta label="Posts" value={data.posts} delta={data.posts_delta} deltaPct={data.posts_delta_pct} />
             <SectionHeader label="Balance de seguidores" />
-            <DataRow label="Adquiridos" value={data.followers_gained} />
-            <DataRow label="Perdidos" value={data.followers_lost} />
+            <DataRowWithDelta label="Adquiridos" value={data.followers_gained} delta={data.followers_gained_delta} deltaPct={data.followers_gained_delta_pct} />
+            <DataRowWithDelta label="Perdidos" value={data.followers_lost} delta={data.followers_lost_delta} deltaPct={data.followers_lost_delta_pct} />
         </>
     );
 }
@@ -99,13 +160,13 @@ function YoutubeSection({ data }: { data: NetworkData }) {
     return (
         <>
             <SectionHeader label="Crecimiento" />
-            <DataRow label="Suscriptores" value={data.subscribers} />
-            <DataRow label="Reproducciones" value={data.views} />
-            <DataRow label="Revenue" value={data.revenue} />
-            <DataRow label="Videos" value={data.videos} />
+            <DataRowWithDelta label="Suscriptores" value={data.subscribers} delta={data.subscribers_delta} deltaPct={data.subscribers_delta_pct} />
+            <DataRowWithDelta label="Reproducciones" value={data.views} delta={data.views_delta} deltaPct={data.views_delta_pct} />
+            <DataRowWithDelta label="Revenue" value={data.revenue} delta={data.revenue_delta} deltaPct={data.revenue_delta_pct} />
+            <DataRowWithDelta label="Videos" value={data.videos} delta={data.videos_delta} deltaPct={data.videos_delta_pct} />
             <SectionHeader label="Balance de suscriptores" />
-            <DataRow label="Ganados" value={data.subscribers_gained} />
-            <DataRow label="Perdidos" value={data.subscribers_lost} />
+            <DataRowWithDelta label="Ganados" value={data.subscribers_gained} delta={data.subscribers_gained_delta} deltaPct={data.subscribers_gained_delta_pct} />
+            <DataRowWithDelta label="Perdidos" value={data.subscribers_lost} delta={data.subscribers_lost_delta} deltaPct={data.subscribers_lost_delta_pct} />
         </>
     );
 }
@@ -114,15 +175,15 @@ function AdsSection({ data }: { data: NetworkData }) {
     return (
         <>
             <SectionHeader label="Alcance" />
-            <DataRow label="Impresiones" value={data.impressions} />
-            <DataRow label="Gasto" value={data.spend} />
+            <DataRowWithDelta label="Impresiones" value={data.impressions} delta={data.impressions_delta} deltaPct={data.impressions_delta_pct} />
+            <DataRowWithDelta label="Gasto" value={data.spend} delta={data.spend_delta} deltaPct={data.spend_delta_pct} />
             <SectionHeader label="Resultados" />
-            <DataRow label="Clics" value={data.clicks} />
-            <DataRow label="Conversiones" value={data.conversions} />
+            <DataRowWithDelta label="Clics" value={data.clicks} delta={data.clicks_delta} deltaPct={data.clicks_delta_pct} />
+            <DataRowWithDelta label="Conversiones" value={data.conversions} delta={data.conversions_delta} deltaPct={data.conversions_delta_pct} />
             <SectionHeader label="Rendimiento" />
-            <DataRow label="CPM" value={data.cpm} />
-            <DataRow label="CPC" value={data.cpc} />
-            <DataRow label="CTR" value={data.ctr} />
+            <DataRowWithDelta label="CPM" value={data.cpm} delta={data.cpm_delta} deltaPct={data.cpm_delta_pct} />
+            <DataRowWithDelta label="CPC" value={data.cpc} delta={data.cpc_delta} deltaPct={data.cpc_delta_pct} />
+            <DataRowWithDelta label="CTR" value={data.ctr} delta={data.ctr_delta} deltaPct={data.ctr_delta_pct} />
         </>
     );
 }
@@ -334,10 +395,13 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
                         </div>
                     </div>
 
-                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={navigating || hasPending}>
-                        <RefreshCw className={`mr-2 h-3.5 w-3.5 ${navigating ? 'animate-spin' : ''}`} />
-                        Actualizar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={navigating || hasPending}>
+                            <RefreshCw className={`mr-2 h-3.5 w-3.5 ${navigating ? 'animate-spin' : ''}`} />
+                            Actualizar
+                        </Button>
+                        <MetricoolReportsButton clientId={client.id} period={end.slice(0, 7)} />
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap items-end gap-3">

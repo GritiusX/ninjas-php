@@ -6,6 +6,7 @@ use App\Models\MetricoolCredential;
 use Carbon\CarbonInterface;
 use Facebook\WebDriver\Interactions\WebDriverActions;
 use Facebook\WebDriver\WebDriverBy;
+use Facebook\WebDriver\WebDriverElement;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Symfony\Component\Panther\Client;
@@ -31,6 +32,16 @@ class MetricoolScraperService
     private const LOGIN_FIELD_SELECTOR    = 'input[name="email"]';
     private const PASSWORD_FIELD_SELECTOR = 'input[name="password"]';
     private const SUBMIT_SELECTOR         = 'button';
+
+    private const ADS_METRIC_MAP = [
+        'impressions' => 'Impresiones',
+        'spend'       => 'Gasto',
+        'clicks'      => 'Clics',
+        'conversions' => 'Conversiones',
+        'cpm'         => 'CPM',
+        'cpc'         => 'CPC',
+        'ctr'         => 'CTR',
+    ];
 
     /**
      * Hace login UNA VEZ y scrape todas las redes pedidas en la misma sesión Chrome.
@@ -104,13 +115,18 @@ class MetricoolScraperService
             $chrome->waitFor(self::SELECTOR_METRIC_BOX, 60);
         }
 
-        $boxes = $chrome->getCrawler()->filter(self::SELECTOR_METRIC_BOX);
+        $boxes  = $chrome->getCrawler()->filter(self::SELECTOR_METRIC_BOX);
+        $deltas = $this->readIndexedBoxesWithDeltas($chrome, $boxes->count());
 
         $this->debugScreenshot($chrome, 'facebook-evolution-ok');
 
         return [
-            'followers_growth' => $this->boxValue($boxes, 0),
-            'views'            => $this->boxValue($boxes, 1),
+            'followers_growth'           => $this->boxValue($boxes, 0),
+            'followers_growth_delta'     => $deltas[0]['delta'] ?? null,
+            'followers_growth_delta_pct' => $deltas[0]['delta_pct'] ?? null,
+            'views'                      => $this->boxValue($boxes, 1),
+            'views_delta'                => $deltas[1]['delta'] ?? null,
+            'views_delta_pct'            => $deltas[1]['delta_pct'] ?? null,
         ];
     }
 
@@ -140,7 +156,7 @@ class MetricoolScraperService
 
         $crawler = $chrome->getCrawler();
         $boxes   = $crawler->filter(self::SELECTOR_METRIC_BOX);
-        $count   = $boxes->count();
+        $deltas  = $this->readIndexedBoxesWithDeltas($chrome, $boxes->count());
 
         $this->debugScreenshot($chrome, 'instagram-evolution-ok');
 
@@ -162,9 +178,15 @@ class MetricoolScraperService
 
         return [
             // Top 3 boxes coloreados (aria-label="Metric box value", índices 0-2)
-            'followers_total'    => $this->boxValue($boxes, 0),
-            'following_total'    => $this->boxValue($boxes, 1),
-            'content_total'      => $this->boxValue($boxes, 2),
+            'followers_total'           => $this->boxValue($boxes, 0),
+            'followers_total_delta'     => $deltas[0]['delta'] ?? null,
+            'followers_total_delta_pct' => $deltas[0]['delta_pct'] ?? null,
+            'following_total'           => $this->boxValue($boxes, 1),
+            'following_total_delta'     => $deltas[1]['delta'] ?? null,
+            'following_total_delta_pct' => $deltas[1]['delta_pct'] ?? null,
+            'content_total'             => $this->boxValue($boxes, 2),
+            'content_total_delta'       => $deltas[2]['delta'] ?? null,
+            'content_total_delta_pct'   => $deltas[2]['delta_pct'] ?? null,
             // 6 boxes grises de #growth — mapeados por label text
             'followers_gained'   => $deltaBoxes['Seguidores'] ?? null,
             'followers_daily'    => $deltaBoxes['Seguidores diarios'] ?? null,
@@ -190,16 +212,15 @@ class MetricoolScraperService
         }
 
         sleep(1);
-        $boxes = $this->readLabeledBoxes($chrome->getCrawler());
+        $boxes = $this->readLabeledBoxesWithDeltas($chrome);
         $this->debugScreenshot($chrome, 'tiktok-evolution-ok');
 
-        return [
-            'followers'        => $boxes['Seguidores'] ?? null,
-            'posts'            => $boxes['Posts'] ?? null,
-            'followers_gained' => $boxes['Adquiridos'] ?? null,
-            'followers_lost'   => $boxes['Perdidos'] ?? null,
-            '_raw'             => $boxes,
-        ];
+        return $this->mapBoxesWithDeltas($boxes, [
+            'followers'        => 'Seguidores',
+            'posts'            => 'Posts',
+            'followers_gained' => 'Adquiridos',
+            'followers_lost'   => 'Perdidos',
+        ]);
     }
 
     private function doYoutubeEvolution(Client $chrome, string $blogId, string $userId, ?CarbonInterface $start, ?CarbonInterface $end): array
@@ -216,18 +237,17 @@ class MetricoolScraperService
         }
 
         sleep(1);
-        $boxes = $this->readLabeledBoxes($chrome->getCrawler());
+        $boxes = $this->readLabeledBoxesWithDeltas($chrome);
         $this->debugScreenshot($chrome, 'youtube-evolution-ok');
 
-        return [
-            'subscribers'      => $boxes['Suscriptores'] ?? null,
-            'views'            => $boxes['Reproducciones'] ?? null,
-            'revenue'          => $boxes['Revenue'] ?? null,
-            'videos'           => $boxes['Vídeos'] ?? null,
-            'subscribers_gained' => $boxes['Ganados'] ?? null,
-            'subscribers_lost'   => $boxes['Perdidos'] ?? null,
-            '_raw'             => $boxes,
-        ];
+        return $this->mapBoxesWithDeltas($boxes, [
+            'subscribers'        => 'Suscriptores',
+            'views'              => 'Reproducciones',
+            'revenue'            => 'Revenue',
+            'videos'             => 'Vídeos',
+            'subscribers_gained' => 'Ganados',
+            'subscribers_lost'   => 'Perdidos',
+        ]);
     }
 
     private function doGoogleAdsEvolution(Client $chrome, string $blogId, string $userId, ?CarbonInterface $start, ?CarbonInterface $end): array
@@ -247,7 +267,7 @@ class MetricoolScraperService
         $boxes = $this->readLabeledBoxesWithDeltas($chrome);
         $this->debugScreenshot($chrome, 'googleAds-evolution-ok');
 
-        return $this->mapAdsMetrics($boxes);
+        return $this->mapBoxesWithDeltas($boxes, self::ADS_METRIC_MAP);
     }
 
     private function doMetaAdsEvolution(Client $chrome, string $blogId, string $userId, ?CarbonInterface $start, ?CarbonInterface $end): array
@@ -267,25 +287,21 @@ class MetricoolScraperService
         $boxes = $this->readLabeledBoxesWithDeltas($chrome);
         $this->debugScreenshot($chrome, 'metaAds-evolution-ok');
 
-        return $this->mapAdsMetrics($boxes);
+        return $this->mapBoxesWithDeltas($boxes, self::ADS_METRIC_MAP);
     }
 
     /**
+     * Traduce el array label => ['value','delta','delta_pct'] devuelto por
+     * readLabeledBoxesWithDeltas() a un array plano keyed por métrica, con
+     * las 3 variantes ({key}, {key}_delta, {key}_delta_pct) que consume el
+     * frontend para pintar valor + flecha de tendencia.
+     *
      * @param  array<string, array{value: ?string, delta: ?string, delta_pct: ?string}>  $boxes
+     * @param  array<string, string>  $metricMap  clave interna => label tal como aparece en Metricool
      * @return array<string, mixed>
      */
-    private function mapAdsMetrics(array $boxes): array
+    private function mapBoxesWithDeltas(array $boxes, array $metricMap): array
     {
-        $metricMap = [
-            'impressions' => 'Impresiones',
-            'spend'       => 'Gasto',
-            'clicks'      => 'Clics',
-            'conversions' => 'Conversiones',
-            'cpm'         => 'CPM',
-            'cpc'         => 'CPC',
-            'ctr'         => 'CTR',
-        ];
-
         $out = [];
         foreach ($metricMap as $key => $label) {
             $out[$key]               = $boxes[$label]['value'] ?? null;
@@ -358,54 +374,108 @@ class MetricoolScraperService
                 continue;
             }
 
-            $value = null;
-            foreach (self::VALUE_CLASSES as $cls) {
-                $valueEls = $card->findElements(WebDriverBy::cssSelector('[aria-label="Metric box value"] ' . $cls));
-                if (!empty($valueEls)) {
-                    $text  = trim($valueEls[0]->getText());
-                    $value = ($text !== '' && $text !== '-') ? $text : null;
-                    break;
-                }
-            }
-
-            $delta = null;
-            $deltaPct = null;
-            $tooltipId = $card->getAttribute('aria-describedby');
-
-            if ($tooltipId) {
-                try {
-                    $actions->moveToElement($card)->perform();
-
-                    $tooltipText = '';
-                    for ($i = 0; $i < 10; $i++) {
-                        $tooltipText = (string) $chrome->executeScript(
-                            'return document.getElementById(' . json_encode($tooltipId) . ')?.innerText ?? "";'
-                        );
-                        if (trim($tooltipText) !== '') {
-                            break;
-                        }
-                        usleep(200_000);
-                    }
-
-                    if (preg_match('/([+-][\d.,]+[a-zA-Z]?)\s*\(([+-]?[\d.,]+%)\)/', $tooltipText, $m)) {
-                        $delta    = $m[1];
-                        $deltaPct = $m[2];
-                    } elseif (trim($tooltipText) !== '') {
-                        Log::info('Metricool scraper: tooltip de delta no matcheó el patrón esperado', [
-                            'label' => $label, 'tooltip_texto' => $tooltipText,
-                        ]);
-                    }
-                } catch (Throwable $e) {
-                    Log::warning('Metricool scraper: no se pudo leer tooltip de delta', [
-                        'label' => $label, 'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            $result[$label] = ['value' => $value, 'delta' => $delta, 'delta_pct' => $deltaPct];
+            $result[$label] = $this->readCardValueAndDelta($chrome, $actions, $card, $label);
         }
 
         return $result;
+    }
+
+    /**
+     * Igual que readLabeledBoxesWithDeltas() pero para páginas donde los boxes
+     * (Facebook, Instagram) se venían leyendo por índice en vez de por label —
+     * no todos exponen un label distinguible, así que acá se devuelve la lista
+     * en el mismo orden del DOM (índice 0, 1, 2...) en vez de un mapa por label.
+     *
+     * $expectedCount es la cantidad de "Metric box value" ya leídos por el
+     * método de value existente (boxValue/SELECTOR_METRIC_BOX) — si la cantidad
+     * de cards "Analysis Metric Box" visibles no coincide, asumimos que la
+     * estructura de la página no es la esperada y devolvemos vacío en vez de
+     * arriesgarnos a asociar un delta al índice equivocado (la extracción del
+     * value, que no depende de este método, sigue funcionando igual).
+     */
+    private function readIndexedBoxesWithDeltas(Client $chrome, int $expectedCount): array
+    {
+        $cards   = $chrome->findElements(WebDriverBy::cssSelector('[aria-label="Analysis Metric Box"]'));
+        $visible = array_values(array_filter($cards, fn ($card) => $card->isDisplayed()));
+
+        if ($expectedCount === 0 || count($visible) !== $expectedCount) {
+            Log::info('Metricool scraper: cantidad de cards con delta no matchea los boxes esperados, se omite delta', [
+                'esperado'   => $expectedCount,
+                'encontrado' => count($visible),
+            ]);
+
+            return [];
+        }
+
+        $actions = new WebDriverActions($chrome);
+        $result  = [];
+        foreach ($visible as $index => $card) {
+            $result[$index] = $this->readCardValueAndDelta($chrome, $actions, $card, "box#{$index}");
+        }
+
+        return $result;
+    }
+
+    /**
+     * Lee value/delta/delta_pct de un [aria-label="Analysis Metric Box"] ya
+     * localizado: hace hover real (WebDriverActions, no un evento sintético)
+     * para leer el tooltip de Vuetify (aria-describedby="v-tooltip-v-XXXX")
+     * con el delta absoluto y el % de cambio vs. el período de comparación —
+     * ese tooltip no existe en el DOM hasta que el hover está activo, por eso
+     * no alcanza con leer el Crawler (snapshot estático).
+     *
+     * Si el tooltip no aparece o no matchea el patrón esperado, delta/delta_pct
+     * quedan en null pero el value igual se lee (best-effort, no aborta nada).
+     *
+     * @return array{value: ?string, delta: ?string, delta_pct: ?string}
+     */
+    private function readCardValueAndDelta(Client $chrome, WebDriverActions $actions, WebDriverElement $card, string $logLabel): array
+    {
+        $value = null;
+        foreach (self::VALUE_CLASSES as $cls) {
+            $valueEls = $card->findElements(WebDriverBy::cssSelector('[aria-label="Metric box value"] ' . $cls));
+            if (!empty($valueEls)) {
+                $text  = trim($valueEls[0]->getText());
+                $value = ($text !== '' && $text !== '-') ? $text : null;
+                break;
+            }
+        }
+
+        $delta = null;
+        $deltaPct = null;
+        $tooltipId = $card->getAttribute('aria-describedby');
+
+        if ($tooltipId) {
+            try {
+                $actions->moveToElement($card)->perform();
+
+                $tooltipText = '';
+                for ($i = 0; $i < 10; $i++) {
+                    $tooltipText = (string) $chrome->executeScript(
+                        'return document.getElementById(' . json_encode($tooltipId) . ')?.innerText ?? "";'
+                    );
+                    if (trim($tooltipText) !== '') {
+                        break;
+                    }
+                    usleep(200_000);
+                }
+
+                if (preg_match('/([+-][\d.,]+[a-zA-Z]?)\s*\(([+-]?[\d.,]+%)\)/', $tooltipText, $m)) {
+                    $delta    = $m[1];
+                    $deltaPct = $m[2];
+                } elseif (trim($tooltipText) !== '') {
+                    Log::info('Metricool scraper: tooltip de delta no matcheó el patrón esperado', [
+                        'label' => $logLabel, 'tooltip_texto' => $tooltipText,
+                    ]);
+                }
+            } catch (Throwable $e) {
+                Log::warning('Metricool scraper: no se pudo leer tooltip de delta', [
+                    'label' => $logLabel, 'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return ['value' => $value, 'delta' => $delta, 'delta_pct' => $deltaPct];
     }
 
     // -------------------------------------------------------------------------

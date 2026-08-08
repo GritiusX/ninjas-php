@@ -58,7 +58,10 @@
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "PowerShell(php -l app\\\\Http\\\\Controllers\\\\Metrics2Controller.php)",
       "PowerShell(php -l app\\\\Console\\\\Commands\\\\MetricoolChromeDiagnose.php)",
-      "PowerShell(php -l app\\\\Http\\\\Controllers\\\\Metrics2Controller.php; php -l app\\\\Jobs\\\\ScrapeMetricoolEvolution.php; php -l app\\\\Models\\\\MetricoolScrapeCache.php)"
+      "PowerShell(php -l app\\\\Http\\\\Controllers\\\\Metrics2Controller.php; php -l app\\\\Jobs\\\\ScrapeMetricoolEvolution.php; php -l app\\\\Models\\\\MetricoolScrapeCache.php)",
+      "Bash(npx eslint *)",
+      "Bash(grep *)",
+      "PowerShell(php -l \"app\\\\Services\\\\Metricool\\\\MetricoolScraperService.php\")"
     ]
   }
 }
