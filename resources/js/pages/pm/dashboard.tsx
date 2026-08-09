@@ -1360,7 +1360,7 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
         <>
             <Card className="border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-950/20">
                 <CardContent className="p-4">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 flex-1">
                             <div className="mb-1 flex flex-wrap items-center gap-2">
                                 <span className="text-xs font-semibold tracking-wide text-green-800 uppercase dark:text-green-400">
@@ -1382,7 +1382,7 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                                 </a>
                             )}
                         </div>
-                        <div className="flex shrink-0 items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:flex-nowrap">
                             <ViewReviewLink pieceId={piece.id} />
                             <CopyPublicReviewLink token={piece.review_token} />
                             <Button
@@ -1418,7 +1418,7 @@ function PublishedCard({ piece }: { piece: ContentPiece }) {
     return (
         <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-800/40 dark:bg-emerald-950/20">
             <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
                         <div className="mb-1 flex flex-wrap items-center gap-2">
                             <span className="text-xs font-semibold tracking-wide text-emerald-800 uppercase dark:text-emerald-400">
@@ -1443,7 +1443,7 @@ function PublishedCard({ piece }: { piece: ContentPiece }) {
                             </a>
                         )}
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:flex-nowrap">
                         <ViewReviewLink pieceId={piece.id} />
                     </div>
                 </div>
