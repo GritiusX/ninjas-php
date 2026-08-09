@@ -965,7 +965,7 @@ function BriefCard({
         <>
             <Card className="border-border bg-card">
                 <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0 flex-1">
                             <div className="mb-1.5 flex flex-wrap items-center gap-2">
                                 <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -981,17 +981,19 @@ function BriefCard({
                                     </span>
                                 )}
                             </div>
-                            <p className="truncate font-medium text-foreground">
-                                {piece.concept ?? piece.product ?? 'Sin concepto'}
-                            </p>
-                            {piece.editor && (
-                                <p className="mt-0.5 text-xs text-muted-foreground">
-                                    Editor: {piece.editor.name}
+                            <div className="grid grid-cols-2 gap-x-2 sm:block">
+                                <p className="truncate font-medium text-foreground">
+                                    {piece.concept ?? piece.product ?? 'Sin concepto'}
                                 </p>
-                            )}
+                                {piece.editor && (
+                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                        Editor: {piece.editor.name}
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="flex shrink-0 items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
                             <ViewReviewLink pieceId={piece.id} />
                             {piece.status === 'CLIENT_REVISION' && piece.assigned_editor_id && (
                                 <Button
@@ -1482,7 +1484,7 @@ export default function PmDashboard({
 
             <div className="space-y-8 px-4 py-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">
                             Dashboard PM
@@ -1492,7 +1494,7 @@ export default function PmDashboard({
                             {inProgress.length} en proceso
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Link href="/pm/tabla">
                             <Button variant="outline">
                                 <Table2 className="mr-2 h-4 w-4" />
