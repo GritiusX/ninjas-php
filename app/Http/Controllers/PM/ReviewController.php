@@ -178,7 +178,14 @@ class ReviewController extends Controller
     {
         $piece->load('client');
 
-        $piece->update(['status' => ContentPiece::STATUS_REVISION]);
+        // El feedback del cliente vive en client_feedback (lo carga
+        // ClientReviewController::respond) — lo copiamos a internal_comments
+        // para que la tarea del editor (que lee internal_comments) muestre el
+        // comentario real en vez de quedar vacía.
+        $piece->update([
+            'status'            => ContentPiece::STATUS_REVISION,
+            'internal_comments' => $piece->client_feedback,
+        ]);
 
         $this->notifications->notifyEditorClientRevision($piece);
 

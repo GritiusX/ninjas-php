@@ -259,14 +259,18 @@ export default function EditorTask({ piece }: Props) {
                     );
                 })()}
 
-                {/* Cambios solicitados (solo si REVISION) */}
-                {piece.status === 'REVISION' && piece.internal_comments && (
+                {/* Cambios solicitados — internal_comments (PM) o client_feedback (cliente).
+                    Se muestra en REVISION/CLIENT_REVISION para que el comentario no le
+                    quede oculto al editor detrás de la notificación. */}
+                {['REVISION', 'CLIENT_REVISION'].includes(piece.status) && (piece.internal_comments || piece.client_feedback) && (
                     <section className="rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/50 p-5 space-y-2">
                         <h2 className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
                             Cambios solicitados
                         </h2>
-                        <p className="text-sm text-orange-800 dark:text-orange-200 leading-relaxed">{piece.internal_comments}</p>
+                        <p className="text-sm text-orange-800 dark:text-orange-200 leading-relaxed">
+                            {piece.internal_comments || piece.client_feedback}
+                        </p>
                     </section>
                 )}
 

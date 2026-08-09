@@ -654,9 +654,9 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
             />
 
             <Dialog open={approvedOpen} onOpenChange={setApprovedOpen}>
-                <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+                <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-md p-0">
                     {/* Hero */}
-                    <div className="bg-green-500/10 border-b border-green-500/20 px-6 pt-8 pb-6 text-center">
+                    <div className="shrink-0 bg-green-500/10 border-b border-green-500/20 px-6 pt-8 pb-6 text-center">
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20 ring-4 ring-green-500/10">
                             <CheckCircle2 className="h-8 w-8 text-green-500" />
                         </div>
@@ -666,7 +666,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                         </p>
                     </div>
 
-                    <div className="px-6 py-5 space-y-4">
+                    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
                         {/* Link de revisión */}
                         {piece.review_token && (
                             <div className="space-y-2">
@@ -737,7 +737,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                         )}
                     </div>
 
-                    <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4 bg-muted/30">
+                    <div className="shrink-0 flex items-center justify-end gap-2 border-t border-border px-6 py-4 bg-muted/30">
                         <Button variant="ghost" size="sm" onClick={() => setApprovedOpen(false)}>
                             Cerrar
                         </Button>

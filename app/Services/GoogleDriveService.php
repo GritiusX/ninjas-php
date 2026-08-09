@@ -98,13 +98,33 @@ class GoogleDriveService
         ]);
     }
 
-    public function streamFile(string $fileId): \GuzzleHttp\Psr7\Response
+    /**
+     * Descarga el contenido de un archivo de Drive. Si se pasan $start/$end,
+     * reenvía un header Range a la API de Drive para traer solo ese rango de
+     * bytes — necesario para que el <video> del browser pueda seekear y para
+     * que iOS Safari (muy estricto con Range/Content-Length) reproduzca el
+     * stream en vez de rechazarlo.
+     */
+    public function streamFile(string $fileId, ?int $start = null, ?int $end = null): \GuzzleHttp\Psr7\Response
     {
-        $this->client->setDefer(false);
-        return $this->drive->files->get($fileId, [
+        // defer(true) hace que files->get() devuelva el Request sin ejecutarlo,
+        // para poder agregarle el header Range antes de mandarlo.
+        $this->client->setDefer(true);
+        $request = $this->drive->files->get($fileId, [
             'alt'               => 'media',
             'supportsAllDrives' => true,
         ]);
+        $this->client->setDefer(false);
+
+        if ($start !== null) {
+            $request = $request->withHeader('Range', 'bytes=' . $start . '-' . ($end ?? ''));
+        }
+
+        // execute() (en vez de mandar el Request directo por Guzzle) mantiene
+        // el retry automático y el Google\Service\Exception con detalle del
+        // error que ya daba el flujo no diferido anterior — evita convertir un
+        // 5xx/429 transitorio de Drive en un fallo duro sin reintento.
+        return $this->client->execute($request);
     }
 
     public function getFileMetadata(string $fileId): DriveFile

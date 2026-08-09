@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, ChevronRight, Clock, ExternalLink, Filter, PauseCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Clock, ExternalLink, Filter, LayoutGrid, PauseCircle, Table2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/status-badge';
@@ -173,13 +173,15 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
                                 </p>
                             )}
 
-                            {piece.status === 'REVISION' && piece.internal_comments && (
+                            {['REVISION', 'CLIENT_REVISION'].includes(piece.status) && (piece.internal_comments || piece.client_feedback) && (
                                 <div className="mt-3 p-3 rounded-md bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800/50">
                                     <div className="flex items-center gap-1.5 mb-1">
                                         <AlertCircle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
-                                        <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Comentarios del PM</span>
+                                        <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Cambios solicitados</span>
                                     </div>
-                                    <p className="text-sm text-orange-800 dark:text-orange-200">{piece.internal_comments}</p>
+                                    <p className="text-sm text-orange-800 dark:text-orange-200">
+                                        {piece.internal_comments || piece.client_feedback}
+                                    </p>
                                 </div>
                             )}
 
@@ -223,11 +225,121 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
     );
 }
 
+// ─── Vista tabla ──────────────────────────────────────────────────────────────
+
+function PieceTableRow({ piece, isActive }: { piece: ContentPiece; isActive?: boolean }) {
+    const deadline = formatDeadline(piece.deadline);
+    const paused = isPaused(piece);
+    const [pauseOpen, setPauseOpen] = useState(false);
+    const canPause = ['BRIEF', 'EDITING', 'REVISION'].includes(piece.status) && !paused;
+    const comment = piece.internal_comments || piece.client_feedback;
+    const hasComment = ['REVISION', 'CLIENT_REVISION'].includes(piece.status) && !!comment;
+
+    return (
+        <>
+            <tr className={`border-b border-border transition-colors ${paused ? 'opacity-50' : isActive ? 'bg-blue-500/5' : 'hover:bg-muted/20'}`}>
+                <td className="px-3 py-2.5 text-sm font-medium text-muted-foreground whitespace-nowrap">
+                    {piece.client?.name}
+                </td>
+                <td className="px-3 py-2.5 text-sm text-foreground max-w-xs">
+                    <div className="flex items-center gap-1.5">
+                        <span className="truncate">
+                            {piece.concept || piece.product || <span className="text-muted-foreground italic">Sin concepto</span>}
+                        </span>
+                        {hasComment && (
+                            <span title={comment ?? undefined}>
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+                            </span>
+                        )}
+                    </div>
+                    {paused && piece.pause_reason && (
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground italic">"{piece.pause_reason}"</p>
+                    )}
+                </td>
+                <td className="px-3 py-2.5">
+                    <StatusBadge status={piece.status} />
+                </td>
+                <td className="px-3 py-2.5 text-sm whitespace-nowrap">
+                    {deadline ? (
+                        <span className={`flex items-center gap-1 ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}>
+                            <Clock className="h-3 w-3" />
+                            {deadline.label}
+                        </span>
+                    ) : (
+                        <span className="text-muted-foreground">—</span>
+                    )}
+                </td>
+                <td className="px-3 py-2.5">
+                    <div className="flex items-center justify-end gap-1">
+                        {canPause && (
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => setPauseOpen(true)}
+                            >
+                                <PauseCircle className="h-3.5 w-3.5" />
+                            </Button>
+                        )}
+                        <Link href={editorRoutes.task.url(piece.id)}>
+                            <Button size="sm" variant={!paused && isActive ? 'default' : 'outline'} className="h-7">
+                                Abrir
+                                <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                            </Button>
+                        </Link>
+                    </div>
+                </td>
+            </tr>
+
+            {pauseOpen && <PauseModal piece={piece} onClose={() => setPauseOpen(false)} />}
+        </>
+    );
+}
+
+function PieceTable({ pieces, activeId }: { pieces: ContentPiece[]; activeId?: number }) {
+    return (
+        <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-left">
+                <thead>
+                    <tr className="border-b border-border bg-muted/40 text-xs text-muted-foreground uppercase tracking-wide">
+                        <th className="px-3 py-2 font-medium">Cliente</th>
+                        <th className="px-3 py-2 font-medium">Concepto</th>
+                        <th className="px-3 py-2 font-medium">Estado</th>
+                        <th className="px-3 py-2 font-medium">Deadline</th>
+                        <th className="px-3 py-2 font-medium text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {pieces.map((piece) => (
+                        <PieceTableRow key={piece.id} piece={piece} isActive={piece.id === activeId} />
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
+
+const VIEW_MODE_STORAGE_KEY = 'editorDashboardViewMode';
+type ViewMode = 'table' | 'cards';
 
 export default function EditorDashboard({ pieces, stats }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [clientFilter, setClientFilter] = useState<string>('all');
+    const [viewMode, setViewMode] = useState<ViewMode>('table');
+
+    useEffect(() => {
+        const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+        if (stored === 'table' || stored === 'cards') {
+            setViewMode(stored);
+        }
+    }, []);
+
+    function changeViewMode(mode: ViewMode) {
+        setViewMode(mode);
+        localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    }
 
     useEffect(() => {
         const timer = setInterval(() => router.reload({ only: ['pieces', 'stats'] }), 30 * 60 * 1000);
@@ -262,22 +374,49 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                     <p className="text-muted-foreground mt-1">Tus tareas activas</p>
                 </div>
 
-                {uniqueClients.length > 1 && (
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <Select value={clientFilter} onValueChange={setClientFilter}>
-                            <SelectTrigger className="w-48">
-                                <SelectValue placeholder="Todos los clientes" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos los clientes</SelectItem>
-                                {uniqueClients.map(c => (
-                                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    {uniqueClients.length > 1 ? (
+                        <div className="flex items-center gap-2">
+                            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <Select value={clientFilter} onValueChange={setClientFilter}>
+                                <SelectTrigger className="w-48">
+                                    <SelectValue placeholder="Todos los clientes" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos los clientes</SelectItem>
+                                    {uniqueClients.map(c => (
+                                        <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : (
+                        <div />
+                    )}
+
+                    <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+                        <button
+                            type="button"
+                            onClick={() => changeViewMode('table')}
+                            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                                viewMode === 'table' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            <Table2 className="h-3.5 w-3.5" />
+                            Tabla
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => changeViewMode('cards')}
+                            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                                viewMode === 'cards' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                            Tarjetas
+                        </button>
                     </div>
-                )}
+                </div>
 
                 <div className="grid grid-cols-3 gap-4">
                     <Card className="bg-card border-border">
@@ -305,9 +444,13 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                             Para trabajar ({sortedPending.length})
                         </h2>
-                        {sortedPending.map((piece, i) => (
-                            <PieceCard key={piece.id} piece={piece} isActive={i === 0} />
-                        ))}
+                        {viewMode === 'table' ? (
+                            <PieceTable pieces={sortedPending} activeId={sortedPending[0]?.id} />
+                        ) : (
+                            sortedPending.map((piece, i) => (
+                                <PieceCard key={piece.id} piece={piece} isActive={i === 0} />
+                            ))
+                        )}
                     </section>
                 )}
 
@@ -316,9 +459,13 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                             En revisión interna ({inReview.length})
                         </h2>
-                        {inReview.map((piece) => (
-                            <PieceCard key={piece.id} piece={piece} />
-                        ))}
+                        {viewMode === 'table' ? (
+                            <PieceTable pieces={inReview} />
+                        ) : (
+                            inReview.map((piece) => (
+                                <PieceCard key={piece.id} piece={piece} />
+                            ))
+                        )}
                     </section>
                 )}
 
@@ -327,9 +474,13 @@ export default function EditorDashboard({ pieces, stats }: Props) {
                         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                             Con el cliente ({clientReview.length})
                         </h2>
-                        {clientReview.map((piece) => (
-                            <PieceCard key={piece.id} piece={piece} />
-                        ))}
+                        {viewMode === 'table' ? (
+                            <PieceTable pieces={clientReview} />
+                        ) : (
+                            clientReview.map((piece) => (
+                                <PieceCard key={piece.id} piece={piece} />
+                            ))
+                        )}
                     </section>
                 )}
 

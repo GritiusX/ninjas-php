@@ -22,15 +22,17 @@ class BriefController extends Controller
             'assigned_editor_id'   => ['nullable', 'exists:users,id'],
         ]);
 
+        $editorId = $data['assigned_editor_id'] ?? null;
+
         ContentPiece::create([
             'client_id'          => $data['client_id'],
             'development'        => $data['development'],
             'brief_notes'        => $data['brief_notes'] ?? null,
             'deadline'           => $data['deadline'] ?? null,
             'raw_material_links' => $data['raw_material_links'],
-            'assigned_editor_id' => $data['assigned_editor_id'] ?? null,
+            'assigned_editor_id' => $editorId,
             'priority'           => ContentPiece::PRIORITY_MEDIUM,
-            'status'             => ContentPiece::STATUS_BRIEF,
+            'status'             => $editorId ? ContentPiece::STATUS_EDITING : ContentPiece::STATUS_BRIEF,
         ]);
 
         return redirect()->route('pm.dashboard')->with('success', 'Brief creado correctamente.');
@@ -83,7 +85,7 @@ class BriefController extends Controller
             'brief_notes'   => ['nullable', 'string'],
             'client_status' => ['nullable', 'string', 'max:120'],
             'is_scheduled'          => ['boolean'],
-            'priority'              => ['required', 'integer', 'in:1,2,3'],
+            'priority'              => ['sometimes', 'integer', 'in:1,2,3'],
             'deadline'              => ['nullable', 'date'],
             'raw_material_link'     => ['nullable', 'url', 'max:500'],
             'raw_material_links'    => ['nullable', 'array', 'max:10'],

@@ -86,7 +86,7 @@ class NotificationService
             'user_id'    => $piece->assigned_editor_id,
             'type'       => 'changes.requested',
             'title'      => "[{$piece->client->name}] El cliente pidió cambios — revisá y resubí",
-            'body'       => $piece->concept ?? $piece->product,
+            'body'       => $piece->client_feedback ?: ($piece->concept ?? $piece->product),
             'link'       => "/editor/task/{$piece->id}",
             'created_at' => now(),
         ]);
@@ -114,7 +114,7 @@ class NotificationService
                 'type'       => 'changes.requested',
                 'title'      => "[{$piece->client->name}] El cliente pidió cambios",
                 'body'       => $message,
-                'link'       => "/editor",
+                'link'       => "/editor/task/{$piece->id}",
                 'created_at' => now(),
             ]);
         }

@@ -26,18 +26,23 @@ trait StreamsGoogleDriveVideo
         $mimeType = $meta->getMimeType() ?: 'video/mp4';
         $fileSize = (int) $meta->getSize();
 
-        $start = 0;
-        $end   = $fileSize - 1;
-        $status = 200;
-        $headers = [
+        $start          = 0;
+        $end            = $fileSize - 1;
+        $status         = 200;
+        $rangeRequested = $request->hasHeader('Range');
+        $headers        = [
             'Content-Type'        => $mimeType,
             'Accept-Ranges'       => 'bytes',
             'Content-Disposition' => 'inline',
             'Cache-Control'       => 'private, max-age=3600',
         ];
 
-        // Handle Range requests so the browser/fetcher can seek
-        if ($request->hasHeader('Range')) {
+        // Handle Range requests so the browser/fetcher can seek. iOS Safari en
+        // particular rechaza la reproducción si el Content-Range/Content-Length
+        // que devolvemos no coincide con los bytes reales del body — por eso
+        // streamFile() ahora reenvía este mismo rango a la API de Drive en vez
+        // de traer siempre el archivo completo desde el byte 0.
+        if ($rangeRequested) {
             preg_match('/bytes=(\d+)-(\d*)/', $request->header('Range'), $range);
             $start  = (int) $range[1];
             $end    = isset($range[2]) && $range[2] !== '' ? (int) $range[2] : $fileSize - 1;
@@ -48,9 +53,11 @@ trait StreamsGoogleDriveVideo
             $headers['Content-Length'] = $fileSize;
         }
 
-        return response()->stream(function () use ($drive, $fileId) {
-            $response = $drive->streamFile($fileId);
-            $body     = $response->getBody();
+        return response()->stream(function () use ($drive, $fileId, $rangeRequested, $start, $end) {
+            $response = $rangeRequested
+                ? $drive->streamFile($fileId, $start, $end)
+                : $drive->streamFile($fileId);
+            $body = $response->getBody();
 
             while (!$body->eof()) {
                 echo $body->read(1024 * 256);

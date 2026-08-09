@@ -45,7 +45,7 @@ function EditableRow({
         return iso.replace(' ', 'T').slice(0, 16);
     };
 
-    const { data, setData, put, processing, reset } = useForm({
+    const { data, setData, put, processing, reset, clearErrors, errors } = useForm({
         concept: piece.concept ?? '',
         product: piece.product ?? '',
         deadline: toDatetimeLocal(piece.deadline),
@@ -60,6 +60,7 @@ function EditableRow({
 
     function cancel() {
         reset();
+        clearErrors();
         setEditing(false);
     }
 
@@ -78,42 +79,53 @@ function EditableRow({
     };
 
     if (editing) {
+        const errorList = Object.values(errors).filter(Boolean);
+
         return (
-            <tr className="border-b border-border bg-muted/30">
-                <td className="px-3 py-2 text-sm text-muted-foreground">{piece.client?.name}</td>
-                <td className="px-3 py-2">
-                    <Input
-                        value={data.concept}
-                        onChange={(e) => setData('concept', e.target.value)}
-                        className="h-8 text-sm"
-                        placeholder="Concepto..."
-                    />
-                </td>
-                <td className="px-3 py-2">
-                    <StatusBadge status={piece.status} />
-                </td>
-                <td className="px-3 py-2 text-sm text-muted-foreground">
-                    {piece.editor?.name ?? '—'}
-                </td>
-                <td className="px-3 py-2">
-                    <Input
-                        type="datetime-local"
-                        value={data.deadline}
-                        onChange={(e) => setData('deadline', e.target.value)}
-                        className="h-8 text-sm"
-                    />
-                </td>
-                <td className="px-3 py-2">
-                    <div className="flex items-center gap-1">
-                        <Button size="icon" variant="default" className="h-7 w-7" onClick={save} disabled={processing}>
-                            <Check className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancel} disabled={processing}>
-                            <X className="h-3.5 w-3.5" />
-                        </Button>
-                    </div>
-                </td>
-            </tr>
+            <>
+                <tr className="border-b border-border bg-muted/30">
+                    <td className="px-3 py-2 text-sm text-muted-foreground">{piece.client?.name}</td>
+                    <td className="px-3 py-2">
+                        <Input
+                            value={data.concept}
+                            onChange={(e) => setData('concept', e.target.value)}
+                            className="h-8 text-sm"
+                            placeholder="Concepto..."
+                        />
+                    </td>
+                    <td className="px-3 py-2">
+                        <StatusBadge status={piece.status} />
+                    </td>
+                    <td className="px-3 py-2 text-sm text-muted-foreground">
+                        {piece.editor?.name ?? '—'}
+                    </td>
+                    <td className="px-3 py-2">
+                        <Input
+                            type="datetime-local"
+                            value={data.deadline}
+                            onChange={(e) => setData('deadline', e.target.value)}
+                            className="h-8 text-sm"
+                        />
+                    </td>
+                    <td className="px-3 py-2">
+                        <div className="flex items-center gap-1">
+                            <Button size="icon" variant="default" className="h-7 w-7" onClick={save} disabled={processing}>
+                                <Check className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancel} disabled={processing}>
+                                <X className="h-3.5 w-3.5" />
+                            </Button>
+                        </div>
+                    </td>
+                </tr>
+                {errorList.length > 0 && (
+                    <tr className="border-b border-border bg-muted/30">
+                        <td colSpan={6} className="px-3 pb-2 text-xs text-red-400">
+                            No se pudo guardar: {errorList.join(' · ')}
+                        </td>
+                    </tr>
+                )}
+            </>
         );
     }
 
