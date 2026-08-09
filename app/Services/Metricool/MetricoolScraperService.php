@@ -116,7 +116,7 @@ class MetricoolScraperService
         }
 
         $boxes  = $chrome->getCrawler()->filter(self::SELECTOR_METRIC_BOX);
-        $deltas = $this->readIndexedBoxesWithDeltas($chrome, $boxes->count());
+        $deltas = $this->readIndexedBoxesWithDeltas($chrome, 2); // followers_growth, views
 
         $this->debugScreenshot($chrome, 'facebook-evolution-ok');
 
@@ -158,7 +158,7 @@ class MetricoolScraperService
 
         $crawler = $chrome->getCrawler();
         $boxes   = $crawler->filter(self::SELECTOR_METRIC_BOX);
-        $deltas  = $this->readIndexedBoxesWithDeltas($chrome, $boxes->count());
+        $deltas  = $this->readIndexedBoxesWithDeltas($chrome, 3); // followers_total, following_total, content_total
 
         $this->debugScreenshot($chrome, 'instagram-evolution-ok');
 
@@ -393,21 +393,34 @@ class MetricoolScraperService
      * no todos exponen un label distinguible, así que acá se devuelve la lista
      * en el mismo orden del DOM (índice 0, 1, 2...) en vez de un mapa por label.
      *
-     * $expectedCount es la cantidad de "Metric box value" ya leídos por el
-     * método de value existente (boxValue/SELECTOR_METRIC_BOX) — si la cantidad
-     * de cards "Analysis Metric Box" visibles no coincide, asumimos que la
-     * estructura de la página no es la esperada y devolvemos vacío en vez de
-     * arriesgarnos a asociar un delta al índice equivocado (la extracción del
-     * value, que no depende de este método, sigue funcionando igual).
+     * $neededCount es la cantidad de boxes que realmente vamos a usar (2 para
+     * Facebook, 3 para el resumen de Instagram) — NO la cantidad total de
+     * "Metric box value" de toda la página, que puede ser mucho mayor (la
+     * página de Instagram, por ejemplo, tiene decenas repartidos en otros
+     * widgets/gráficos). Solo se hace hover sobre los primeros $neededCount
+     * cards "Analysis Metric Box" visibles, nunca sobre el resto — cada hover
+     * es una acción real de WebDriver que puede tardar varios segundos, así
+     * que iterar por todos los boxes de la página (como pasaba antes, al
+     * comparar contra el total) podía tardar minutos o directamente colgar el
+     * scrape.
+     *
+     * Si hay menos cards visibles que $neededCount, devuelve vacío (best
+     * effort) en vez de arriesgarse a leer de menos o desalinear índices — la
+     * extracción del value, que no depende de este método, sigue funcionando
+     * igual.
      */
-    private function readIndexedBoxesWithDeltas(Client $chrome, int $expectedCount): array
+    private function readIndexedBoxesWithDeltas(Client $chrome, int $neededCount): array
     {
+        if ($neededCount <= 0) {
+            return [];
+        }
+
         $cards   = $chrome->findElements(WebDriverBy::cssSelector('[aria-label="Analysis Metric Box"]'));
         $visible = array_values(array_filter($cards, fn ($card) => $card->isDisplayed()));
 
-        if ($expectedCount === 0 || count($visible) !== $expectedCount) {
-            Log::info('Metricool scraper: cantidad de cards con delta no matchea los boxes esperados, se omite delta', [
-                'esperado'   => $expectedCount,
+        if (count($visible) < $neededCount) {
+            Log::info('Metricool scraper: menos cards con delta que las necesarias, se omite delta', [
+                'necesario'  => $neededCount,
                 'encontrado' => count($visible),
             ]);
 
@@ -416,8 +429,8 @@ class MetricoolScraperService
 
         $actions = new WebDriverActions($chrome);
         $result  = [];
-        foreach ($visible as $index => $card) {
-            $result[$index] = $this->readCardValueAndDelta($chrome, $actions, $card, "box#{$index}");
+        for ($index = 0; $index < $neededCount; $index++) {
+            $result[$index] = $this->readCardValueAndDelta($chrome, $actions, $visible[$index], "box#{$index}");
         }
 
         return $result;
