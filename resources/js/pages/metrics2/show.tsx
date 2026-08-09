@@ -62,14 +62,25 @@ function parseSignedNumber(raw: string | null | undefined): number | null {
     return Number.isNaN(n) ? null : n;
 }
 
-function deltaColor(pct: number | null): string {
+// string en vez de 'up' | 'down' porque viene de NetworkData (Record<string, string | null>).
+type Direction = string | null | undefined;
+
+// Metricool ya pinta un ícono de flecha (fa-arrow-up/fa-arrow-down) directo en
+// el DOM del value, sin depender de hover — es más confiable que el signo del
+// % (que solo llega vía el tooltip, y a veces el hover no llega a tiempo). Por
+// eso direction, cuando viene del scraper, tiene prioridad sobre el % parseado.
+function deltaColor(pct: number | null, direction?: Direction): string {
+    if (direction === 'up') return 'text-green-600';
+    if (direction === 'down') return 'text-red-600';
     if (pct === null) return 'text-muted-foreground';
     if (pct > 1) return 'text-green-600';
     if (pct < -1) return 'text-red-600';
     return 'text-yellow-600';
 }
 
-function deltaIcon(pct: number | null) {
+function deltaIcon(pct: number | null, direction?: Direction) {
+    if (direction === 'up') return TrendingUp;
+    if (direction === 'down') return TrendingDown;
     if (pct === null) return Minus;
     if (pct > 1) return TrendingUp;
     if (pct < -1) return TrendingDown;
@@ -84,15 +95,17 @@ function DataRowWithDelta({
     value,
     delta,
     deltaPct,
+    direction,
 }: {
     label: string;
     value: string | null | undefined;
     delta?: string | null;
     deltaPct?: string | null;
+    direction?: Direction;
 }) {
     const pct = parseSignedNumber(deltaPct);
-    const DeltaIcon = deltaIcon(pct);
-    const hasDelta = Boolean(delta || deltaPct);
+    const DeltaIcon = deltaIcon(pct, direction);
+    const hasDelta = Boolean(delta || deltaPct || direction);
 
     return (
         <div className="flex items-center justify-between border-b py-2 text-sm last:border-0">
@@ -103,7 +116,7 @@ function DataRowWithDelta({
                 </span>
                 {hasDelta && (
                     <span
-                        className={`flex items-center gap-0.5 text-xs ${deltaColor(pct)}`}
+                        className={`flex items-center gap-0.5 text-xs ${deltaColor(pct, direction)}`}
                         title={delta && deltaPct ? `${delta} (${deltaPct})` : (deltaPct ?? delta ?? undefined)}
                     >
                         <DeltaIcon className="h-3 w-3" />
@@ -118,8 +131,8 @@ function DataRowWithDelta({
 function FacebookSection({ data }: { data: NetworkData }) {
     return (
         <>
-            <DataRowWithDelta label="Crecimiento de seguidores" value={data.followers_growth} delta={data.followers_growth_delta} deltaPct={data.followers_growth_delta_pct} />
-            <DataRowWithDelta label="Visualizaciones" value={data.views} delta={data.views_delta} deltaPct={data.views_delta_pct} />
+            <DataRowWithDelta label="Crecimiento de seguidores" value={data.followers_growth} delta={data.followers_growth_delta} deltaPct={data.followers_growth_delta_pct} direction={data.followers_growth_direction} />
+            <DataRowWithDelta label="Visualizaciones" value={data.views} delta={data.views_delta} deltaPct={data.views_delta_pct} direction={data.views_direction} />
         </>
     );
 }
@@ -128,9 +141,9 @@ function InstagramSection({ data, start, end }: { data: NetworkData; start: stri
     return (
         <>
             <SectionHeader label="Totales acumulados" />
-            <DataRowWithDelta label="Seguidores (total)" value={data.followers_total} delta={data.followers_total_delta} deltaPct={data.followers_total_delta_pct} />
-            <DataRowWithDelta label="Siguiendo (total)" value={data.following_total} delta={data.following_total_delta} deltaPct={data.following_total_delta_pct} />
-            <DataRowWithDelta label="Contenido total" value={data.content_total} delta={data.content_total_delta} deltaPct={data.content_total_delta_pct} />
+            <DataRowWithDelta label="Seguidores (total)" value={data.followers_total} delta={data.followers_total_delta} deltaPct={data.followers_total_delta_pct} direction={data.followers_total_direction} />
+            <DataRowWithDelta label="Siguiendo (total)" value={data.following_total} delta={data.following_total_delta} deltaPct={data.following_total_delta_pct} direction={data.following_total_direction} />
+            <DataRowWithDelta label="Contenido total" value={data.content_total} delta={data.content_total_delta} deltaPct={data.content_total_delta_pct} direction={data.content_total_direction} />
 
             <SectionHeader label={`Período (${formatDate(start)} – ${formatDate(end)})`} />
             <DataRow label="Seguidores ganados" value={data.followers_gained} />
@@ -147,11 +160,11 @@ function TiktokSection({ data }: { data: NetworkData }) {
     return (
         <>
             <SectionHeader label="Crecimiento" />
-            <DataRowWithDelta label="Seguidores" value={data.followers} delta={data.followers_delta} deltaPct={data.followers_delta_pct} />
-            <DataRowWithDelta label="Posts" value={data.posts} delta={data.posts_delta} deltaPct={data.posts_delta_pct} />
+            <DataRowWithDelta label="Seguidores" value={data.followers} delta={data.followers_delta} deltaPct={data.followers_delta_pct} direction={data.followers_direction} />
+            <DataRowWithDelta label="Posts" value={data.posts} delta={data.posts_delta} deltaPct={data.posts_delta_pct} direction={data.posts_direction} />
             <SectionHeader label="Balance de seguidores" />
-            <DataRowWithDelta label="Adquiridos" value={data.followers_gained} delta={data.followers_gained_delta} deltaPct={data.followers_gained_delta_pct} />
-            <DataRowWithDelta label="Perdidos" value={data.followers_lost} delta={data.followers_lost_delta} deltaPct={data.followers_lost_delta_pct} />
+            <DataRowWithDelta label="Adquiridos" value={data.followers_gained} delta={data.followers_gained_delta} deltaPct={data.followers_gained_delta_pct} direction={data.followers_gained_direction} />
+            <DataRowWithDelta label="Perdidos" value={data.followers_lost} delta={data.followers_lost_delta} deltaPct={data.followers_lost_delta_pct} direction={data.followers_lost_direction} />
         </>
     );
 }
@@ -160,13 +173,13 @@ function YoutubeSection({ data }: { data: NetworkData }) {
     return (
         <>
             <SectionHeader label="Crecimiento" />
-            <DataRowWithDelta label="Suscriptores" value={data.subscribers} delta={data.subscribers_delta} deltaPct={data.subscribers_delta_pct} />
-            <DataRowWithDelta label="Reproducciones" value={data.views} delta={data.views_delta} deltaPct={data.views_delta_pct} />
-            <DataRowWithDelta label="Revenue" value={data.revenue} delta={data.revenue_delta} deltaPct={data.revenue_delta_pct} />
-            <DataRowWithDelta label="Videos" value={data.videos} delta={data.videos_delta} deltaPct={data.videos_delta_pct} />
+            <DataRowWithDelta label="Suscriptores" value={data.subscribers} delta={data.subscribers_delta} deltaPct={data.subscribers_delta_pct} direction={data.subscribers_direction} />
+            <DataRowWithDelta label="Reproducciones" value={data.views} delta={data.views_delta} deltaPct={data.views_delta_pct} direction={data.views_direction} />
+            <DataRowWithDelta label="Revenue" value={data.revenue} delta={data.revenue_delta} deltaPct={data.revenue_delta_pct} direction={data.revenue_direction} />
+            <DataRowWithDelta label="Videos" value={data.videos} delta={data.videos_delta} deltaPct={data.videos_delta_pct} direction={data.videos_direction} />
             <SectionHeader label="Balance de suscriptores" />
-            <DataRowWithDelta label="Ganados" value={data.subscribers_gained} delta={data.subscribers_gained_delta} deltaPct={data.subscribers_gained_delta_pct} />
-            <DataRowWithDelta label="Perdidos" value={data.subscribers_lost} delta={data.subscribers_lost_delta} deltaPct={data.subscribers_lost_delta_pct} />
+            <DataRowWithDelta label="Ganados" value={data.subscribers_gained} delta={data.subscribers_gained_delta} deltaPct={data.subscribers_gained_delta_pct} direction={data.subscribers_gained_direction} />
+            <DataRowWithDelta label="Perdidos" value={data.subscribers_lost} delta={data.subscribers_lost_delta} deltaPct={data.subscribers_lost_delta_pct} direction={data.subscribers_lost_direction} />
         </>
     );
 }
@@ -175,15 +188,15 @@ function AdsSection({ data }: { data: NetworkData }) {
     return (
         <>
             <SectionHeader label="Alcance" />
-            <DataRowWithDelta label="Impresiones" value={data.impressions} delta={data.impressions_delta} deltaPct={data.impressions_delta_pct} />
-            <DataRowWithDelta label="Gasto" value={data.spend} delta={data.spend_delta} deltaPct={data.spend_delta_pct} />
+            <DataRowWithDelta label="Impresiones" value={data.impressions} delta={data.impressions_delta} deltaPct={data.impressions_delta_pct} direction={data.impressions_direction} />
+            <DataRowWithDelta label="Gasto" value={data.spend} delta={data.spend_delta} deltaPct={data.spend_delta_pct} direction={data.spend_direction} />
             <SectionHeader label="Resultados" />
-            <DataRowWithDelta label="Clics" value={data.clicks} delta={data.clicks_delta} deltaPct={data.clicks_delta_pct} />
-            <DataRowWithDelta label="Conversiones" value={data.conversions} delta={data.conversions_delta} deltaPct={data.conversions_delta_pct} />
+            <DataRowWithDelta label="Clics" value={data.clicks} delta={data.clicks_delta} deltaPct={data.clicks_delta_pct} direction={data.clicks_direction} />
+            <DataRowWithDelta label="Conversiones" value={data.conversions} delta={data.conversions_delta} deltaPct={data.conversions_delta_pct} direction={data.conversions_direction} />
             <SectionHeader label="Rendimiento" />
-            <DataRowWithDelta label="CPM" value={data.cpm} delta={data.cpm_delta} deltaPct={data.cpm_delta_pct} />
-            <DataRowWithDelta label="CPC" value={data.cpc} delta={data.cpc_delta} deltaPct={data.cpc_delta_pct} />
-            <DataRowWithDelta label="CTR" value={data.ctr} delta={data.ctr_delta} deltaPct={data.ctr_delta_pct} />
+            <DataRowWithDelta label="CPM" value={data.cpm} delta={data.cpm_delta} deltaPct={data.cpm_delta_pct} direction={data.cpm_direction} />
+            <DataRowWithDelta label="CPC" value={data.cpc} delta={data.cpc_delta} deltaPct={data.cpc_delta_pct} direction={data.cpc_direction} />
+            <DataRowWithDelta label="CTR" value={data.ctr} delta={data.ctr_delta} deltaPct={data.ctr_delta_pct} direction={data.ctr_direction} />
         </>
     );
 }

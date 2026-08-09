@@ -121,12 +121,14 @@ class MetricoolScraperService
         $this->debugScreenshot($chrome, 'facebook-evolution-ok');
 
         return [
-            'followers_growth'           => $this->boxValue($boxes, 0),
-            'followers_growth_delta'     => $deltas[0]['delta'] ?? null,
-            'followers_growth_delta_pct' => $deltas[0]['delta_pct'] ?? null,
-            'views'                      => $this->boxValue($boxes, 1),
-            'views_delta'                => $deltas[1]['delta'] ?? null,
-            'views_delta_pct'            => $deltas[1]['delta_pct'] ?? null,
+            'followers_growth'            => $this->boxValue($boxes, 0),
+            'followers_growth_delta'      => $deltas[0]['delta'] ?? null,
+            'followers_growth_delta_pct'  => $deltas[0]['delta_pct'] ?? null,
+            'followers_growth_direction'  => $deltas[0]['direction'] ?? null,
+            'views'                       => $this->boxValue($boxes, 1),
+            'views_delta'                 => $deltas[1]['delta'] ?? null,
+            'views_delta_pct'             => $deltas[1]['delta_pct'] ?? null,
+            'views_direction'             => $deltas[1]['direction'] ?? null,
         ];
     }
 
@@ -178,15 +180,18 @@ class MetricoolScraperService
 
         return [
             // Top 3 boxes coloreados (aria-label="Metric box value", índices 0-2)
-            'followers_total'           => $this->boxValue($boxes, 0),
-            'followers_total_delta'     => $deltas[0]['delta'] ?? null,
-            'followers_total_delta_pct' => $deltas[0]['delta_pct'] ?? null,
-            'following_total'           => $this->boxValue($boxes, 1),
-            'following_total_delta'     => $deltas[1]['delta'] ?? null,
-            'following_total_delta_pct' => $deltas[1]['delta_pct'] ?? null,
-            'content_total'             => $this->boxValue($boxes, 2),
-            'content_total_delta'       => $deltas[2]['delta'] ?? null,
-            'content_total_delta_pct'   => $deltas[2]['delta_pct'] ?? null,
+            'followers_total'            => $this->boxValue($boxes, 0),
+            'followers_total_delta'      => $deltas[0]['delta'] ?? null,
+            'followers_total_delta_pct'  => $deltas[0]['delta_pct'] ?? null,
+            'followers_total_direction'  => $deltas[0]['direction'] ?? null,
+            'following_total'            => $this->boxValue($boxes, 1),
+            'following_total_delta'      => $deltas[1]['delta'] ?? null,
+            'following_total_delta_pct'  => $deltas[1]['delta_pct'] ?? null,
+            'following_total_direction'  => $deltas[1]['direction'] ?? null,
+            'content_total'              => $this->boxValue($boxes, 2),
+            'content_total_delta'        => $deltas[2]['delta'] ?? null,
+            'content_total_delta_pct'    => $deltas[2]['delta_pct'] ?? null,
+            'content_total_direction'    => $deltas[2]['direction'] ?? null,
             // 6 boxes grises de #growth — mapeados por label text
             'followers_gained'   => $deltaBoxes['Seguidores'] ?? null,
             'followers_daily'    => $deltaBoxes['Seguidores diarios'] ?? null,
@@ -291,12 +296,13 @@ class MetricoolScraperService
     }
 
     /**
-     * Traduce el array label => ['value','delta','delta_pct'] devuelto por
-     * readLabeledBoxesWithDeltas() a un array plano keyed por métrica, con
-     * las 3 variantes ({key}, {key}_delta, {key}_delta_pct) que consume el
-     * frontend para pintar valor + flecha de tendencia.
+     * Traduce el array label => ['value','delta','delta_pct','direction']
+     * devuelto por readLabeledBoxesWithDeltas() a un array plano keyed por
+     * métrica, con las 4 variantes ({key}, {key}_delta, {key}_delta_pct,
+     * {key}_direction) que consume el frontend para pintar valor + flecha de
+     * tendencia.
      *
-     * @param  array<string, array{value: ?string, delta: ?string, delta_pct: ?string}>  $boxes
+     * @param  array<string, array{value: ?string, delta: ?string, delta_pct: ?string, direction: ?string}>  $boxes
      * @param  array<string, string>  $metricMap  clave interna => label tal como aparece en Metricool
      * @return array<string, mixed>
      */
@@ -304,9 +310,10 @@ class MetricoolScraperService
     {
         $out = [];
         foreach ($metricMap as $key => $label) {
-            $out[$key]               = $boxes[$label]['value'] ?? null;
-            $out["{$key}_delta"]     = $boxes[$label]['delta'] ?? null;
-            $out["{$key}_delta_pct"] = $boxes[$label]['delta_pct'] ?? null;
+            $out[$key]                = $boxes[$label]['value'] ?? null;
+            $out["{$key}_delta"]      = $boxes[$label]['delta'] ?? null;
+            $out["{$key}_delta_pct"]  = $boxes[$label]['delta_pct'] ?? null;
+            $out["{$key}_direction"]  = $boxes[$label]['direction'] ?? null;
         }
         $out['_raw'] = $boxes;
 
@@ -417,17 +424,22 @@ class MetricoolScraperService
     }
 
     /**
-     * Lee value/delta/delta_pct de un [aria-label="Analysis Metric Box"] ya
-     * localizado: hace hover real (WebDriverActions, no un evento sintético)
-     * para leer el tooltip de Vuetify (aria-describedby="v-tooltip-v-XXXX")
-     * con el delta absoluto y el % de cambio vs. el período de comparación —
-     * ese tooltip no existe en el DOM hasta que el hover está activo, por eso
-     * no alcanza con leer el Crawler (snapshot estático).
+     * Lee value/delta/delta_pct/direction de un [aria-label="Analysis Metric
+     * Box"] ya localizado.
      *
-     * Si el tooltip no aparece o no matchea el patrón esperado, delta/delta_pct
-     * quedan en null pero el value igual se lee (best-effort, no aborta nada).
+     * La dirección (arriba/abajo) se lee del ícono <i class="fa-arrow-up|
+     * fa-arrow-down"> que Metricool ya renderiza en el DOM estático junto al
+     * value — no depende de hover ni de que el tooltip llegue a tiempo, así
+     * que es la señal más confiable para decidir la flecha. El delta/delta_pct
+     * (con la magnitud del cambio) sigue viniendo del tooltip de Vuetify
+     * (aria-describedby="v-tooltip-v-XXXX"), que solo existe en el DOM
+     * mientras dura el hover — por eso hace falta un hover real
+     * (WebDriverActions, no un evento sintético) para poder leerlo.
      *
-     * @return array{value: ?string, delta: ?string, delta_pct: ?string}
+     * Si el ícono o el tooltip no aparecen, direction/delta/delta_pct quedan
+     * en null pero el value igual se lee (best-effort, no aborta nada).
+     *
+     * @return array{value: ?string, delta: ?string, delta_pct: ?string, direction: ?string}
      */
     private function readCardValueAndDelta(Client $chrome, WebDriverActions $actions, WebDriverElement $card, string $logLabel): array
     {
@@ -438,6 +450,17 @@ class MetricoolScraperService
                 $text  = trim($valueEls[0]->getText());
                 $value = ($text !== '' && $text !== '-') ? $text : null;
                 break;
+            }
+        }
+
+        $direction = null;
+        $iconEls   = $card->findElements(WebDriverBy::cssSelector('[aria-label="Metric box value"] i'));
+        if (!empty($iconEls)) {
+            $iconClass = (string) $iconEls[0]->getAttribute('class');
+            if (str_contains($iconClass, 'fa-arrow-up')) {
+                $direction = 'up';
+            } elseif (str_contains($iconClass, 'fa-arrow-down')) {
+                $direction = 'down';
             }
         }
 
@@ -475,7 +498,7 @@ class MetricoolScraperService
             }
         }
 
-        return ['value' => $value, 'delta' => $delta, 'delta_pct' => $deltaPct];
+        return ['value' => $value, 'delta' => $delta, 'delta_pct' => $deltaPct, 'direction' => $direction];
     }
 
     // -------------------------------------------------------------------------
