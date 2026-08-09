@@ -303,7 +303,9 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
     const progress = navigating || totalNetworks === 0 ? undefined : (completedNetworks / totalNetworks) * 100;
 
     const rangeChanged = desde !== start || hasta !== end;
-    const rangeValid = desde !== '' && hasta !== '' && desde <= hasta;
+    // Vacío en ambos también es válido: significa "sin fechas" (automático) —
+    // el usuario tiene que tocar "Aplicar rango" para que eso se haga efectivo.
+    const rangeValid = (desde === '' && hasta === '') || (desde !== '' && hasta !== '' && desde <= hasta);
 
     // Sync cuando Inertia actualiza las props (ej: después de force refresh)
     useEffect(() => {
@@ -376,16 +378,18 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
     function handleApplyRange() {
         if (!rangeValid || !rangeChanged) return;
         setNavigating(true);
-        router.get(`/metrics2/${client.id}`, { start: desde, end: hasta }, {
+        const params = desde === '' && hasta === '' ? {} : { start: desde, end: hasta };
+        router.get(`/metrics2/${client.id}`, params, {
             onFinish: () => setNavigating(false),
         });
     }
 
-    function handleResetRange() {
-        setNavigating(true);
-        router.get(`/metrics2/${client.id}`, {}, {
-            onFinish: () => setNavigating(false),
-        });
+    // Solo limpia los inputs de fecha — no navega ni dispara nada. Si el
+    // usuario quiere quedarse sin fechas (automático), tiene que confirmarlo
+    // tocando "Aplicar rango" a continuación.
+    function handleClearDates() {
+        setDesde('');
+        setHasta('');
     }
 
     return (
@@ -404,6 +408,10 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
                             <p className="text-muted-foreground text-sm">
                                 {formatDate(start)} — {formatDate(end)}
                                 {isDefault && <span className="ml-1">(automático — Metricool decide el período real por red)</span>}
+                            </p>
+                            <p className="text-muted-foreground/70 mt-1 max-w-md text-xs leading-snug">
+                                Si hay caché de los últimos 30 días se muestra directo; si no, se dispara un scrape solo.
+                                Usá "Actualizar" para forzar una recarga aunque ya haya caché.
                             </p>
                         </div>
                     </div>
@@ -443,11 +451,14 @@ export default function Metrics2Show({ client, networkResults: initialResults, s
                     <Button size="sm" onClick={handleApplyRange} disabled={!rangeValid || !rangeChanged || navigating}>
                         Aplicar rango
                     </Button>
-                    {!isDefault && (
-                        <Button size="sm" variant="ghost" onClick={handleResetRange} disabled={navigating}>
-                            Volver al automático
-                        </Button>
-                    )}
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleClearDates}
+                        disabled={navigating || (desde === '' && hasta === '')}
+                    >
+                        Limpiar fechas
+                    </Button>
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">

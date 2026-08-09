@@ -16,6 +16,10 @@ export function MetricoolReportsButton({ clientId, period }: { clientId: number;
     const [error, setError]         = useState<string | null>(null);
     const [creating, setCreating]   = useState(false);
     const [createMsg, setCreateMsg] = useState<string | null>(null);
+    // El mes a generar es independiente del período que esté mirando la
+    // página (acá se puede elegir cualquier mes, no solo el que ya tenga
+    // datos sincronizados) — "period" solo se usa como valor inicial.
+    const [targetPeriod, setTargetPeriod] = useState(period);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -47,6 +51,8 @@ export function MetricoolReportsButton({ clientId, period }: { clientId: number;
     }
 
     function createReport() {
+        if (!targetPeriod) return;
+
         setCreating(true);
         setCreateMsg('Iniciando generación...');
         const csrf = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
@@ -54,7 +60,7 @@ export function MetricoolReportsButton({ clientId, period }: { clientId: number;
         fetch(`/metrics/${clientId}/metricool-report-create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-            body: JSON.stringify({ period }),
+            body: JSON.stringify({ period: targetPeriod }),
         })
             .then((r) => r.json())
             .then(() => {
@@ -92,7 +98,7 @@ export function MetricoolReportsButton({ clientId, period }: { clientId: number;
                     if (newLatest && newLatest !== prevLatest) {
                         clearInterval(timer);
                         setReports(list);
-                        setCreateMsg(`Reporte ${period} listo. Ya podés descargarlo.`);
+                        setCreateMsg(`Reporte ${targetPeriod} listo. Ya podés descargarlo.`);
                         setCreating(false);
                     }
                 })
@@ -120,16 +126,23 @@ export function MetricoolReportsButton({ clientId, period }: { clientId: number;
 
             {open && (
                 <div className="absolute right-0 top-10 z-50 w-72 rounded-md border border-border bg-popover shadow-md">
-                    {/* Generar nuevo reporte */}
-                    <div className="border-b border-border px-3 py-2.5">
+                    {/* Generar nuevo reporte — mes elegible libremente, no depende del período que esté mirando la página */}
+                    <div className="border-b border-border px-3 py-2.5 space-y-2">
+                        <input
+                            type="month"
+                            value={targetPeriod}
+                            onChange={(e) => setTargetPeriod(e.target.value)}
+                            disabled={creating}
+                            className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm text-foreground disabled:opacity-50"
+                        />
                         <button
                             type="button"
-                            disabled={creating}
+                            disabled={creating || !targetPeriod}
                             onClick={createReport}
                             className="flex w-full items-center gap-2 rounded px-1 py-1 text-sm text-foreground hover:bg-muted disabled:opacity-50"
                         >
                             <FilePlus className={`h-3.5 w-3.5 shrink-0 text-primary ${creating ? 'animate-pulse' : ''}`} />
-                            <span>{creating ? 'Generando...' : `Generar reporte ${period}`}</span>
+                            <span>{creating ? 'Generando...' : `Generar reporte ${targetPeriod}`}</span>
                         </button>
                         {createMsg && (
                             <p className={`mt-1.5 px-1 text-xs ${createMsg.startsWith('Error') ? 'text-red-400' : 'text-green-400'}`}>
