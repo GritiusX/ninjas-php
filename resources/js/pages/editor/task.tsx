@@ -135,7 +135,7 @@ export default function EditorTask({ piece }: Props) {
         <>
             <Head title={`${piece.client?.name} · ${piece.concept ?? piece.product ?? 'Tarea'}`} />
 
-            <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+            <div className="mx-auto max-w-2xl px-4 py-6 space-y-6 lg:max-w-none">
                 {/* Header */}
                 <div className="space-y-3">
                     <div>

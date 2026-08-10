@@ -237,13 +237,20 @@ function PieceTableRow({ piece, isActive }: { piece: ContentPiece; isActive?: bo
 
     return (
         <>
-            <tr className={`border-b border-border transition-colors ${paused ? 'opacity-50' : isActive ? 'bg-blue-500/5' : 'hover:bg-muted/20'}`}>
-                <td className="px-3 py-2.5 text-sm font-medium text-muted-foreground whitespace-nowrap">
+            {/* grid-cols-1 en mobile = cada campo es su propia fila (sin scroll horizontal);
+                sm:grid-cols-[...] los acomoda en columnas, como una tabla, en pantallas grandes. */}
+            <div
+                className={`grid grid-cols-1 gap-2 border-b border-border p-3 transition-colors last:border-0 sm:grid-cols-[140px_1fr_110px_110px_150px] sm:items-center sm:gap-3 sm:px-3 sm:py-2.5 ${
+                    paused ? 'opacity-50' : isActive ? 'bg-blue-500/5' : 'hover:bg-muted/20'
+                }`}
+            >
+                <div className="truncate text-sm font-medium text-muted-foreground">
                     {piece.client?.name}
-                </td>
-                <td className="px-3 py-2.5 text-sm text-foreground max-w-xs">
+                </div>
+
+                <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                        <span className="truncate">
+                        <span className="truncate text-sm text-foreground">
                             {piece.concept || piece.product || <span className="text-muted-foreground italic">Sin concepto</span>}
                         </span>
                         {hasComment && (
@@ -255,11 +262,13 @@ function PieceTableRow({ piece, isActive }: { piece: ContentPiece; isActive?: bo
                     {paused && piece.pause_reason && (
                         <p className="mt-0.5 truncate text-xs text-muted-foreground italic">"{piece.pause_reason}"</p>
                     )}
-                </td>
-                <td className="px-3 py-2.5">
+                </div>
+
+                <div>
                     <StatusBadge status={piece.status} />
-                </td>
-                <td className="px-3 py-2.5 text-sm whitespace-nowrap">
+                </div>
+
+                <div className="text-sm">
                     {deadline ? (
                         <span className={`flex items-center gap-1 ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}>
                             <Clock className="h-3 w-3" />
@@ -268,28 +277,27 @@ function PieceTableRow({ piece, isActive }: { piece: ContentPiece; isActive?: bo
                     ) : (
                         <span className="text-muted-foreground">—</span>
                     )}
-                </td>
-                <td className="px-3 py-2.5">
-                    <div className="flex items-center justify-end gap-1">
-                        {canPause && (
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                                onClick={() => setPauseOpen(true)}
-                            >
-                                <PauseCircle className="h-3.5 w-3.5" />
-                            </Button>
-                        )}
-                        <Link href={editorRoutes.task.url(piece.id)}>
-                            <Button size="sm" variant={!paused && isActive ? 'default' : 'outline'} className="h-7">
-                                Abrir
-                                <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                            </Button>
-                        </Link>
-                    </div>
-                </td>
-            </tr>
+                </div>
+
+                <div className="flex items-center gap-1 sm:justify-end">
+                    {canPause && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={() => setPauseOpen(true)}
+                        >
+                            <PauseCircle className="h-3.5 w-3.5" />
+                        </Button>
+                    )}
+                    <Link href={editorRoutes.task.url(piece.id)}>
+                        <Button size="sm" variant={!paused && isActive ? 'default' : 'outline'} className="h-7">
+                            Abrir
+                            <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                        </Button>
+                    </Link>
+                </div>
+            </div>
 
             {pauseOpen && <PauseModal piece={piece} onClose={() => setPauseOpen(false)} />}
         </>
@@ -298,23 +306,17 @@ function PieceTableRow({ piece, isActive }: { piece: ContentPiece; isActive?: bo
 
 function PieceTable({ pieces, activeId }: { pieces: ContentPiece[]; activeId?: number }) {
     return (
-        <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-left">
-                <thead>
-                    <tr className="border-b border-border bg-muted/40 text-xs text-muted-foreground uppercase tracking-wide">
-                        <th className="px-3 py-2 font-medium">Cliente</th>
-                        <th className="px-3 py-2 font-medium">Concepto</th>
-                        <th className="px-3 py-2 font-medium">Estado</th>
-                        <th className="px-3 py-2 font-medium">Deadline</th>
-                        <th className="px-3 py-2 font-medium text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {pieces.map((piece) => (
-                        <PieceTableRow key={piece.id} piece={piece} isActive={piece.id === activeId} />
-                    ))}
-                </tbody>
-            </table>
+        <div className="overflow-hidden rounded-lg border border-border">
+            <div className="hidden bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide sm:grid sm:grid-cols-[140px_1fr_110px_110px_150px] sm:gap-3">
+                <span>Cliente</span>
+                <span>Concepto</span>
+                <span>Estado</span>
+                <span>Deadline</span>
+                <span className="text-right">Acciones</span>
+            </div>
+            {pieces.map((piece) => (
+                <PieceTableRow key={piece.id} piece={piece} isActive={piece.id === activeId} />
+            ))}
         </div>
     );
 }
