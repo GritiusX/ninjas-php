@@ -287,6 +287,7 @@ function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[]
         if (!matchedClient) error = `Cliente "${clientName}" no encontrado`;
         else if (raw_material_links.length === 0) error = 'Material referencia requerido';
         else if (editorName && !matchedEditor) error = `Editor "${editorName}" no encontrado`;
+        else if (deadline && !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) error = `Fecha entrega inválida: "${cols[2]}" (usar DD/MM/AAAA)`;
         else {
             const invalidLink = raw_material_links.find((link) => !isValidUrl(link));
             if (invalidLink) error = `URL inválida: "${invalidLink}"`;
@@ -381,6 +382,7 @@ function BulkImportModal({
     const [submitting, setSubmitting] = useState(false);
     const [fileError, setFileError] = useState<string | null>(null);
     const [pasteError, setPasteError] = useState<string | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
 
     function handleClose() {
@@ -388,6 +390,7 @@ function BulkImportModal({
         setInputMode('upload');
         setRows([]);
         setRawText('');
+        setSubmitError(null);
         setSearch('');
         setFileError(null);
         setPasteError(null);
@@ -434,9 +437,18 @@ function BulkImportModal({
             assigned_editor_id: r.assigned_editor_id || null,
         }));
 
+        setSubmitError(null);
         setSubmitting(true);
         router.post(briefRoutes.bulkStore.url(), { rows: payload }, {
             onSuccess: handleClose,
+            onError: (errors) => {
+                const messages = Object.values(errors);
+                setSubmitError(
+                    messages.length > 0
+                        ? messages.join(' ')
+                        : 'No se pudieron crear los briefs. Revisá los datos e intentá de nuevo.',
+                );
+            },
             onFinish: () => setSubmitting(false),
         });
     }
@@ -562,6 +574,11 @@ function BulkImportModal({
                         {hasErrors && (
                             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                                 Hay filas con errores. Corregí el archivo y volvé a subir.
+                            </div>
+                        )}
+                        {submitError && (
+                            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                {submitError}
                             </div>
                         )}
 
