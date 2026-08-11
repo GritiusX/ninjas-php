@@ -42,11 +42,6 @@ class Client extends Model
         return $this->hasMany(AdMetric::class);
     }
 
-    public function monthlySnapshots(): HasMany
-    {
-        return $this->hasMany(MonthlySnapshot::class);
-    }
-
     public function getBrandContext(): string
     {
         if ($this->context_path && Storage::exists($this->context_path)) {

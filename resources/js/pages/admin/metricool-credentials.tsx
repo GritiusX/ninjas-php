@@ -34,7 +34,7 @@ export default function MetricoolCredentialsPage({ email, hasPassword }: Props) 
                         Credenciales de Metricool
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Usuario y contraseña de login usados por el scraper de <code>/metrics2</code> (no confundir con
+                        Usuario y contraseña de login usados por el scraper de <code>/metrics</code> (no confundir con
                         el token de la API oficial, que se configura por variable de entorno). Actualizalas acá si
                         cambia la contraseña de la cuenta de Metricool.
                     </p>

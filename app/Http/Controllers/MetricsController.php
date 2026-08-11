@@ -3,43 +3,49 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\GenerateMetricoolReport;
-use App\Jobs\SyncClientMetricsForMonth;
+use App\Jobs\ScrapeMetricoolEvolution;
 use App\Models\Client;
-use App\Models\MonthlySnapshot;
-use App\Services\GoogleAds\GoogleAdsService;
-use App\Services\Metricool\KpiCalculator;
-use App\Services\Metricool\MetricoolBundleBuilder;
+use App\Models\MetricoolMetricHistory;
+use App\Models\MetricoolScrapeCache;
 use App\Services\Metricool\MetricoolClient;
-use Carbon\CarbonInterface;
+use App\Services\Metricool\MetricoolScraperService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use ZipArchive;
-use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class MetricsController extends Controller
 {
-    public function index(): Response
+    private const DEFAULT_NETWORKS = ['facebook', 'instagram'];
+
+    // Si ya hay un scrape de los últimos N días para un cliente/red, no se
+    // vuelve a disparar automáticamente hasta que pasen esos N días.
+    private const AUTO_RESCRAPE_AFTER_DAYS = 30;
+
+    public function __construct(private readonly MetricoolScraperService $scraper)
     {
-        $clients = Client::query()
+    }
+
+    public function list(): Response
+    {
+        [$start, $end] = $this->defaultRange();
+
+        $clients = Client::whereNotNull('metricool_blog_id')
             ->orderBy('name')
-            ->get(['id', 'name', 'metricool_blog_id'])
-            ->map(function (Client $client) {
-                $latest = MonthlySnapshot::where('client_id', $client->id)
-                    ->orderByDesc('year')
-                    ->orderByDesc('month')
-                    ->first();
+            ->get(['id', 'name', 'metricool_networks'])
+            ->map(function (Client $client) use ($start, $end) {
+                $networks    = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
+                $cachedCount = collect($networks)
+                    ->filter(fn (string $network) => $this->findFreshCache($client->id, $network, $start, $end, isDefault: true) !== null)
+                    ->count();
 
                 return [
-                    'id'                 => $client->id,
-                    'name'               => $client->name,
-                    'metricool_blog_id'  => $client->metricool_blog_id,
-                    'has_data'           => (bool) $latest,
-                    'last_synced_at'     => $latest?->synced_at?->toIso8601String(),
+                    'id'            => $client->id,
+                    'name'          => $client->name,
+                    'networks'      => $networks,
+                    'cachedCount'   => $cachedCount,
+                    'totalNetworks' => count($networks),
                 ];
             });
 
@@ -50,254 +56,71 @@ class MetricsController extends Controller
 
     public function show(Request $request, Client $client): Response
     {
-        $target = $this->resolveMonth($request);
-        $previous = $target->copy()->subMonthNoOverflow();
+        [$start, $end] = $this->resolveRange($request);
+        $isDefault = [$start, $end] === $this->defaultRange();
 
-        $current = $this->snapshotsByArea($client->id, $target->year, $target->month);
-        $prev    = $this->snapshotsByArea($client->id, $previous->year, $previous->month);
+        $networks = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
+        $blogId   = (string) $client->metricool_blog_id;
+        $userId   = (string) config('metricool.user_id');
 
-        $byArea = [];
-        foreach (['awareness', 'content', 'community', 'ads', 'system'] as $area) {
-            $byArea[$area] = $this->mergeWithPrevious($current[$area] ?? [], $prev[$area] ?? []);
+        if ($request->boolean('force')) {
+            // Borramos TODO el cache de este cliente (no solo el rango exacto)
+            // para que ningún registro "reciente" de otro rango tape el refresh
+            // forzado vía el fallback de abajo.
+            MetricoolScrapeCache::where('client_id', $client->id)->delete();
+
+            // Por si el chrome-profile quedó con locks de una corrida anterior
+            // que no cerró limpio (job matado, timeout, deploy): sin esto, el
+            // próximo intento de Selenium falla siempre igual, no solo a veces.
+            $this->killStrayChromeProcesses();
         }
 
-        $availableMonths = MonthlySnapshot::where('client_id', $client->id)
-            ->select('year', 'month')
-            ->groupBy('year', 'month')
-            ->orderByDesc('year')
-            ->orderByDesc('month')
-            ->get()
-            ->map(fn ($row) => sprintf('%04d-%02d', $row->year, $row->month))
-            ->values();
+        $networkResults = $this->buildNetworkResults($client->id, $networks, $start, $end, $isDefault);
+        $missing        = array_keys(array_filter($networkResults, fn ($r) => $r['pending']));
 
-        $lastSync = MonthlySnapshot::where('client_id', $client->id)
-            ->where('year', $target->year)
-            ->where('month', $target->month)
-            ->max('synced_at');
+        if (!empty($missing)) {
+            ScrapeMetricoolEvolution::dispatch(
+                $client->id,
+                $missing,
+                $blogId,
+                $userId,
+                $start,
+                $end,
+                forceDateRange: !$isDefault,
+            );
+        }
 
         return Inertia::render('metrics/show', [
-            'client' => [
-                'id'                 => $client->id,
-                'name'               => $client->name,
-                'metricool_blog_id'  => $client->metricool_blog_id,
-            ],
-            'period' => [
-                'year'       => $target->year,
-                'month'      => $target->month,
-                'label'      => $target->locale('es')->isoFormat('MMMM YYYY'),
-                'last_sync'  => $lastSync,
-                'available'  => $availableMonths,
-            ],
-            'metrics' => $byArea,
+            'client'         => ['id' => $client->id, 'name' => $client->name],
+            'networkResults' => $networkResults,
+            'start'          => $start,
+            'end'            => $end,
+            'isDefault'      => $isDefault,
+            'history'        => $this->buildHistory($client->id, $networks),
         ]);
     }
 
-    public function sync(Request $request, Client $client): RedirectResponse
+    public function cancel(): JsonResponse
     {
-        if (! $client->metricool_blog_id) {
-            return back()->with('error', 'El cliente no tiene blog ID de Metricool configurado.');
-        }
-
-        $months = $this->resolveMonthRange($request);
-
-        try {
-            if ($request->boolean('inline')) {
-                $builder   = app(MetricoolBundleBuilder::class);
-                $calculator = app(KpiCalculator::class);
-                $googleAds  = app(GoogleAdsService::class);
-
-                foreach ($months as $target) {
-                    (new SyncClientMetricsForMonth($client->id, $target->year, $target->month))
-                        ->handle($builder, $calculator, $googleAds);
-                }
-
-                $count = count($months);
-                $message = $count === 1
-                    ? 'Sincronización completada.'
-                    : "Sincronización completada ({$count} meses).";
-            } else {
-                foreach ($months as $target) {
-                    dispatch(new SyncClientMetricsForMonth($client->id, $target->year, $target->month));
-                }
-                $message = 'Sincronización encolada. Se actualizará en breve.';
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('[MetricsSync] Error al sincronizar', [
-                'client_id' => $client->id,
-                'error'     => $e->getMessage(),
-            ]);
-            return back()->with('error', 'Error al sincronizar: ' . $e->getMessage());
-        }
-
-        return back()->with('success', $message);
+        $this->killStrayChromeProcesses();
+        return response()->json(['ok' => true]);
     }
 
-    public function syncOne(Client $client): JsonResponse
+    public function status(Request $request, Client $client): JsonResponse
     {
-        set_time_limit(600); // 10 minutos por cliente
-
-        if (! $client->metricool_blog_id) {
-            return response()->json(['error' => 'Sin blog ID configurado.'], 422);
-        }
-
-        $now = now()->startOfMonth();
-
-        try {
-            (new SyncClientMetricsForMonth($client->id, $now->year, $now->month))
-                ->handle(
-                    app(MetricoolBundleBuilder::class),
-                    app(KpiCalculator::class),
-                    app(GoogleAdsService::class),
-                );
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('[SyncOne] Error', [
-                'client_id' => $client->id,
-                'error'     => $e->getMessage(),
-            ]);
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-
-        return response()->json(['ok' => true, 'client' => $client->name]);
-    }
-
-    public function metricoolReportsDiagnose(): JsonResponse
-    {
-        $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();
-        $mc      = app(MetricoolClient::class);
-        $result  = [];
-
-        foreach ($clients as $client) {
-            $raw   = $mc->listReports($client->metricool_blog_id);
-            $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
-
-            $statuses = collect($items)->map(fn($r) => [
-                'status'       => $r['status'] ?? null,
-                'reportFile'   => isset($r['reportFile']) ? substr($r['reportFile'], 0, 80) : null,
-                'creationDate' => $r['creationDate'] ?? null,
-            ])->values();
-
-            $result[] = [
-                'client'       => $client->name,
-                'blog_id'      => $client->metricool_blog_id,
-                'total_reports'=> count($items),
-                'reports'      => $statuses,
-            ];
-        }
-
-        return response()->json($result);
-    }
-
-    /** Step 1 — dispatch one background job per client and return immediately */
-    public function metricoolReportsGenerate(): JsonResponse
-    {
-        $start   = now()->subMonthNoOverflow()->startOfMonth();
-        $end     = now()->subMonthNoOverflow()->endOfMonth();
-        $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();
-
-        foreach ($clients as $client) {
-            dispatch(new GenerateMetricoolReport(
-                blogId:    $client->metricool_blog_id,
-                startDate: $start->format('Ymd'),
-                endDate:   $end->format('Ymd'),
-            ));
-        }
-
-        return response()->json(['total' => $clients->count()]);
-    }
-
-    /** Step 2 — poll how many clients have a FINISHED report */
-    public function metricoolReportsStatus(): JsonResponse
-    {
-        $clients     = Client::whereNotNull('metricool_blog_id')->get();
-        $mc          = app(MetricoolClient::class);
-        $total       = $clients->count();
-        $ready       = 0;
-        $unsupported = 0; // clients where the reports API returns 400 (feature not available)
-
-        foreach ($clients as $client) {
-            $raw = $mc->listReportsRaw($client->metricool_blog_id);
-
-            if ($raw['_status'] === 400) {
-                $unsupported++;
-                continue;
-            }
-
-            $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
-            $has   = collect($items)
-                ->filter(fn ($r) => ($r['status'] ?? '') === 'FINISHED' && isset($r['reportFile']))
-                ->isNotEmpty();
-            if ($has) {
-                $ready++;
-            }
-        }
+        [$start, $end] = $this->resolveRange($request);
+        $isDefault = [$start, $end] === $this->defaultRange();
+        $networks  = $client->metricool_networks ?? self::DEFAULT_NETWORKS;
 
         return response()->json([
-            'total'       => $total,
-            'ready'       => $ready,
-            'unsupported' => $unsupported,
-            'done'        => ($ready + $unsupported) >= $total,
+            'networkResults' => $this->buildNetworkResults($client->id, $networks, $start, $end, $isDefault),
         ]);
     }
 
-    /** Step 3 — download ZIP of all FINISHED reports (fast, no waiting) */
-    public function metricoolReportsZipAll(): StreamedResponse
-    {
-        set_time_limit(120);
-
-        $clients = Client::whereNotNull('metricool_blog_id')->orderBy('name')->get();
-        $mc      = app(MetricoolClient::class);
-
-        $tmpFile = tempnam(sys_get_temp_dir(), 'mc_reports_');
-        $zip     = new ZipArchive();
-        $zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-
-        foreach ($clients as $client) {
-            $raw   = $mc->listReports($client->metricool_blog_id);
-            $items = $raw['data'] ?? (array_is_list($raw) ? $raw : []);
-
-            $report = collect($items)
-                ->filter(fn ($r) => ($r['status'] ?? '') === 'FINISHED' && isset($r['reportFile']))
-                ->sortByDesc('creationDate')
-                ->first();
-
-            if (! $report) {
-                continue;
-            }
-
-            $statusRaw = $mc->getReportStatus($client->metricool_blog_id, $report['reportFile']);
-            $info      = $statusRaw['data'] ?? $statusRaw;
-            $path      = $info['reportPath'] ?? null;
-
-            if (! $path) {
-                $path = filter_var($report['reportFile'], FILTER_VALIDATE_URL)
-                    ? $report['reportFile']
-                    : null;
-            }
-
-            if (! $path) {
-                continue;
-            }
-
-            $file = Http::timeout(30)->get($path);
-            if (! $file->successful()) {
-                continue;
-            }
-
-            $ext      = pathinfo(parse_url($path, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'pdf';
-            $filename = str($client->name)->slug() . '.' . $ext;
-            $zip->addFromString($filename, $file->body());
-        }
-
-        $zip->close();
-
-        $month   = now()->subMonthNoOverflow();
-        $zipName = 'reportes-metricool-' . $month->format('Y-m') . '.zip';
-
-        return response()->streamDownload(function () use ($tmpFile) {
-            readfile($tmpFile);
-            @unlink($tmpFile);
-        }, $zipName, ['Content-Type' => 'application/zip']);
-    }
+    // -------------------------------------------------------------------------
+    // Reportes PDF de Metricool (API oficial, independiente del scraper) —
+    // portado de la vieja MetricsController.
+    // -------------------------------------------------------------------------
 
     public function metricoolReports(Client $client): JsonResponse
     {
@@ -369,75 +192,149 @@ class MetricsController extends Controller
         return redirect()->away($path);
     }
 
-    /** @return CarbonInterface[] */
-    private function resolveMonthRange(Request $request): array
+    private function resolveMonth(Request $request): Carbon
     {
-        $start = $this->parseMonth($request->string('start_date')->trim()->value())
-            ?? now()->subMonthNoOverflow()->startOfMonth();
-        $end   = $this->parseMonth($request->string('end_date')->trim()->value()) ?? $start;
+        $value = $request->string('period')->trim()->value();
 
-        if ($end->lt($start)) {
-            $end = $start;
-        }
-
-        $months = [];
-        $cursor = $start->copy()->startOfMonth();
-        while ($cursor->lte($end)) {
-            $months[] = $cursor->copy();
-            $cursor->addMonthNoOverflow();
-        }
-
-        return $months;
-    }
-
-    private function resolveMonth(Request $request): CarbonInterface
-    {
-        return $this->parseMonth($request->string('period')->trim()->value())
-            ?? now()->subMonthNoOverflow()->startOfMonth();
-    }
-
-    private function parseMonth(string $value): ?CarbonInterface
-    {
         if ($value && preg_match('/^(\d{4})-(\d{1,2})$/', $value, $m)) {
             return Carbon::create((int) $m[1], (int) $m[2], 1);
         }
-        return null;
+
+        return now()->subMonthNoOverflow()->startOfMonth();
     }
 
-    private function snapshotsByArea(int $clientId, int $year, int $month): array
-    {
-        return MonthlySnapshot::where('client_id', $clientId)
-            ->where('year', $year)
-            ->where('month', $month)
-            ->get(['area', 'metric_key', 'value'])
-            ->groupBy('area')
-            ->map(fn ($group) => $group->map(fn ($s) => [
-                'metric_key' => $s->metric_key,
-                'value'      => $s->value !== null ? (float) $s->value : null,
-            ])->keyBy('metric_key')->toArray())
-            ->toArray();
-    }
+    // -------------------------------------------------------------------------
 
-    private function mergeWithPrevious(array $current, array $previous): array
+    /**
+     * Mata procesos de Chrome/chromedriver colgados y borra los locks del
+     * perfil persistido (storage/app/private/chrome-profile). Sin esto, un
+     * Chrome que quedó huérfano (job matado, timeout, deploy) hace que TODO
+     * intento futuro de Selenium falle con "session not created: Chrome
+     * instance exited", siempre, no solo a veces.
+     */
+    private function killStrayChromeProcesses(): void
     {
-        $rows = [];
-        foreach ($current as $key => $row) {
-            $value = $row['value'];
-            $prev  = $previous[$key]['value'] ?? null;
+        exec('pkill -f chromedriver 2>/dev/null');
+        exec('pkill -f "chrome --" 2>/dev/null');
 
-            $deltaPct = null;
-            if ($value !== null && $prev !== null && $prev != 0) {
-                $deltaPct = (($value - $prev) / abs($prev)) * 100;
+        $profileDir = storage_path('app/private/chrome-profile');
+        foreach (['SingletonLock', 'SingletonCookie', 'SingletonSocket'] as $lockFile) {
+            $path = $profileDir . DIRECTORY_SEPARATOR . $lockFile;
+            if (file_exists($path) || is_link($path)) {
+                @unlink($path);
             }
+        }
+    }
 
-            $rows[] = [
-                'metric_key' => $key,
-                'value'      => $value,
-                'previous'   => $prev,
-                'delta_pct'  => $deltaPct,
-            ];
+    /**
+     * Rango "automático": últimos AUTO_RESCRAPE_AFTER_DAYS días terminando hoy.
+     * Se recalcula en cada request — por diseño se corre un día cada día, por
+     * eso NO se usa para matchear cache exacto (ver findFreshCache).
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function defaultRange(): array
+    {
+        return [now()->subDays(self::AUTO_RESCRAPE_AFTER_DAYS - 1)->toDateString(), now()->toDateString()];
+    }
+
+    /**
+     * Lee 'start'/'end' de la query string (formato Y-m-d, start <= end).
+     * Si faltan o son inválidos, cae al rango automático.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function resolveRange(Request $request): array
+    {
+        $start = $request->query('start');
+        $end   = $request->query('end');
+
+        if (is_string($start) && is_string($end)) {
+            try {
+                $startDate = Carbon::parse($start)->startOfDay();
+                $endDate   = Carbon::parse($end)->startOfDay();
+
+                if ($startDate->lte($endDate)) {
+                    return [$startDate->toDateString(), $endDate->toDateString()];
+                }
+            } catch (\Exception) {
+                // rango inválido, cae al default
+            }
         }
 
-        return $rows;
+        return $this->defaultRange();
+    }
+
+    /**
+     * Busca cache para client_id/network. Si $isDefault es true (el usuario no
+     * eligió un rango custom) y no hay match exacto para $start/$end, cae a
+     * "cualquier scrape de los últimos AUTO_RESCRAPE_AFTER_DAYS días" en vez de
+     * exigir que coincida el rango exacto — así no se re-scrapea todos los días
+     * solo porque el rango automático se corrió un día. Si el usuario eligió un
+     * rango custom ($isDefault = false), se exige coincidencia exacta: no
+     * queremos mostrar datos de otro período distinto al que pidió.
+     */
+    private function findFreshCache(int $clientId, string $network, string $start, string $end, bool $isDefault): ?MetricoolScrapeCache
+    {
+        $cached = MetricoolScrapeCache::findCached($clientId, $network, $start, $end);
+
+        if ($cached === null && $isDefault) {
+            $cached = MetricoolScrapeCache::findRecent($clientId, $network, self::AUTO_RESCRAPE_AFTER_DAYS);
+        }
+
+        return $cached;
+    }
+
+    private function buildNetworkResults(int $clientId, array $networks, string $start, string $end, bool $isDefault): array
+    {
+        $results = [];
+        foreach ($networks as $network) {
+            $cached = $this->findFreshCache($clientId, $network, $start, $end, $isDefault);
+
+            if ($cached === null) {
+                $results[$network] = [
+                    'data'       => null,
+                    'fromCache'  => false,
+                    'error'      => null,
+                    'pending'    => true,
+                    'rangeStart' => null,
+                    'rangeEnd'   => null,
+                ];
+                continue;
+            }
+
+            $data  = $cached->data;
+            $error = $data['_error'] ?? null;
+
+            $results[$network] = [
+                'data'       => $error ? null : $data,
+                'fromCache'  => true,
+                'error'      => $error,
+                'pending'    => false,
+                'rangeStart' => $cached->range_start->toDateString(),
+                'rangeEnd'   => $cached->range_end->toDateString(),
+            ];
+        }
+        return $results;
+    }
+
+    /**
+     * Últimos AUTO_RESCRAPE_AFTER_DAYS snapshots diarios por red, para que el
+     * frontend arme sparklines y el drill-down de evolución. Se carga solo en
+     * show() (no en status(), que hace polling cada 3s mientras hay redes
+     * pendientes) porque el historial no cambia entre snapshots diarios.
+     */
+    private function buildHistory(int $clientId, array $networks): array
+    {
+        $history = [];
+        foreach ($networks as $network) {
+            $history[$network] = MetricoolMetricHistory::recentFor($clientId, $network, self::AUTO_RESCRAPE_AFTER_DAYS)
+                ->map(fn ($row) => [
+                    'date' => $row->captured_on->toDateString(),
+                    'data' => $row->data,
+                ])
+                ->values();
+        }
+        return $history;
     }
 }

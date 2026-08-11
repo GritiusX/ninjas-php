@@ -10,9 +10,7 @@ use App\Http\Controllers\Admin\GoogleAdsAuthController;
 use App\Http\Controllers\Admin\MetricoolCredentialController;
 use App\Http\Controllers\Admin\MetricoolDebugController;
 use App\Http\Controllers\Admin\UserAdminController;
-use App\Http\Controllers\Metrics2Controller;
 use App\Http\Controllers\MetricsController;
-use App\Http\Controllers\MetricsPdfController;
 use App\Http\Controllers\Editor\EditorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PM\BriefController;
@@ -80,28 +78,15 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::post('/pieces/{piece}/schedule-metricool', [MetricoolScheduleController::class, 'schedule'])->name('pieces.schedule-metricool');
 });
 
-// --- Panel de Métricas (PM + Admin) ---
+// --- Panel de Métricas (PM + Admin): scraper Metricool por cliente ---
 Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->group(function () {
-    Route::get('/', [MetricsController::class, 'index'])->name('index');
-    Route::post('/{client}/sync-one', [MetricsController::class, 'syncOne'])->name('sync-one');
-    Route::post('/reports-generate', [MetricsController::class, 'metricoolReportsGenerate'])->name('reportsGenerate');
-    Route::get('/reports-status', [MetricsController::class, 'metricoolReportsStatus'])->name('reportsStatus');
-    Route::get('/reports-zip', [MetricsController::class, 'metricoolReportsZipAll'])->name('reportsZip');
-    Route::get('/reports-diagnose', [MetricsController::class, 'metricoolReportsDiagnose'])->name('reportsDiagnose');
-    Route::get('/{client}', [MetricsController::class, 'show'])->name('show');
-    Route::get('/{client}/pdf', [MetricsPdfController::class, 'download'])->name('pdf');
+    Route::get('/', [MetricsController::class, 'list'])->name('index');
+    Route::post('/cancel', [MetricsController::class, 'cancel'])->name('cancel');
+    Route::get('/{client}/status', [MetricsController::class, 'status'])->name('status');
     Route::get('/{client}/metricool-reports', [MetricsController::class, 'metricoolReports'])->name('metricoolReports');
     Route::post('/{client}/metricool-report-create', [MetricsController::class, 'metricoolReportCreate'])->name('metricoolReportCreate');
     Route::get('/{client}/metricool-report-download', [MetricsController::class, 'metricoolReportDownload'])->name('metricoolReportDownload');
-    Route::post('/{client}/sync', [MetricsController::class, 'sync'])->name('sync');
-});
-
-// --- /metrics2: scraper Metricool por cliente ---
-Route::middleware(['auth', 'role:pm'])->prefix('metrics2')->name('metrics2.')->group(function () {
-    Route::get('/', [Metrics2Controller::class, 'list'])->name('index');
-    Route::post('/cancel', [Metrics2Controller::class, 'cancel'])->name('cancel');
-    Route::get('/{client}/status', [Metrics2Controller::class, 'status'])->name('status');
-    Route::get('/{client}', [Metrics2Controller::class, 'show'])->name('show');
+    Route::get('/{client}', [MetricsController::class, 'show'])->name('show');
 });
 
 // --- Notificaciones (todos los roles) ---
