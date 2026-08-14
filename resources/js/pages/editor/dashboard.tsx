@@ -83,7 +83,7 @@ function PauseModal({ piece, onClose }: { piece: ContentPiece; onClose: () => vo
                     </p>
                     <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
                         <span className="font-medium text-foreground">
-                            {piece.concept ?? piece.product ?? `Tarea #${piece.id}`}
+                            {piece.title ?? piece.concept ?? piece.product ?? `Tarea #${piece.id}`}
                         </span>
                         {piece.client && (
                             <span className="ml-2 text-muted-foreground">— {piece.client.name}</span>
@@ -158,7 +158,7 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
                             </div>
 
                             <p className="font-medium text-foreground truncate">
-                                {piece.concept || piece.product || 'Sin concepto'}
+                                {piece.title || piece.concept || piece.product || 'Sin concepto'}
                             </p>
 
                             {piece.objective && (
@@ -251,7 +251,7 @@ function PieceTableRow({ piece, isActive }: { piece: ContentPiece; isActive?: bo
                 <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                         <span className="truncate text-sm text-foreground">
-                            {piece.concept || piece.product || <span className="text-muted-foreground italic">Sin concepto</span>}
+                            {piece.title || piece.concept || piece.product || <span className="text-muted-foreground italic">Sin concepto</span>}
                         </span>
                         {hasComment && (
                             <span title={comment ?? undefined}>

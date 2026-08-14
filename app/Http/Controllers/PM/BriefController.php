@@ -14,6 +14,7 @@ class BriefController extends Controller
     {
         $data = $request->validate([
             'client_id'            => ['required', 'exists:clients,id'],
+            'title'                => ['nullable', 'string', 'max:255'],
             'development'          => ['required', 'string', 'max:1000'],
             'brief_notes'          => ['nullable', 'string'],
             'deadline'             => ['nullable', 'date'],
@@ -26,6 +27,7 @@ class BriefController extends Controller
 
         ContentPiece::create([
             'client_id'          => $data['client_id'],
+            'title'              => $data['title'] ?? null,
             'concept'            => $data['development'],
             'development'        => $data['development'],
             'brief_notes'        => $data['brief_notes'] ?? null,
@@ -44,6 +46,7 @@ class BriefController extends Controller
         $data = $request->validate([
             'rows'                         => ['required', 'array', 'min:1', 'max:50'],
             'rows.*.client_id'             => ['required', 'exists:clients,id'],
+            'rows.*.title'                 => ['nullable', 'string', 'max:255'],
             'rows.*.concept'               => ['required', 'string', 'max:1000'],
             'rows.*.development'           => ['nullable', 'string'],
             'rows.*.brief_notes'           => ['nullable', 'string'],
@@ -57,6 +60,7 @@ class BriefController extends Controller
             $editorId = $row['assigned_editor_id'] ?? null;
             ContentPiece::create([
                 'client_id'          => $row['client_id'],
+                'title'              => $row['title'] ?? null,
                 'concept'            => $row['concept'],
                 'development'        => $row['development'] ?? null,
                 'brief_notes'        => $row['brief_notes'] ?? null,
@@ -76,6 +80,7 @@ class BriefController extends Controller
     public function update(Request $request, ContentPiece $piece): RedirectResponse
     {
         $data = $request->validate([
+            'title'         => ['nullable', 'string', 'max:255'],
             'concept'       => ['nullable', 'string', 'max:1000'],
             'product'       => ['nullable', 'string', 'max:500'],
             'category'      => ['nullable', 'string', 'max:80'],
@@ -98,8 +103,10 @@ class BriefController extends Controller
         return back()->with('success', 'Brief actualizado.');
     }
 
-    public function destroy(ContentPiece $piece): RedirectResponse
+    public function destroy(Request $request, ContentPiece $piece): RedirectResponse
     {
+        abort_unless($request->user()->isAdmin(), 403);
+
         $piece->delete();
 
         return redirect()->route('pm.dashboard')->with('success', 'Pieza eliminada.');

@@ -133,7 +133,7 @@ export default function EditorTask({ piece }: Props) {
 
     return (
         <>
-            <Head title={`${piece.client?.name} · ${piece.concept ?? piece.product ?? 'Tarea'}`} />
+            <Head title={`${piece.client?.name} · ${piece.title ?? piece.concept ?? piece.product ?? 'Tarea'}`} />
 
             <div className="mx-auto max-w-2xl px-4 py-6 space-y-6 lg:max-w-none">
                 {/* Header */}
@@ -154,7 +154,7 @@ export default function EditorTask({ piece }: Props) {
                                 {piece.client?.name}
                             </p>
                             <h1 className="text-xl font-bold text-foreground leading-tight">
-                                {piece.concept ?? piece.product ?? 'Sin concepto'}
+                                {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                             </h1>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 shrink-0">

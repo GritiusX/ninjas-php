@@ -133,6 +133,8 @@ function GoogleAdsDialog({ clients, onClose }: { clients: Client[]; onClose: () 
 export default function ClientsIndex({ clients }: { clients: Client[] }) {
     const [gadsOpen, setGadsOpen] = useState(false);
     const [pending, setPending] = useState<{ id: number; name: string } | null>(null);
+    const showMetaColumn = clients.some((c) => c.meta_ad_account_id);
+    const showGoogleAdsColumn = clients.some((c) => c.google_ads_customer_id);
 
     function handleConfirmDestroy() {
         if (!pending) return;
@@ -168,8 +170,8 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                                     <th className="px-4 py-3 text-left">Cliente</th>
                                     <th className="px-4 py-3 text-left">WhatsApp</th>
                                     <th className="px-4 py-3 text-left">ROAS goal</th>
-                                    <th className="px-4 py-3 text-left">Meta Ad Account</th>
-                                    <th className="px-4 py-3 text-left">Google Ads ID</th>
+                                    {showMetaColumn && <th className="px-4 py-3 text-left">Meta Ad Account</th>}
+                                    {showGoogleAdsColumn && <th className="px-4 py-3 text-left">Google Ads ID</th>}
                                     <th className="px-4 py-3" />
                                 </tr>
                             </thead>
@@ -181,12 +183,16 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                                         <td className="px-4 py-3">
                                             <span className="font-mono text-amber-400">{Number(c.roas_goal).toFixed(2)}</span>
                                         </td>
-                                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{c.meta_ad_account_id ?? '—'}</td>
-                                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                                            {c.google_ads_customer_id
-                                                ? c.google_ads_customer_id.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')
-                                                : '—'}
-                                        </td>
+                                        {showMetaColumn && (
+                                            <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{c.meta_ad_account_id ?? '—'}</td>
+                                        )}
+                                        {showGoogleAdsColumn && (
+                                            <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                                                {c.google_ads_customer_id
+                                                    ? c.google_ads_customer_id.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')
+                                                    : '—'}
+                                            </td>
+                                        )}
                                         <td className="px-4 py-3">
                                             <div className="flex items-center justify-end gap-1">
                                                 <Link href={clientRoutes.edit.url(c.id)}>

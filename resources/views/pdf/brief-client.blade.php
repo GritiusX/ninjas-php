@@ -112,7 +112,12 @@
         @foreach($pieces as $i => $piece)
         <tr>
             <td class="col-num">{{ $i + 1 }}</td>
-            <td class="col-dev">{{ $piece->development ?? ($piece->concept ?? '—') }}</td>
+            <td class="col-dev">
+                @if($piece->title)
+                    <div style="font-weight: bold; margin-bottom: 2px;">{{ $piece->title }}</div>
+                @endif
+                {{ $piece->development ?? ($piece->concept ?? '—') }}
+            </td>
             <td class="col-deadline">
                 {{ $piece->deadline ? $piece->deadline->format('d/m/Y') : '—' }}
             </td>

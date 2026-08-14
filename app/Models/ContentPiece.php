@@ -33,6 +33,7 @@ class ContentPiece extends Model
         'status',
         'priority',
         'deadline',
+        'title',
         'concept',
         'product',
         'category',

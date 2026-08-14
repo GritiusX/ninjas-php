@@ -16,8 +16,8 @@ class EnsureRole
             return redirect()->route('login');
         }
 
-        // admin tiene acceso a todo
-        if ($user->role === 'admin') {
+        // admin y superadmin tienen acceso a todo
+        if (in_array($user->role, ['admin', 'superadmin'])) {
             return $next($request);
         }
 

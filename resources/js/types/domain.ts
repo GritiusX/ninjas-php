@@ -28,6 +28,7 @@ export type Client = {
 export type Editor = {
     id: number;
     name: string;
+    role: string;
 };
 
 export type ContentPiece = {
@@ -37,6 +38,7 @@ export type ContentPiece = {
     status: ContentStatus;
     priority: Priority;
     deadline: string | null;
+    title: string | null;
     concept: string | null;
     product: string | null;
     category: string | null;

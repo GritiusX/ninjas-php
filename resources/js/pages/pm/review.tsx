@@ -18,6 +18,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-review-link';
+import { DeleteBriefButton } from '@/components/delete-brief-button';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +40,7 @@ type Props = { piece: ContentPiece; geminiUsage: GeminiUsage };
 
 function buildWhatsAppMessage(piece: ContentPiece): string {
     const client = piece.client?.name ?? 'su marca';
-    const title  = piece.concept ?? piece.product ?? 'el contenido';
+    const title  = piece.title ?? piece.concept ?? piece.product ?? 'el contenido';
     let msg = `Hola, les escribimos desde Little Ninjas.\n\nYa esta listo el contenido de ${client}: "${title}".\n\nQuedamos atentos al feedback.`;
     if (piece.review_token) {
         msg += `\n\nRevisen y aprueben aca: ${publicReviewUrl(piece.review_token)}`;
@@ -452,6 +453,11 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                     {piece.client && (
                         <div className="flex items-center gap-2">
                             <CopyPublicReviewLink token={piece.review_token} variant="button" />
+                            <DeleteBriefButton
+                                pieceId={piece.id}
+                                label={piece.title ?? piece.concept ?? piece.product}
+                                variant="button"
+                            />
                         </div>
                     )}
                 </div>
@@ -501,6 +507,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                             </CardHeader>
                             <CardContent className="space-y-3 text-sm">
                                 {[
+                                    { label: 'Título', value: piece.title },
                                     { label: 'Concepto', value: piece.concept },
                                     { label: 'Producto', value: piece.product },
                                     { label: 'Categoría', value: piece.category },
@@ -662,7 +669,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                         </div>
                         <h2 className="text-lg font-bold text-foreground">¡Pieza aprobada!</h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            {piece.client?.name} — {piece.concept ?? piece.product ?? 'Lista para el cliente'}
+                            {piece.client?.name} — {piece.title ?? piece.concept ?? piece.product ?? 'Lista para el cliente'}
                         </p>
                     </div>
 

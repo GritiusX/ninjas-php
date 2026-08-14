@@ -1,5 +1,5 @@
 ﻿import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BarChart3, Bell, Film, KeyRound, LayoutGrid, Settings, Shield, Sparkles, Users } from 'lucide-react';
+import { AlertTriangle, BarChart3, Bell, Film, KeyRound, LayoutGrid, Settings, Shield, Sparkles, Users, Video } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -44,6 +44,12 @@ function useNavItems(): NavItem[] {
         { title: 'Métricas', href: metricsRoutes.index(), icon: BarChart3 },
         notifItem,
     ];
+
+    if (role === 'admin' || role === 'superadmin') {
+        pmItems.push(
+            { title: 'Mis tareas de editor', href: editorRoutes.dashboard(), icon: Video },
+        );
+    }
 
     if (role === 'admin') {
         pmItems.push(

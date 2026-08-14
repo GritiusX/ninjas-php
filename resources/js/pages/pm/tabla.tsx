@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Check, Download, Pencil, UserCheck, X } from 'lucide-react';
 import { useState } from 'react';
+import { DeleteBriefButton } from '@/components/delete-brief-button';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,9 +29,15 @@ type Props = {
     editors: Editor[];
 };
 
+function editorLabel(e: Editor) {
+    if (e.role === 'editor') return e.name;
+    const roleName = e.role === 'superadmin' ? 'Superadmin' : 'Admin';
+    return `${e.name} (${roleName})`;
+}
+
 // ─── Inline row editor ───────────────────────────────────────────────────────
 
-function EditableRow({
+export function EditableRow({
     piece,
     editors,
 }: {
@@ -46,6 +53,7 @@ function EditableRow({
     };
 
     const { data, setData, put, processing, reset, clearErrors, errors } = useForm({
+        title: piece.title ?? '',
         concept: piece.concept ?? '',
         product: piece.product ?? '',
         deadline: toDatetimeLocal(piece.deadline),
@@ -87,6 +95,14 @@ function EditableRow({
                     <td className="px-3 py-2 text-sm text-muted-foreground">{piece.client?.name}</td>
                     <td className="px-3 py-2">
                         <Input
+                            value={data.title}
+                            onChange={(e) => setData('title', e.target.value)}
+                            className="h-8 text-sm"
+                            placeholder="Título..."
+                        />
+                    </td>
+                    <td className="px-3 py-2">
+                        <Input
                             value={data.concept}
                             onChange={(e) => setData('concept', e.target.value)}
                             className="h-8 text-sm"
@@ -120,7 +136,7 @@ function EditableRow({
                 </tr>
                 {errorList.length > 0 && (
                     <tr className="border-b border-border bg-muted/30">
-                        <td colSpan={6} className="px-3 pb-2 text-xs text-red-400">
+                        <td colSpan={7} className="px-3 pb-2 text-xs text-red-400">
                             No se pudo guardar: {errorList.join(' · ')}
                         </td>
                     </tr>
@@ -136,23 +152,28 @@ function EditableRow({
                     {piece.client?.name}
                 </td>
                 <td className="px-3 py-2.5 text-sm text-foreground max-w-xs truncate">
+                    {piece.title ?? <span className="text-muted-foreground italic">Sin título</span>}
+                </td>
+                <td className="px-3 py-2.5 text-sm text-foreground max-w-xs truncate">
                     {piece.development ?? piece.concept ?? piece.product ?? <span className="text-muted-foreground italic">Sin desarrollo</span>}
                 </td>
                 <td className="px-3 py-2.5">
                     <StatusBadge status={piece.status} />
                 </td>
                 <td className="px-3 py-2.5 text-sm">
-                    {piece.editor ? (
-                        <span className="text-foreground">{piece.editor.name}</span>
-                    ) : (
-                        <button
-                            onClick={() => setAssignOpen(true)}
-                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                        >
-                            <UserCheck className="h-3 w-3" />
-                            Asignar
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setAssignOpen(true)}
+                        className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                    >
+                        {piece.editor ? (
+                            <span className="text-foreground">{piece.editor.name}</span>
+                        ) : (
+                            <>
+                                <UserCheck className="h-3 w-3" />
+                                Asignar
+                            </>
+                        )}
+                    </button>
                 </td>
                 <td className="px-3 py-2.5 text-sm">
                     {deadlineDisplay()}
@@ -172,6 +193,7 @@ function EditableRow({
                         >
                             <Pencil className="h-3.5 w-3.5" />
                         </Button>
+                        <DeleteBriefButton pieceId={piece.id} label={piece.title ?? piece.concept ?? piece.product} />
                     </div>
                 </td>
             </tr>
@@ -215,7 +237,7 @@ function AssignEditorModal({
                     <DialogTitle>Asignar editor</DialogTitle>
                 </DialogHeader>
                 <p className="text-sm text-muted-foreground">
-                    {piece.client?.name} — {piece.concept ?? piece.product ?? 'Sin concepto'}
+                    {piece.client?.name} — {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                 </p>
                 <form id="assign-form-tabla" onSubmit={submit} className="space-y-3 pt-1">
                     <div className="space-y-1.5">
@@ -226,7 +248,7 @@ function AssignEditorModal({
                             </SelectTrigger>
                             <SelectContent>
                                 {editors.map((e) => (
-                                    <SelectItem key={e.id} value={String(e.id)}>{e.name}</SelectItem>
+                                    <SelectItem key={e.id} value={String(e.id)}>{editorLabel(e)}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -331,6 +353,7 @@ export default function PmTabla({ pieces, clients, editors }: Props) {
                             <thead>
                                 <tr className="border-b border-border bg-muted/50">
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
+                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Título</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Desarrollo</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Editor</th>

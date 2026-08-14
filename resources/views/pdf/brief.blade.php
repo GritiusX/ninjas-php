@@ -92,7 +92,7 @@
 {{-- Header --}}
 <div class="header">
     <div class="client-name">{{ $piece->client?->name ?? '—' }}</div>
-    <div class="concept">{{ $piece->concept ?? $piece->product ?? 'Sin concepto' }}</div>
+    <div class="concept">{{ $piece->title ?? $piece->concept ?? $piece->product ?? 'Sin concepto' }}</div>
     <div class="meta">
         @if($piece->deadline)
             <span class="deadline-label">

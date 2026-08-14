@@ -52,7 +52,7 @@ export default function ReviewList({ pieces }: { pieces: ContentPiece[] }) {
                                             </div>
 
                                             <p className="font-medium text-foreground truncate">
-                                                {piece.concept ?? piece.product ?? 'Sin concepto'}
+                                                {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                                             </p>
 
                                             <div className="flex items-center gap-3 text-xs text-muted-foreground">

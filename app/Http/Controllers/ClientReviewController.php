@@ -96,6 +96,7 @@ class ClientReviewController extends Controller
         return [
             'id'                => $piece->id,
             'client_name'       => $piece->client?->name ?? '',
+            'title'             => $piece->title ?? $piece->concept ?? $piece->product,
             'final_video_link'  => $piece->final_video_link,
             'client_chosen_copy'=> $piece->client_chosen_copy,
             'copy_text'         => $copyText,

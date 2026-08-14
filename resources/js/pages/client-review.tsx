@@ -5,6 +5,7 @@ type Props = {
     piece: {
         id: number;
         client_name: string;
+        title: string | null;
         final_video_link: string | null;
         client_chosen_copy: string | null;
         copy_text: string | null;
@@ -60,7 +61,9 @@ export default function ClientReview({ piece, already_responded, decision, token
                         </div>
                         <span className="font-bold text-gray-900 text-lg">Little Ninjas</span>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mt-4">Revisión de contenido</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 mt-4">
+                        {piece.title || 'Revisión de contenido'}
+                    </h1>
                     <p className="text-gray-500 mt-1">
                         Para <span className="font-semibold text-gray-700">{piece.client_name}</span>
                     </p>
@@ -81,20 +84,17 @@ export default function ClientReview({ piece, already_responded, decision, token
                     {piece.final_video_link ? (
                         <div className="px-5 pb-5 space-y-3">
                             <div className="aspect-video rounded-xl bg-gray-100 overflow-hidden">
-                                {piece.final_video_link.includes('drive.google.com') ? (
-                                    <iframe
-                                        src={piece.final_video_link.replace('/view', '/preview')}
-                                        className="w-full h-full"
-                                        allow="autoplay"
-                                        allowFullScreen
-                                    />
-                                ) : (
-                                    <video
-                                        src={piece.final_video_link}
-                                        controls
-                                        className="w-full h-full object-contain"
-                                    />
-                                )}
+                                <video
+                                    src={
+                                        piece.final_video_link.includes('drive.google.com')
+                                            ? `/media/${token}/video`
+                                            : piece.final_video_link
+                                    }
+                                    controls
+                                    playsInline
+                                    preload="metadata"
+                                    className="w-full h-full object-contain"
+                                />
                             </div>
                             <a
                                 href={piece.final_video_link}

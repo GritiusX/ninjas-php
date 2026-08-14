@@ -10,6 +10,7 @@ import {
     Download,
     ExternalLink,
     FilePlus,
+    LayoutGrid,
     Pencil,
     Plus,
     Search,
@@ -22,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CopyPublicReviewLink } from '@/components/copy-public-review-link';
+import { DeleteBriefButton } from '@/components/delete-brief-button';
+import { EditableRow } from './tabla';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,6 +74,12 @@ function fmtDeadline(deadline: string | null) {
     return { label: `${d}/${m}`, urgent: false };
 }
 
+function editorLabel(e: Editor) {
+    if (e.role === 'editor') return e.name;
+    const roleName = e.role === 'superadmin' ? 'Superadmin' : 'Admin';
+    return `${e.name} (${roleName})`;
+}
+
 // ─── Assign editor modal ─────────────────────────────────────────────────────
 
 function AssignEditorModal({
@@ -101,7 +110,7 @@ function AssignEditorModal({
                 </DialogHeader>
                 <p className="text-sm text-muted-foreground">
                     {piece.client?.name} —{' '}
-                    {piece.concept ?? piece.product ?? 'Sin concepto'}
+                    {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                 </p>
                 <form
                     id="assign-form"
@@ -120,7 +129,7 @@ function AssignEditorModal({
                             <SelectContent>
                                 {editors.map((e) => (
                                     <SelectItem key={e.id} value={String(e.id)}>
-                                        {e.name}
+                                        {editorLabel(e)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -215,11 +224,12 @@ function MultiLinkInput({
 
 // ─── Bulk import modal ───────────────────────────────────────────────────────
 
-const TEMPLATE_HEADER = 'Desarrollo contenido\tInstrucciones editor\tFecha entrega (DD/MM/AAAA)\tMaterial referencia\tCliente\tEditor';
+const TEMPLATE_HEADER = 'Titulo\tDesarrollo contenido\tInstrucciones editor\tFecha entrega (DD/MM/AAAA)\tMaterial referencia\tCliente\tEditor';
 
 type BulkRow = {
     client_id: number | null;
     clientName: string;
+    title: string;
     development: string;
     brief_notes: string;
     deadline: string;
@@ -254,7 +264,7 @@ function isValidUrl(value: string): boolean {
 
 function isBulkHeaderRow(cols: string[]): boolean {
     const first = (cols[0] ?? '').toLowerCase();
-    return first.startsWith('desarrollo');
+    return first.startsWith('titulo') || first.startsWith('título') || first.startsWith('desarrollo');
 }
 
 function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[] {
@@ -266,12 +276,13 @@ function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[]
 
         if (isBulkHeaderRow(cols)) continue;
 
-        const development = cols[0] ?? '';
-        const brief_notes = cols[1] ?? '';
-        const deadline = parseDeadline(cols[2] ?? '');
-        const raw_material_links = parseMaterialLinks(cols[3] ?? '');
-        const clientName = cols[4] ?? '';
-        const editorName = cols[5] ?? '';
+        const title = cols[0] ?? '';
+        const development = cols[1] ?? '';
+        const brief_notes = cols[2] ?? '';
+        const deadline = parseDeadline(cols[3] ?? '');
+        const raw_material_links = parseMaterialLinks(cols[4] ?? '');
+        const clientName = cols[5] ?? '';
+        const editorName = cols[6] ?? '';
 
         if (!clientName || !development) continue;
 
@@ -287,7 +298,7 @@ function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[]
         if (!matchedClient) error = `Cliente "${clientName}" no encontrado`;
         else if (raw_material_links.length === 0) error = 'Material referencia requerido';
         else if (editorName && !matchedEditor) error = `Editor "${editorName}" no encontrado`;
-        else if (deadline && !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) error = `Fecha entrega inválida: "${cols[2]}" (usar DD/MM/AAAA)`;
+        else if (deadline && !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) error = `Fecha entrega inválida: "${cols[3]}" (usar DD/MM/AAAA)`;
         else {
             const invalidLink = raw_material_links.find((link) => !isValidUrl(link));
             if (invalidLink) error = `URL inválida: "${invalidLink}"`;
@@ -296,6 +307,7 @@ function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[]
         rows.push({
             client_id: matchedClient?.id ?? null,
             clientName,
+            title,
             development,
             brief_notes,
             deadline,
@@ -341,8 +353,9 @@ function parseSpreadsheetFile(file: File, clients: Client[], editors: Editor[]):
 function downloadExampleCsv() {
     const esc = (s: string) => (/[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
     const rows = [
-        ['Desarrollo contenido', 'Instrucciones editor', 'Fecha entrega (DD/MM/AAAA)', 'Material referencia', 'Cliente', 'Editor'],
+        ['Titulo', 'Desarrollo contenido', 'Instrucciones editor', 'Fecha entrega (DD/MM/AAAA)', 'Material referencia', 'Cliente', 'Editor'],
         [
+            'Reel proceso de producción',
             'Mostrar proceso del producto y persona disfrutándolo',
             'Usar música trending, evitar texto en pantalla',
             '15/07/2025',
@@ -362,7 +375,7 @@ function downloadExampleCsv() {
 }
 
 const TEMPLATE_EXAMPLE =
-    'Mostrar proceso del producto y persona disfrutándolo\tUsar música trending, evitar texto en pantalla\t15/07/2025\thttps://drive.google.com/file/d/ejemplo\tAura Natural\tFelipe';
+    'Reel proceso de producción\tMostrar proceso del producto y persona disfrutándolo\tUsar música trending, evitar texto en pantalla\t15/07/2025\thttps://drive.google.com/file/d/ejemplo\tAura Natural\tFelipe';
 
 function BulkImportModal({
     clients,
@@ -429,6 +442,7 @@ function BulkImportModal({
     function handleImport() {
         const payload = rows.map((r) => ({
             client_id: r.client_id,
+            title: r.title || null,
             concept: r.development.slice(0, 1000),
             development: r.development || null,
             brief_notes: r.brief_notes || null,
@@ -589,19 +603,19 @@ function BulkImportModal({
                                 <Input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Buscar por desarrollo..."
+                                    placeholder="Buscar por título o desarrollo..."
                                     className="h-8 pl-8 text-sm"
                                 />
                             </div>
                             <span className="shrink-0 text-sm text-muted-foreground">
-                                {rows.filter(r => !search || r.development.toLowerCase().includes(search.toLowerCase())).length} de {rows.length}
+                                {rows.filter(r => !search || r.title.toLowerCase().includes(search.toLowerCase()) || r.development.toLowerCase().includes(search.toLowerCase())).length} de {rows.length}
                             </span>
                         </div>
 
                         {/* Cards grid */}
                         <div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1">
                             {rows
-                                .filter((r) => !search || r.development.toLowerCase().includes(search.toLowerCase()))
+                                .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()) || r.development.toLowerCase().includes(search.toLowerCase()))
                                 .map((row, i) => (
                                     <div
                                         key={i}
@@ -619,7 +633,12 @@ function BulkImportModal({
                                                 {row.deadline || '—'}
                                             </span>
                                         </div>
-                                        <p className="text-sm font-medium text-foreground leading-snug line-clamp-3">
+                                        {row.title && (
+                                            <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                                                {row.title}
+                                            </p>
+                                        )}
+                                        <p className="text-sm text-foreground leading-snug line-clamp-3">
                                             {row.development}
                                         </p>
                                         {row.brief_notes && (
@@ -673,6 +692,7 @@ function NewBriefModal({
 }) {
     const { data, setData, post, transform, processing, errors, reset } = useForm<{
         client_id: string;
+        title: string;
         development: string;
         brief_notes: string;
         deadline: string;
@@ -680,6 +700,7 @@ function NewBriefModal({
         assigned_editor_id: string;
     }>({
         client_id: '',
+        title: '',
         development: '',
         brief_notes: '',
         deadline: '',
@@ -741,6 +762,19 @@ function NewBriefModal({
                         </Select>
                         {errors.client_id && (
                             <p className="text-xs text-destructive">{errors.client_id}</p>
+                        )}
+                    </div>
+
+                    {/* Título */}
+                    <div className="space-y-1.5">
+                        <Label>Título</Label>
+                        <Input
+                            value={data.title}
+                            onChange={(e) => setData('title', e.target.value)}
+                            placeholder="Título de la pieza..."
+                        />
+                        {errors.title && (
+                            <p className="text-xs text-destructive">{errors.title}</p>
                         )}
                     </div>
 
@@ -811,7 +845,7 @@ function NewBriefModal({
                             </SelectTrigger>
                             <SelectContent>
                                 {editors.map((e) => (
-                                    <SelectItem key={e.id} value={String(e.id)}>{e.name}</SelectItem>
+                                    <SelectItem key={e.id} value={String(e.id)}>{editorLabel(e)}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -849,6 +883,7 @@ function EditBriefModal({
     };
 
     const { data, setData, put, transform, processing, errors } = useForm({
+        title: piece.title ?? '',
         development: piece.development ?? piece.concept ?? '',
         brief_notes: piece.brief_notes ?? '',
         deadline: toDatetimeLocal(piece.deadline),
@@ -878,6 +913,19 @@ function EditBriefModal({
                 </DialogHeader>
 
                 <form id="edit-brief-form" onSubmit={submit} className="space-y-4">
+                    {/* Título */}
+                    <div className="space-y-1.5">
+                        <Label>Título</Label>
+                        <Input
+                            value={data.title}
+                            onChange={(e) => setData('title', e.target.value)}
+                            placeholder="Título de la pieza..."
+                        />
+                        {errors.title && (
+                            <p className="text-xs text-destructive">{errors.title}</p>
+                        )}
+                    </div>
+
                     {/* Desarrollo contenido */}
                     <div className="space-y-1.5">
                         <Label>
@@ -1000,7 +1048,7 @@ function BriefCard({
                             </div>
                             <div className="grid grid-cols-2 gap-x-2 sm:block">
                                 <p className="truncate font-medium text-foreground">
-                                    {piece.concept ?? piece.product ?? 'Sin concepto'}
+                                    {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                                 </p>
                                 {piece.editor && (
                                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
@@ -1023,16 +1071,14 @@ function BriefCard({
                                     Avisar al editor
                                 </Button>
                             )}
-                            {!piece.assigned_editor_id && (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setAssignOpen(true)}
-                                >
-                                    <UserCheck className="mr-1 h-3.5 w-3.5" />
-                                    Asignar
-                                </Button>
-                            )}
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setAssignOpen(true)}
+                            >
+                                <UserCheck className="mr-1 h-3.5 w-3.5" />
+                                {piece.assigned_editor_id ? 'Reasignar' : 'Asignar'}
+                            </Button>
                             <CopyPublicReviewLink token={piece.review_token} />
                             <a href={`/pm/brief/${piece.id}/pdf`} target="_blank" rel="noopener noreferrer">
                                 <Button
@@ -1053,6 +1099,7 @@ function BriefCard({
                             >
                                 <Pencil className="h-3.5 w-3.5" />
                             </Button>
+                            <DeleteBriefButton pieceId={piece.id} label={piece.title ?? piece.concept ?? piece.product} />
                             <button
                                 onClick={() => setExpanded(!expanded)}
                                 className="text-muted-foreground transition-colors hover:text-foreground"
@@ -1157,7 +1204,7 @@ function ReviewCard({ piece }: { piece: ContentPiece }) {
                             )}
                         </div>
                         <p className="truncate font-medium text-foreground">
-                            {piece.concept ?? piece.product ?? 'Sin concepto'}
+                            {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                         </p>
                         {piece.editor && (
                             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -1176,7 +1223,10 @@ function ReviewCard({ piece }: { piece: ContentPiece }) {
                             </a>
                         )}
                     </div>
-                    <ViewReviewLink pieceId={piece.id} />
+                    <div className="flex items-center gap-1">
+                        <ViewReviewLink pieceId={piece.id} />
+                        <DeleteBriefButton pieceId={piece.id} label={piece.title ?? piece.concept ?? piece.product} />
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -1258,7 +1308,7 @@ function MetricoolScheduleModal({
                     </DialogTitle>
                 </DialogHeader>
                 <p className="text-sm text-muted-foreground">
-                    {piece.client?.name} — {piece.concept ?? piece.product ?? 'Sin concepto'}
+                    {piece.client?.name} — {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                 </p>
 
                 {loading && (
@@ -1385,7 +1435,7 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                                 </span>
                             </div>
                             <p className="truncate font-medium text-foreground">
-                                {piece.concept ?? piece.product ?? 'Sin concepto'}
+                                {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                             </p>
                             {piece.final_video_link && (
                                 <a
@@ -1410,6 +1460,7 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                                 <Send className="mr-1.5 h-3.5 w-3.5" />
                                 Programar
                             </Button>
+                            <DeleteBriefButton pieceId={piece.id} label={piece.title ?? piece.concept ?? piece.product} />
                         </div>
                     </div>
                 </CardContent>
@@ -1446,7 +1497,7 @@ function PublishedCard({ piece }: { piece: ContentPiece }) {
                             </span>
                         </div>
                         <p className="truncate font-medium text-foreground">
-                            {piece.concept ?? piece.product ?? 'Sin concepto'}
+                            {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
                         </p>
                         {piece.final_video_link && (
                             <a
@@ -1462,6 +1513,7 @@ function PublishedCard({ piece }: { piece: ContentPiece }) {
                     </div>
                     <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:flex-nowrap">
                         <ViewReviewLink pieceId={piece.id} />
+                        <DeleteBriefButton pieceId={piece.id} label={piece.title ?? piece.concept ?? piece.product} />
                     </div>
                 </div>
             </CardContent>
@@ -1469,7 +1521,39 @@ function PublishedCard({ piece }: { piece: ContentPiece }) {
     );
 }
 
+// ─── Brief table (vista tabla) ───────────────────────────────────────────────
+
+function BriefTable({ pieces, editors }: { pieces: ContentPiece[]; editors: Editor[] }) {
+    return (
+        <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="border-b border-border bg-muted/50">
+                            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
+                            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Título</th>
+                            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Desarrollo</th>
+                            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
+                            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Editor</th>
+                            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deadline</th>
+                            <th className="px-3 py-2.5 w-12"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {pieces.map((p) => (
+                            <EditableRow key={p.id} piece={p} editors={editors} />
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
+
+const VIEW_MODE_STORAGE_KEY = 'pmDashboardViewMode';
+type ViewMode = 'table' | 'cards';
 
 export default function PmDashboard({
     reviewQueue,
@@ -1487,6 +1571,19 @@ export default function PmDashboard({
     const [pdfFilterBy, setPdfFilterBy] = useState<'deadline' | 'created_at'>('deadline');
     const [pdfPopover, setPdfPopover] = useState(false);
     const [tab, setTab] = useState<'active' | 'published'>('active');
+    const [viewMode, setViewMode] = useState<ViewMode>('table');
+
+    useEffect(() => {
+        const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+        if (stored === 'table' || stored === 'cards') {
+            setViewMode(stored);
+        }
+    }, []);
+
+    function changeViewMode(mode: ViewMode) {
+        setViewMode(mode);
+        localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    }
 
     const clientReview = briefQueue.filter((p) =>
         ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status),
@@ -1512,12 +1609,28 @@ export default function PmDashboard({
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <Link href="/pm/tabla">
-                            <Button variant="outline">
-                                <Table2 className="mr-2 h-4 w-4" />
-                                Vista tabla
-                            </Button>
-                        </Link>
+                        <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+                            <button
+                                type="button"
+                                onClick={() => changeViewMode('table')}
+                                className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                                    viewMode === 'table' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                <Table2 className="h-3.5 w-3.5" />
+                                Tabla
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => changeViewMode('cards')}
+                                className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                                    viewMode === 'cards' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5" />
+                                Tarjetas
+                            </button>
+                        </div>
                         <div className="relative flex items-center gap-1">
                             <Select value={briefClientId} onValueChange={(v) => { setBriefClientId(v); setPdfPopover(false); }}>
                                 <SelectTrigger className="h-9 w-44 text-xs">
@@ -1638,9 +1751,13 @@ export default function PmDashboard({
                                         {reviewQueue.length}
                                     </Badge>
                                 </div>
-                                {reviewQueue.map((p) => (
-                                    <ReviewCard key={p.id} piece={p} />
-                                ))}
+                                {viewMode === 'table' ? (
+                                    <BriefTable pieces={reviewQueue} editors={editors} />
+                                ) : (
+                                    reviewQueue.map((p) => (
+                                        <ReviewCard key={p.id} piece={p} />
+                                    ))
+                                )}
                             </section>
                         )}
 
@@ -1655,9 +1772,13 @@ export default function PmDashboard({
                                         {inProgress.length}
                                     </Badge>
                                 </div>
-                                {inProgress.map((p) => (
-                                    <BriefCard key={p.id} piece={p} editors={editors} />
-                                ))}
+                                {viewMode === 'table' ? (
+                                    <BriefTable pieces={inProgress} editors={editors} />
+                                ) : (
+                                    inProgress.map((p) => (
+                                        <BriefCard key={p.id} piece={p} editors={editors} />
+                                    ))
+                                )}
                             </section>
                         )}
 
@@ -1672,9 +1793,13 @@ export default function PmDashboard({
                                         {clientReview.length}
                                     </Badge>
                                 </div>
-                                {clientReview.map((p) => (
-                                    <BriefCard key={p.id} piece={p} editors={editors} />
-                                ))}
+                                {viewMode === 'table' ? (
+                                    <BriefTable pieces={clientReview} editors={editors} />
+                                ) : (
+                                    clientReview.map((p) => (
+                                        <BriefCard key={p.id} piece={p} editors={editors} />
+                                    ))
+                                )}
                             </section>
                         )}
 
@@ -1689,9 +1814,13 @@ export default function PmDashboard({
                                         {approvedQueue.length}
                                     </Badge>
                                 </div>
-                                {approvedQueue.map((p) => (
-                                    <ApprovedCard key={p.id} piece={p} />
-                                ))}
+                                {viewMode === 'table' ? (
+                                    <BriefTable pieces={approvedQueue} editors={editors} />
+                                ) : (
+                                    approvedQueue.map((p) => (
+                                        <ApprovedCard key={p.id} piece={p} />
+                                    ))
+                                )}
                             </section>
                         )}
 
