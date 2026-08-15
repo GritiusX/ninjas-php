@@ -54,6 +54,7 @@ type Props = {
     briefQueue: ContentPiece[];
     approvedQueue: ContentPiece[];
     publishedQueue: ContentPiece[];
+    pendingEditorNotify: ContentPiece[];
     clients: Client[];
     editors: Editor[];
 };
@@ -1560,6 +1561,7 @@ export default function PmDashboard({
     briefQueue,
     approvedQueue,
     publishedQueue,
+    pendingEditorNotify,
     clients,
     editors,
 }: Props) {
@@ -1585,8 +1587,9 @@ export default function PmDashboard({
         localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
     }
 
+    const pendingEditorNotifyIds = new Set(pendingEditorNotify.map((p) => p.id));
     const clientReview = briefQueue.filter((p) =>
-        ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status),
+        ['CLIENT_REVIEW', 'CLIENT_REVISION', 'PM_APPROVED'].includes(p.status) && !pendingEditorNotifyIds.has(p.id),
     );
     const inProgress = briefQueue.filter((p) =>
         ['BRIEF', 'EDITING', 'REVISION'].includes(p.status),
@@ -1604,6 +1607,9 @@ export default function PmDashboard({
                             Dashboard PM
                         </h1>
                         <p className="mt-0.5 text-muted-foreground">
+                            {pendingEditorNotify.length > 0 && (
+                                <>{pendingEditorNotify.length} esperando reenvío al editor ·{' '}</>
+                            )}
                             {reviewQueue.length} para revisar ·{' '}
                             {inProgress.length} en proceso
                         </p>
@@ -1740,6 +1746,28 @@ export default function PmDashboard({
 
                 {tab === 'active' && (
                     <>
+                        {/* Esperando reenvío al editor — el cliente ya pidió cambios pero
+                            el editor no puede subir un nuevo video hasta que se le avise. */}
+                        {pendingEditorNotify.length > 0 && (
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-sm font-semibold tracking-wider text-rose-500 uppercase">
+                                        Esperando reenvío al editor
+                                    </h2>
+                                    <Badge className="border-rose-500/30 bg-rose-500/20 text-rose-500">
+                                        {pendingEditorNotify.length}
+                                    </Badge>
+                                </div>
+                                {viewMode === 'table' ? (
+                                    <BriefTable pieces={pendingEditorNotify} editors={editors} />
+                                ) : (
+                                    pendingEditorNotify.map((p) => (
+                                        <BriefCard key={p.id} piece={p} editors={editors} />
+                                    ))
+                                )}
+                            </section>
+                        )}
+
                         {/* Cola de revisión */}
                         {reviewQueue.length > 0 && (
                             <section className="space-y-3">
@@ -1824,7 +1852,7 @@ export default function PmDashboard({
                             </section>
                         )}
 
-                        {reviewQueue.length === 0 && briefQueue.length === 0 && approvedQueue.length === 0 && (
+                        {pendingEditorNotify.length === 0 && reviewQueue.length === 0 && briefQueue.length === 0 && approvedQueue.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-20 text-center">
                                 <p className="text-lg font-medium text-foreground">
                                     Todo tranquilo por acá

@@ -93,13 +93,16 @@ class EditorController extends Controller
         }
 
         $request->validate([
-            'video' => ['required', 'file', 'mimetypes:video/mp4,video/quicktime,video/x-msvideo', 'max:2097152'],
+            'video'            => ['required', 'file', 'mimetypes:video/mp4,video/quicktime,video/x-msvideo', 'max:2097152'],
+            'replace_previous' => ['nullable', 'boolean'],
         ]);
 
         $piece->load('client');
-        $editor     = $request->user();
-        $pieceName  = $piece->concept ?? $piece->product ?? "Pieza {$piece->id}";
-        $file       = $request->file('video');
+        $editor        = $request->user();
+        $pieceName     = $piece->concept ?? $piece->product ?? "Pieza {$piece->id}";
+        $file          = $request->file('video');
+        $previousLink  = $piece->final_video_link;
+        $replacePrevious = $request->boolean('replace_previous');
 
         set_time_limit(0);
 
@@ -128,6 +131,17 @@ class EditorController extends Controller
             'final_video_link' => $videoLink,
             'status'           => ContentPiece::STATUS_INTERNAL_REVIEW,
         ]);
+
+        if ($replacePrevious && $previousLink) {
+            $oldFileId = $drive->extractFileId($previousLink);
+            if ($oldFileId) {
+                try {
+                    $drive->deleteFile($oldFileId);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
 
         $this->notifications->notifyPmVideoSubmitted($piece, $editor);
 
