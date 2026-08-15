@@ -1,7 +1,8 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Check, Download, Pencil, UserCheck, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Download, Eye, ExternalLink, Pencil, UserCheck, X } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
+import { OpenAsEditorLink } from '@/components/open-as-editor-link';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import * as briefRoutes from '@/routes/pm/brief';
+import * as reviewRoutes from '@/routes/pm/review';
 import type { Client, ContentPiece, Editor } from '@/types';
 
 type Props = {
@@ -31,7 +33,7 @@ type Props = {
 
 function editorLabel(e: Editor) {
     if (e.role === 'editor') return e.name;
-    const roleName = e.role === 'superadmin' ? 'Superadmin' : 'Admin';
+    const roleName = e.role === 'superadmin' ? 'Superadmin' : e.role === 'pm' ? 'PM' : 'Admin';
     return `${e.name} (${roleName})`;
 }
 
@@ -46,6 +48,12 @@ export function EditableRow({
 }) {
     const [editing, setEditing] = useState(false);
     const [assignOpen, setAssignOpen] = useState(false);
+    const [expanded, setExpanded] = useState(false);
+
+    const allLinks = [
+        ...(piece.raw_material_links ?? []),
+        ...(piece.raw_material_link && !piece.raw_material_links?.length ? [piece.raw_material_link] : []),
+    ].filter(Boolean);
 
     const toDatetimeLocal = (iso: string | null) => {
         if (!iso) return '';
@@ -180,6 +188,26 @@ export function EditableRow({
                 </td>
                 <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1">
+                        <Link href={reviewRoutes.show.url(piece.id)}>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                title="Ver / revisar"
+                            >
+                                <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                        </Link>
+                        <OpenAsEditorLink piece={piece} />
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            title="Ver tarea"
+                            onClick={() => setExpanded(!expanded)}
+                        >
+                            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                        </Button>
                         <a href={briefRoutes.pdf.url(piece.id)} target="_blank" rel="noopener noreferrer">
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Descargar brief PDF">
                                 <Download className="h-3.5 w-3.5" />
@@ -197,6 +225,59 @@ export function EditableRow({
                     </div>
                 </td>
             </tr>
+
+            {expanded && (
+                <tr className="border-b border-border bg-muted/20">
+                    <td colSpan={7} className="px-3 py-3">
+                        <div className="space-y-2 text-sm text-foreground">
+                            {piece.objective && (
+                                <div>
+                                    <span className="text-xs tracking-wide text-muted-foreground uppercase">Objetivo</span>
+                                    <p>{piece.objective}</p>
+                                </div>
+                            )}
+                            {piece.hook && (
+                                <div>
+                                    <span className="text-xs tracking-wide text-muted-foreground uppercase">Hook</span>
+                                    <p>{piece.hook}</p>
+                                </div>
+                            )}
+                            {piece.cta && (
+                                <div>
+                                    <span className="text-xs tracking-wide text-muted-foreground uppercase">CTA</span>
+                                    <p>{piece.cta}</p>
+                                </div>
+                            )}
+                            {allLinks.length > 0 && (
+                                <div className="space-y-1">
+                                    <span className="text-xs tracking-wide text-muted-foreground uppercase">Material</span>
+                                    {allLinks.map((link, i) => (
+                                        <a
+                                            key={i}
+                                            href={link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            Link {allLinks.length > 1 ? i + 1 : ''}
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+                            {piece.brief_notes && (
+                                <div className="flex items-start gap-1 rounded bg-muted p-2 text-xs text-muted-foreground">
+                                    <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                                    {piece.brief_notes}
+                                </div>
+                            )}
+                            {!piece.objective && !piece.hook && !piece.cta && allLinks.length === 0 && !piece.brief_notes && (
+                                <p className="text-xs text-muted-foreground italic">Sin detalles adicionales.</p>
+                            )}
+                        </div>
+                    </td>
+                </tr>
+            )}
 
             {assignOpen && (
                 <AssignEditorModal
