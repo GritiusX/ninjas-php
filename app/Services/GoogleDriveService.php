@@ -135,6 +135,20 @@ class GoogleDriveService
         ]);
     }
 
+    public function deleteFile(string $fileId): void
+    {
+        $this->drive->files->delete($fileId, ['supportsAllDrives' => true]);
+    }
+
+    /**
+     * Extrae el fileId de Drive de una URL tipo .../file/d/{id}/view.
+     */
+    public function extractFileId(string $videoLink): ?string
+    {
+        preg_match('/\/d\/([a-zA-Z0-9_-]+)/', $videoLink, $matches);
+        return $matches[1] ?? null;
+    }
+
     private function getOrCreateFolder(string $name, string $parentId): string
     {
         $escaped = str_replace("'", "\\'", $name);

@@ -27,19 +27,31 @@ function formatDeadline(deadline: string | null) {
 }
 
 function SubmitVideoForm({ piece, submitVideoUrl, backUrl }: { piece: ContentPiece; submitVideoUrl: string; backUrl: string }) {
-    const { data, setData, post, processing, progress, errors } = useForm<{ video: File | null }>({
+    const { data, setData, post, processing, progress, errors, transform } = useForm<{ video: File | null }>({
         video: null,
     });
     const [submitted, setSubmitted] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const isUpdate = piece.status === 'INTERNAL_REVIEW';
+    const hasExistingVideo = !!piece.final_video_link;
 
-    function submit(e: React.FormEvent) {
-        e.preventDefault();
+    function doSubmit(replacePrevious: boolean) {
+        transform((current) => ({ ...current, replace_previous: replacePrevious }));
         post(submitVideoUrl, {
             forceFormData: true,
             onSuccess: () => setSubmitted(true),
         });
+        setConfirmOpen(false);
+    }
+
+    function submit(e: React.FormEvent) {
+        e.preventDefault();
+        if (hasExistingVideo) {
+            setConfirmOpen(true);
+            return;
+        }
+        doSubmit(false);
     }
 
     const uploadPercent = progress?.percentage ?? 0;
@@ -104,6 +116,25 @@ function SubmitVideoForm({ piece, submitVideoUrl, backUrl }: { piece: ContentPie
                     {processing ? 'Subiendo...' : isUpdate ? 'Actualizar y re-enviar' : 'Subir y enviar para revisión'}
                 </Button>
             </form>
+
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Ya hay un video cargado</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        ¿Querés reemplazar el video anterior (se borra de Drive) o subir este como una nueva versión (el anterior queda guardado en Drive, recuperable si hace falta)?
+                    </p>
+                    <DialogFooter className="flex-col gap-2 sm:flex-col">
+                        <Button variant="outline" className="w-full" onClick={() => doSubmit(false)} disabled={processing}>
+                            Subir como nueva versión
+                        </Button>
+                        <Button className="w-full" onClick={() => doSubmit(true)} disabled={processing}>
+                            Reemplazar el anterior
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={submitted} onOpenChange={() => {}}>
                 <DialogContent className="sm:max-w-sm" onInteractOutside={(e) => e.preventDefault()}>
@@ -276,23 +307,31 @@ export function PieceTaskView({ piece, submitVideoUrl, backUrl, backLabel }: Pro
                     </section>
                 )}
 
+                {/* Video actual — visible siempre, incluso en CLIENT_REVISION mientras
+                    se espera que el PM reenvíe los cambios al editor. */}
+                {piece.final_video_link && (
+                    <section className="rounded-xl bg-card border border-border p-5 space-y-2">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Video actual
+                        </h2>
+                        <a
+                            href={piece.final_video_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Ver video subido actualmente
+                        </a>
+                    </section>
+                )}
+
                 {/* Subir video */}
                 {canSubmit && (
                     <section className="rounded-xl bg-card border border-border p-5 space-y-3">
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                             {piece.status === 'INTERNAL_REVIEW' ? 'Actualizar video' : 'Subir video editado'}
                         </h2>
-                        {piece.final_video_link && (
-                            <a
-                                href={piece.final_video_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                            >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                                Ver video subido actualmente
-                            </a>
-                        )}
                         <SubmitVideoForm piece={piece} submitVideoUrl={submitVideoUrl} backUrl={backUrl} />
                     </section>
                 )}

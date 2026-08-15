@@ -153,9 +153,16 @@ export function EditableRow({
         );
     }
 
+    const pendingEditorNotify = piece.status === 'CLIENT_REVISION' && !!piece.editor;
+
     return (
         <>
-            <tr className="border-b border-border hover:bg-muted/20 transition-colors">
+            <tr
+                className={`border-b border-border hover:bg-muted/20 transition-colors ${
+                    pendingEditorNotify ? 'border-l-2 border-l-rose-500 bg-rose-500/5' : ''
+                }`}
+                title={pendingEditorNotify ? 'Esperando que se avise al editor sobre los cambios pedidos por el cliente' : undefined}
+            >
                 <td className="px-3 py-2.5 text-sm font-medium text-muted-foreground">
                     {piece.client?.name}
                 </td>
