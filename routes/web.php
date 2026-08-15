@@ -16,6 +16,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PM\BriefController;
 use App\Http\Controllers\PM\BriefPdfController;
 use App\Http\Controllers\PM\PmController;
+use App\Http\Controllers\PM\PmTaskController;
 use App\Http\Controllers\PM\MetricoolScheduleController;
 use App\Http\Controllers\PM\ReviewController;
 use App\Http\Controllers\PM\VideoStreamController;
@@ -51,6 +52,10 @@ Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->g
 Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(function () {
     Route::get('/', [PmController::class, 'dashboard'])->name('dashboard');
     Route::get('/tabla', [PmController::class, 'tabla'])->name('tabla');
+
+    // Tarea de editor (PM/admin asignado como editor de una pieza)
+    Route::get('/task/{piece}', [PmTaskController::class, 'task'])->name('task');
+    Route::post('/submit-video/{piece}', [PmTaskController::class, 'submitVideo'])->name('submit-video');
 
     // Briefs
     Route::post('/brief', [BriefController::class, 'store'])->name('brief.store');

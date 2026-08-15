@@ -24,6 +24,7 @@ import {
 import { useEffect, useState } from 'react';
 import { CopyPublicReviewLink } from '@/components/copy-public-review-link';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
+import { OpenAsEditorLink } from '@/components/open-as-editor-link';
 import { EditableRow } from './tabla';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
@@ -76,7 +77,7 @@ function fmtDeadline(deadline: string | null) {
 
 function editorLabel(e: Editor) {
     if (e.role === 'editor') return e.name;
-    const roleName = e.role === 'superadmin' ? 'Superadmin' : 'Admin';
+    const roleName = e.role === 'superadmin' ? 'Superadmin' : e.role === 'pm' ? 'PM' : 'Admin';
     return `${e.name} (${roleName})`;
 }
 
@@ -1060,6 +1061,7 @@ function BriefCard({
 
                         <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
                             <ViewReviewLink pieceId={piece.id} />
+                            <OpenAsEditorLink piece={piece} />
                             {piece.status === 'CLIENT_REVISION' && piece.assigned_editor_id && (
                                 <Button
                                     size="sm"
@@ -1182,54 +1184,78 @@ function BriefCard({
 
 // ─── Review queue card ───────────────────────────────────────────────────────
 
-function ReviewCard({ piece }: { piece: ContentPiece }) {
+function ReviewCard({ piece, editors }: { piece: ContentPiece; editors: Editor[] }) {
     const deadline = fmtDeadline(piece.deadline);
+    const [assignOpen, setAssignOpen] = useState(false);
 
     return (
-        <Card className="border-border bg-card transition-colors hover:border-ring">
-            <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                        <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                {piece.client?.name}
-                            </span>
-                            {deadline && (
-                                <span
-                                    className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}
-                                >
-                                    <Clock className="h-3 w-3" />
-                                    {deadline.label}
+        <>
+            <Card className="border-border bg-card transition-colors hover:border-ring">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                            <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    {piece.client?.name}
                                 </span>
+                                {deadline && (
+                                    <span
+                                        className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}
+                                    >
+                                        <Clock className="h-3 w-3" />
+                                        {deadline.label}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="truncate font-medium text-foreground">
+                                {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
+                            </p>
+                            {piece.editor && (
+                                <button
+                                    onClick={() => setAssignOpen(true)}
+                                    className="mt-0.5 text-xs text-muted-foreground hover:text-foreground"
+                                >
+                                    por {piece.editor.name}
+                                </button>
+                            )}
+                            {piece.final_video_link && (
+                                <a
+                                    href={piece.final_video_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-1 inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                                >
+                                    <ExternalLink className="h-3 w-3" />
+                                    Ver video
+                                </a>
                             )}
                         </div>
-                        <p className="truncate font-medium text-foreground">
-                            {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
-                        </p>
-                        {piece.editor && (
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                por {piece.editor.name}
-                            </p>
-                        )}
-                        {piece.final_video_link && (
-                            <a
-                                href={piece.final_video_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-1 inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                        <div className="flex items-center gap-1">
+                            <ViewReviewLink pieceId={piece.id} />
+                            <OpenAsEditorLink piece={piece} />
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setAssignOpen(true)}
                             >
-                                <ExternalLink className="h-3 w-3" />
-                                Ver video
-                            </a>
-                        )}
+                                <UserCheck className="mr-1 h-3.5 w-3.5" />
+                                Reasignar
+                            </Button>
+                            <DeleteBriefButton pieceId={piece.id} label={piece.title ?? piece.concept ?? piece.product} />
+                        </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <ViewReviewLink pieceId={piece.id} />
-                        <DeleteBriefButton pieceId={piece.id} label={piece.title ?? piece.concept ?? piece.product} />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+
+            {assignOpen && (
+                <AssignEditorModal
+                    piece={piece}
+                    editors={editors}
+                    open={assignOpen}
+                    onClose={() => setAssignOpen(false)}
+                />
+            )}
+        </>
     );
 }
 
@@ -1755,7 +1781,7 @@ export default function PmDashboard({
                                     <BriefTable pieces={reviewQueue} editors={editors} />
                                 ) : (
                                     reviewQueue.map((p) => (
-                                        <ReviewCard key={p.id} piece={p} />
+                                        <ReviewCard key={p.id} piece={p} editors={editors} />
                                     ))
                                 )}
                             </section>
