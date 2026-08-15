@@ -11,7 +11,7 @@ class ContentPieceSeeder extends Seeder
 {
     public function run(): void
     {
-        $felipe = User::where('email', 'felipe@littleninjas.com')->first();
+        $felipe = User::where('email', 'felipe@littleninjas.com.ar')->first();
 
         $drive = 'https://drive.google.com/drive/folders/';
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ContentPiece extends Model
 {
@@ -80,6 +81,11 @@ class ContentPiece extends Model
     public function editor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_editor_id');
+    }
+
+    public function reviewRounds(): HasMany
+    {
+        return $this->hasMany(ContentPieceReviewRound::class)->orderBy('round_number');
     }
 
     public function getPriorityLabel(): string

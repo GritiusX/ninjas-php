@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Bold, Strikethrough, Underline } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 type Props = {
     piece: {
@@ -24,6 +25,27 @@ export default function ClientReview({ piece, already_responded, decision, token
     const [processing, setProcessing] = useState(false);
     const [comment, setComment] = useState('');
     const [commentError, setCommentError] = useState<string | null>(null);
+    const commentRef = useRef<HTMLTextAreaElement>(null);
+
+    function applyFormat(marker: string) {
+        const el = commentRef.current;
+        if (!el) return;
+
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const selectedText = comment.slice(start, end);
+        const nextComment = comment.slice(0, start) + marker + selectedText + marker + comment.slice(end);
+        setComment(nextComment);
+
+        const cursor = selectedText
+            ? end + marker.length * 2
+            : start + marker.length;
+
+        requestAnimationFrame(() => {
+            el.focus();
+            el.setSelectionRange(cursor, cursor);
+        });
+    }
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -240,12 +262,41 @@ export default function ClientReview({ piece, already_responded, decision, token
                             {/* Comment textarea */}
                             {showCommentBox && (
                                 <div className="space-y-1">
-                                    <label className="text-xs font-medium text-gray-600">
-                                        {selected === 'reject'
-                                            ? 'Comentarios (requerido)'
-                                            : 'Tu comentario (opcional)'}
-                                    </label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-medium text-gray-600">
+                                            {selected === 'reject'
+                                                ? 'Comentarios (requerido)'
+                                                : 'Tu comentario (opcional)'}
+                                        </label>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => applyFormat('**')}
+                                                title="Negrita"
+                                                className="flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                                            >
+                                                <Bold className="h-3.5 w-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyFormat('~~')}
+                                                title="Tachado"
+                                                className="flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                                            >
+                                                <Strikethrough className="h-3.5 w-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyFormat('__')}
+                                                title="Subrayado"
+                                                className="flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                                            >
+                                                <Underline className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
                                     <textarea
+                                        ref={commentRef}
                                         className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 min-h-[100px] resize-y"
                                         placeholder={
                                             selected === 'reject'
@@ -259,6 +310,9 @@ export default function ClientReview({ piece, already_responded, decision, token
                                         }}
                                         autoFocus
                                     />
+                                    <p className="text-[11px] text-gray-400">
+                                        Los saltos de línea y espacios se conservan. Seleccioná texto y usá los botones para dar formato.
+                                    </p>
                                     {commentError && (
                                         <p className="text-xs text-red-600">{commentError}</p>
                                     )}

@@ -5,6 +5,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { FormattedText } from '@/lib/formatted-text';
 import type { ContentPiece } from '@/types';
 
 type Props = {
@@ -301,9 +302,10 @@ export function PieceTaskView({ piece, submitVideoUrl, backUrl, backLabel }: Pro
                             <AlertCircle className="h-4 w-4" />
                             Cambios solicitados
                         </h2>
-                        <p className="text-sm text-orange-800 dark:text-orange-200 leading-relaxed">
-                            {piece.internal_comments || piece.client_feedback}
-                        </p>
+                        <FormattedText
+                            text={piece.internal_comments || piece.client_feedback || ''}
+                            className="text-sm text-orange-800 dark:text-orange-200 leading-relaxed"
+                        />
                     </section>
                 )}
 

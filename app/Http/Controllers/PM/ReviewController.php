@@ -5,6 +5,7 @@ namespace App\Http\Controllers\PM;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ContentPiece;
+use App\Models\ContentPieceReviewRound;
 use App\Models\GeminiUsage;
 use App\Models\User;
 use App\Services\GeminiService;
@@ -39,7 +40,7 @@ class ReviewController extends Controller
 
     public function show(ContentPiece $piece): Response
     {
-        $piece->load('client', 'editor');
+        $piece->load('client', 'editor', 'reviewRounds');
 
         $monthlyTokenLimit = (int) config('services.gemini.monthly_token_limit', 1_000_000);
 
@@ -136,6 +137,15 @@ class ReviewController extends Controller
         // Siempre pasa a CLIENT_REVIEW (el link público ya está disponible)
         $piece->refresh();
         $piece->update(['status' => ContentPiece::STATUS_CLIENT_REVIEW]);
+
+        ContentPieceReviewRound::create([
+            'content_piece_id'   => $piece->id,
+            'round_number'       => $piece->reviewRounds()->count() + 1,
+            'review_token'       => $token,
+            'video_link'         => $piece->final_video_link,
+            'client_chosen_copy' => $request->selected_copy,
+            'sent_at'            => now(),
+        ]);
 
         $this->whatsapp->sendClientApprovalMessage($piece);
 

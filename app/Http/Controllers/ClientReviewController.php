@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContentPiece;
+use App\Models\ContentPieceReviewRound;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,7 +19,17 @@ class ClientReviewController extends Controller
     {
         $piece = ContentPiece::with('client')
             ->where('review_token', $token)
-            ->firstOrFail();
+            ->first();
+
+        if (!$piece) {
+            $expiredRound = ContentPieceReviewRound::where('review_token', $token)->first();
+
+            if ($expiredRound) {
+                return Inertia::render('client-review-expired');
+            }
+
+            abort(404);
+        }
 
         $alreadyResponded = in_array($piece->status, [
             ContentPiece::STATUS_CLIENT_APPROVED,
@@ -76,6 +87,14 @@ class ClientReviewController extends Controller
 
             $this->notifications->notifyPmClientRequestedChanges($piece, $comment ?? '');
         }
+
+        ContentPieceReviewRound::where('review_token', $token)->update([
+            'client_decision' => $decision === 'approve'
+                ? ContentPieceReviewRound::DECISION_APPROVED
+                : ContentPieceReviewRound::DECISION_REVISION,
+            'client_feedback' => $comment,
+            'responded_at'    => now(),
+        ]);
 
         return Inertia::render('client-review', [
             'piece'            => $this->safePiece($piece),
