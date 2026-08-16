@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\MetricoolDebugController;
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\Editor\EditorController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PM\BriefController;
 use App\Http\Controllers\PM\BriefPdfController;
@@ -93,6 +94,9 @@ Route::middleware(['auth', 'role:pm'])->prefix('metrics')->name('metrics.')->gro
     Route::get('/{client}/metricool-report-download', [MetricsController::class, 'metricoolReportDownload'])->name('metricoolReportDownload');
     Route::get('/{client}', [MetricsController::class, 'show'])->name('show');
 });
+
+// --- Manual de ayuda (todos los roles, un PDF por rol) ---
+Route::middleware('auth')->get('/help/manual', [HelpController::class, 'manual'])->name('help.manual');
 
 // --- Notificaciones (todos los roles) ---
 Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {
