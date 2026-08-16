@@ -1,5 +1,5 @@
 ﻿import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BarChart3, Bell, Film, KeyRound, LayoutGrid, Settings, Shield, Sparkles, Users, Video } from 'lucide-react';
+import { AlertTriangle, BarChart3, Bell, CircleHelp, Film, KeyRound, LayoutGrid, Settings, Shield, Sparkles, Users, Video } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -12,6 +12,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import * as adminRoutes from '@/routes/admin';
 import * as adminClientRoutes from '@/routes/admin/clients';
 import * as adminUserRoutes from '@/routes/admin/users';
@@ -71,6 +72,30 @@ function homeHref(role: string) {
     return pmRoutes.dashboard();
 }
 
+const ROLES_WITH_MANUAL = ['editor', 'pm', 'admin', 'superadmin'];
+
+function HelpButton({ role }: { role: string }) {
+    if (!ROLES_WITH_MANUAL.includes(role)) return null;
+
+    return (
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                            <a href="/help/manual" target="_blank" rel="noopener noreferrer">
+                                <CircleHelp />
+                                <span>Ayuda</span>
+                            </a>
+                        </SidebarMenuButton>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">¿Necesitás ayuda?</TooltipContent>
+                </Tooltip>
+            </SidebarMenuItem>
+        </SidebarMenu>
+    );
+}
+
 export function AppSidebar() {
     const { auth } = usePage<{ auth: Auth }>().props;
     const navItems = useNavItems();
@@ -94,6 +119,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
+                <HelpButton role={auth.user.role} />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { FormattedText, stripFormatting } from '@/lib/formatted-text';
 import * as editorRoutes from '@/routes/editor';
 import type { Auth, ContentPiece } from '@/types';
 
@@ -179,9 +180,10 @@ function PieceCard({ piece, isActive }: { piece: ContentPiece; isActive?: boolea
                                         <AlertCircle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
                                         <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Cambios solicitados</span>
                                     </div>
-                                    <p className="text-sm text-orange-800 dark:text-orange-200">
-                                        {piece.internal_comments || piece.client_feedback}
-                                    </p>
+                                    <FormattedText
+                                        text={piece.internal_comments || piece.client_feedback || ''}
+                                        className="text-sm text-orange-800 dark:text-orange-200"
+                                    />
                                 </div>
                             )}
 
@@ -254,7 +256,7 @@ function PieceTableRow({ piece, isActive }: { piece: ContentPiece; isActive?: bo
                             {piece.title || piece.concept || piece.product || <span className="text-muted-foreground italic">Sin concepto</span>}
                         </span>
                         {hasComment && (
-                            <span title={comment ?? undefined}>
+                            <span title={comment ? stripFormatting(comment) : undefined}>
                                 <AlertCircle className="h-3.5 w-3.5 shrink-0 text-orange-500" />
                             </span>
                         )}

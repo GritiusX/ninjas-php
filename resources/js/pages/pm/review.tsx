@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { FormattedText } from '@/lib/formatted-text';
 import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-review-link';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
 import { StatusBadge } from '@/components/status-badge';
@@ -423,6 +424,8 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
     const hasWhatsapp = !!piece.client?.whatsapp_number;
     const canApprove = piece.status === 'INTERNAL_REVIEW';
     const canRequestChanges = piece.status === 'INTERNAL_REVIEW';
+    const reviewRounds = piece.review_rounds ?? [];
+    const isResend = reviewRounds.length > 0;
 
     return (
         <>
@@ -606,7 +609,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                                             onClick={approve}
                                         >
                                             <ThumbsUp className="mr-2 h-4 w-4" />
-                                            Aprobar internamente
+                                            {isResend ? 'Reenviar al cliente' : 'Aprobar internamente'}
                                         </Button>
                                     )}
                                     {canRequestChanges && (
@@ -620,8 +623,65 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                                         </Button>
                                     )}
                                     <p className="text-xs text-muted-foreground text-center">
-                                        Al aprobar, el sistema enviará el video y el copy al cliente por WhatsApp.
+                                        {isResend
+                                            ? 'Se generará un link nuevo y se enviará al cliente por WhatsApp. El link anterior dejará de funcionar.'
+                                            : 'Al aprobar, el sistema enviará el video y el copy al cliente por WhatsApp.'}
                                     </p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Historial de rondas */}
+                        {reviewRounds.length > 0 && (
+                            <Card className="bg-card border-border">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm text-foreground flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                        Historial de rondas
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {[...reviewRounds].reverse().map((round) => (
+                                        <div
+                                            key={round.id}
+                                            className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-foreground">
+                                                    Ronda {round.round_number}
+                                                </span>
+                                                <span
+                                                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                        round.client_decision === 'approved'
+                                                            ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                                            : round.client_decision === 'revision'
+                                                            ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                                                            : 'bg-muted text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    {round.client_decision === 'approved'
+                                                        ? 'Aprobado'
+                                                        : round.client_decision === 'revision'
+                                                        ? 'Pidió cambios'
+                                                        : 'Esperando respuesta'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Enviado {new Date(round.sent_at).toLocaleDateString('es-AR', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                })}
+                                            </p>
+                                            {round.client_feedback && (
+                                                <FormattedText
+                                                    text={round.client_feedback}
+                                                    className="text-sm text-foreground"
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
                                 </CardContent>
                             </Card>
                         )}
@@ -636,7 +696,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-sm text-foreground">{piece.client_feedback}</p>
+                                    <FormattedText text={piece.client_feedback} className="text-sm text-foreground" />
                                     {piece.status === 'CLIENT_REVIEW' && (
                                         <Button
                                             size="sm"
@@ -667,7 +727,9 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20 ring-4 ring-green-500/10">
                             <CheckCircle2 className="h-8 w-8 text-green-500" />
                         </div>
-                        <h2 className="text-lg font-bold text-foreground">¡Pieza aprobada!</h2>
+                        <h2 className="text-lg font-bold text-foreground">
+                            {reviewRounds.length > 1 ? '¡Link reenviado al cliente!' : '¡Pieza aprobada!'}
+                        </h2>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {piece.client?.name} — {piece.title ?? piece.concept ?? piece.product ?? 'Lista para el cliente'}
                         </p>

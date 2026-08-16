@@ -63,12 +63,26 @@ export type ContentPiece = {
     updated_at: string;
     client?: Client;
     editor?: Editor;
+    review_rounds?: ContentPieceReviewRound[];
 };
 
 export type GeneratedCopy = {
     directo: string;
     storytelling: string;
     educativo: string;
+};
+
+export type ContentPieceReviewRound = {
+    id: number;
+    content_piece_id: number;
+    round_number: number;
+    review_token: string;
+    video_link: string | null;
+    client_chosen_copy: 'directo' | 'storytelling' | 'educativo' | null;
+    sent_at: string;
+    client_decision: 'pending' | 'approved' | 'revision';
+    client_feedback: string | null;
+    responded_at: string | null;
 };
 
 export type AppNotification = {

@@ -11,8 +11,8 @@ class TemporaryAccessSeeder extends Seeder
 {
     public function run(): void
     {
-        $felipe = User::where('email', 'felipe@littleninjas.com')->first();
-        $admin  = User::where('email', 'gonzalo@littleninjas.com')->first();
+        $felipe = User::where('email', 'felipe@littleninjas.com.ar')->first();
+        $admin  = User::where('email', 'gonzalo@littleninjas.com.ar')->first();
 
         $clientId = fn(string $name) => Client::where('name', $name)->value('id');
 

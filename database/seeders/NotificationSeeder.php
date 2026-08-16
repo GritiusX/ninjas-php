@@ -14,8 +14,8 @@ class NotificationSeeder extends Seeder
             return;
         }
 
-        $admin  = User::where('email', 'gonzalo@littleninjas.com')->first();
-        $felipe = User::where('email', 'felipe@littleninjas.com')->first();
+        $admin  = User::where('email', 'gonzalo@littleninjas.com.ar')->first();
+        $felipe = User::where('email', 'felipe@littleninjas.com.ar')->first();
 
         if (!$admin || !$felipe) {
             return;
