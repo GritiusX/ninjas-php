@@ -15,6 +15,7 @@ createInertiaApp({
             case name === 'welcome':
             case name === 'error':
             case name === 'client-review':
+            case name === 'client-review-expired':
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

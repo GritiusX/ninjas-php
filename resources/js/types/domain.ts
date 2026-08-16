@@ -63,7 +63,7 @@ export type ContentPiece = {
     updated_at: string;
     client?: Client;
     editor?: Editor;
-    reviewRounds?: ContentPieceReviewRound[];
+    review_rounds?: ContentPieceReviewRound[];
 };
 
 export type GeneratedCopy = {

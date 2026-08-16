@@ -424,7 +424,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
     const hasWhatsapp = !!piece.client?.whatsapp_number;
     const canApprove = piece.status === 'INTERNAL_REVIEW';
     const canRequestChanges = piece.status === 'INTERNAL_REVIEW';
-    const reviewRounds = piece.reviewRounds ?? [];
+    const reviewRounds = piece.review_rounds ?? [];
     const isResend = reviewRounds.length > 0;
 
     return (
