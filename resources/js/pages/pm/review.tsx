@@ -391,6 +391,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
     const [approvedOpen, setApprovedOpen] = useState(false);
     const [resendLinkOpen, setResendLinkOpen] = useState(false);
     const [scheduleOpen, setScheduleOpen] = useState(false);
+    const [totalApproveOpen, setTotalApproveOpen] = useState(false);
     const [selectedCopy, setSelectedCopy] = useState<CopyKey | null>(null);
     const [whatsappInput, setWhatsappInput] = useState('');
     const [whatsappSaving, setWhatsappSaving] = useState(false);
@@ -403,6 +404,15 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
 
     function approve() {
         router.post(reviewRoutes.approve.url(piece.id), { selected_copy: selectedCopy });
+    }
+
+    function approveTotal(scheduleAfter: boolean) {
+        router.post(reviewRoutes.approveTotal.url(piece.id), { selected_copy: selectedCopy }, {
+            onSuccess: () => {
+                setTotalApproveOpen(false);
+                if (scheduleAfter) setScheduleOpen(true);
+            },
+        });
     }
 
     function saveWhatsapp() {
@@ -708,6 +718,15 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                                     )}
                                     {canApprove && (
                                         <Button
+                                            className="w-full bg-teal-600 hover:bg-teal-500 text-white"
+                                            onClick={() => setTotalApproveOpen(true)}
+                                        >
+                                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                                            Aprobación total
+                                        </Button>
+                                    )}
+                                    {canApprove && (
+                                        <Button
                                             className="w-full bg-green-600 hover:bg-green-500 text-white"
                                             onClick={approve}
                                         >
@@ -749,6 +768,29 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                 open={scheduleOpen}
                 onClose={() => setScheduleOpen(false)}
             />
+
+            <Dialog open={totalApproveOpen} onOpenChange={setTotalApproveOpen}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Aprobación total
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        Esta acción aprueba la pieza sin pasar por revisión del cliente y mueve el video
+                        a la carpeta final en Drive. ¿Querés programarla en Metricool ahora?
+                    </p>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => approveTotal(false)}>
+                            Dejar para más tarde
+                        </Button>
+                        <Button onClick={() => approveTotal(true)}>
+                            Programar ahora
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={resendLinkOpen} onOpenChange={setResendLinkOpen}>
                 <DialogContent className="sm:max-w-sm">
