@@ -46,14 +46,14 @@ export default function MetricsIndex({ clients }: Props) {
 
     return (
         <>
-            <Head title="Scraper Metricool" />
+            <Head title="Métricas Metricool" />
             <ScrapingOverlay visible={loading} />
 
             <div className="flex flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Scraper Metricool</h1>
+                    <h1 className="text-xl font-semibold">Métricas Metricool</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        "En cache" = ya se scrapeó en los últimos 30 días. El rango de fechas se elige adentro de cada cliente.
+                        "En cache" = ya hay datos de los últimos 30 días. El rango de fechas se elige adentro de cada cliente.
                     </p>
                 </div>
 
@@ -106,6 +106,6 @@ export default function MetricsIndex({ clients }: Props) {
 
 MetricsIndex.layout = {
     breadcrumbs: [
-        { title: 'Scraper Metricool', href: '/metrics' },
+        { title: 'Métricas Metricool', href: '/metrics' },
     ],
 };
