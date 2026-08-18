@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Client as ClientModel;
 use Google\Client;
 use Google\Http\MediaFileUpload;
 use Google\Service\Drive;
@@ -22,12 +23,10 @@ class GoogleDriveService
         $this->drive = new Drive($this->client);
     }
 
-    public function uploadVideo(string $filePath, string $fileName, string $clientName, string $pieceName): string
+    public function uploadVideo(string $filePath, string $fileName, ClientModel $client, string $pieceName): string
     {
-        $rootFolderId   = config('services.google_drive.root_folder_id');
-        $clientFolderId = $this->getOrCreateFolder($clientName, $rootFolderId);
-        $stagingId      = $this->getOrCreateFolder('En revisión', $clientFolderId);
-        $pieceFolderId  = $this->getOrCreateFolder($pieceName, $stagingId);
+        $folders       = $this->resolveClientFolders($client);
+        $pieceFolderId = $this->getOrCreateFolder($pieceName, $folders['inProgress']);
 
         $mimeType = mime_content_type($filePath) ?: 'video/mp4';
         $fileSize = filesize($filePath);
@@ -68,7 +67,7 @@ class GoogleDriveService
         return "https://drive.google.com/file/d/{$fileId}/view";
     }
 
-    public function moveVideoToDelivery(string $videoLink, string $clientName, string $pieceName): void
+    public function moveVideoToDelivery(string $videoLink, ClientModel $client, string $pieceName): void
     {
         preg_match('/\/d\/([a-zA-Z0-9_-]+)/', $videoLink, $matches);
         $fileId = $matches[1] ?? null;
@@ -77,10 +76,8 @@ class GoogleDriveService
             return;
         }
 
-        $rootFolderId   = config('services.google_drive.root_folder_id');
-        $clientFolderId = $this->getOrCreateFolder($clientName, $rootFolderId);
-        $deliveryId     = $this->getOrCreateFolder('A entregar', $clientFolderId);
-        $pieceFolderId  = $this->getOrCreateFolder($pieceName, $deliveryId);
+        $folders       = $this->resolveClientFolders($client);
+        $pieceFolderId = $this->getOrCreateFolder($pieceName, $folders['final']);
 
         // Get current parents to remove them
         $file = $this->drive->files->get($fileId, [
@@ -147,6 +144,49 @@ class GoogleDriveService
     {
         preg_match('/\/d\/([a-zA-Z0-9_-]+)/', $videoLink, $matches);
         return $matches[1] ?? null;
+    }
+
+    /**
+     * Resuelve (y cachea en el Client) las carpetas root/en-proceso/finales.
+     * Si el cliente ya tiene drive_folder_id, no pega a la API por nombre —
+     * evita que un rename de client.name en el admin cree una carpeta
+     * duplicada en Drive (la carpeta ya cacheada se sigue usando por ID).
+     *
+     * @return array{root: string, inProgress: string, final: string}
+     */
+    public function resolveClientFolders(ClientModel $client): array
+    {
+        if ($client->drive_folder_id && $client->drive_in_progress_folder_id && $client->drive_final_folder_id) {
+            return [
+                'root'       => $client->drive_folder_id,
+                'inProgress' => $client->drive_in_progress_folder_id,
+                'final'      => $client->drive_final_folder_id,
+            ];
+        }
+
+        $rootFolderId = config('services.google_drive.root_folder_id');
+        $clientId     = $this->getOrCreateFolder($client->name, $rootFolderId);
+        $inProgressId = $this->getOrCreateFolder('1. En proceso', $clientId);
+        $finalId      = $this->getOrCreateFolder('2. Finales', $clientId);
+
+        $client->forceFill([
+            'drive_folder_id'             => $clientId,
+            'drive_in_progress_folder_id' => $inProgressId,
+            'drive_final_folder_id'       => $finalId,
+        ])->save();
+
+        return [
+            'root'       => $clientId,
+            'inProgress' => $inProgressId,
+            'final'      => $finalId,
+        ];
+    }
+
+    public function renameFolder(string $folderId, string $newName): void
+    {
+        $this->drive->files->update($folderId, new DriveFile([
+            'name' => $newName,
+        ]), ['supportsAllDrives' => true, 'fields' => 'id']);
     }
 
     private function getOrCreateFolder(string $name, string $parentId): string

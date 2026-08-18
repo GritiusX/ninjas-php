@@ -239,7 +239,7 @@ class ReviewController extends Controller
         return redirect()->route('pm.dashboard')->with('success', 'Editor notificado. La tarea volvió a edición.');
     }
 
-    public function approveClientRevision(ContentPiece $piece): RedirectResponse
+    public function approveClientRevision(ContentPiece $piece, GoogleDriveService $driveService): RedirectResponse
     {
         $piece->load('client');
 
@@ -248,13 +248,15 @@ class ReviewController extends Controller
         if ($piece->final_video_link) {
             $pieceName = $piece->concept ?? $piece->product ?? "Pieza {$piece->id}";
             try {
-                (new GoogleDriveService())->moveVideoToDelivery(
+                $driveService->moveVideoToDelivery(
                     $piece->final_video_link,
-                    $piece->client->name,
+                    $piece->client,
                     $pieceName,
                 );
-            } catch (\Throwable) {
-                // Mover en Drive es best-effort, no bloquea el flujo
+            } catch (\Throwable $e) {
+                // Mover en Drive es best-effort, no bloquea el flujo, pero
+                // reportamos para poder detectar archivos mal ubicados.
+                report($e);
             }
         }
 

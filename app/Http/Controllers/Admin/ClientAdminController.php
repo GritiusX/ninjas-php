@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Services\GoogleDriveService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -49,7 +50,7 @@ class ClientAdminController extends Controller
         return Inertia::render('admin/clients/edit', ['client' => $client]);
     }
 
-    public function update(Request $request, Client $client): RedirectResponse
+    public function update(Request $request, Client $client, GoogleDriveService $driveService): RedirectResponse
     {
         $data = $request->validate([
             'name'                   => ['required', 'string', 'max:120'],
@@ -70,7 +71,17 @@ class ClientAdminController extends Controller
             unset($data['meta_access_token']);
         }
 
+        $nameChanged = $data['name'] !== $client->name;
+
         $client->update($data);
+
+        if ($nameChanged && $client->drive_folder_id) {
+            try {
+                $driveService->renameFolder($client->drive_folder_id, $client->name);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return redirect()->route('admin.clients.index')->with('success', 'Cliente actualizado.');
     }
