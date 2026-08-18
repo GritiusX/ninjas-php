@@ -12,6 +12,7 @@ import {
     MessageSquare,
     RefreshCw,
     Save,
+    Send,
     Sparkles,
     ThumbsUp,
     XCircle,
@@ -21,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { FormattedText } from '@/lib/formatted-text';
 import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-review-link';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
+import { MetricoolScheduleModal } from '@/components/metricool-schedule-modal';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -388,6 +390,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
     const [changesOpen, setChangesOpen] = useState(false);
     const [approvedOpen, setApprovedOpen] = useState(false);
     const [resendLinkOpen, setResendLinkOpen] = useState(false);
+    const [scheduleOpen, setScheduleOpen] = useState(false);
     const [selectedCopy, setSelectedCopy] = useState<CopyKey | null>(null);
     const [whatsappInput, setWhatsappInput] = useState('');
     const [whatsappSaving, setWhatsappSaving] = useState(false);
@@ -457,6 +460,15 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
 
                     {piece.client && (
                         <div className="flex items-center gap-2">
+                            {piece.status === 'CLIENT_APPROVED' && (
+                                <Button
+                                    className="bg-green-600 hover:bg-green-500 text-white"
+                                    onClick={() => setScheduleOpen(true)}
+                                >
+                                    <Send className="mr-1.5 h-4 w-4" />
+                                    Programar
+                                </Button>
+                            )}
                             <CopyPublicReviewLink token={piece.review_token} variant="button" />
                             {piece.review_token && (piece.status === 'CLIENT_REVIEW' || (isResend && piece.status === 'INTERNAL_REVIEW')) && (
                                 <Button
@@ -730,6 +742,12 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                 piece={piece}
                 open={changesOpen}
                 onClose={() => setChangesOpen(false)}
+            />
+
+            <MetricoolScheduleModal
+                piece={piece}
+                open={scheduleOpen}
+                onClose={() => setScheduleOpen(false)}
             />
 
             <Dialog open={resendLinkOpen} onOpenChange={setResendLinkOpen}>

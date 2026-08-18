@@ -1,7 +1,8 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, Bell, Check, ChevronDown, ChevronRight, Download, Eye, ExternalLink, MessageSquare, Pencil, UserCheck, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Bell, Check, ChevronDown, ChevronRight, Download, Eye, ExternalLink, MessageSquare, Pencil, Send, UserCheck, X } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
+import { MetricoolScheduleModal } from '@/components/metricool-schedule-modal';
 import { OpenAsEditorLink } from '@/components/open-as-editor-link';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ export function EditableRow({
 }) {
     const [editing, setEditing] = useState(false);
     const [assignOpen, setAssignOpen] = useState(false);
+    const [scheduleOpen, setScheduleOpen] = useState(false);
     const [expanded, setExpanded] = useState(false);
 
     const allLinks = [
@@ -235,6 +237,21 @@ export function EditableRow({
                         >
                             <UserCheck className="h-3.5 w-3.5" />
                         </Button>
+                        {piece.status === 'CLIENT_APPROVED' && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-7 w-7 text-green-600 hover:text-green-500 hover:bg-green-500/10"
+                                        onClick={() => setScheduleOpen(true)}
+                                    >
+                                        <Send className="h-3.5 w-3.5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Programar en Metricool</TooltipContent>
+                            </Tooltip>
+                        )}
                         {pendingEditorNotify && (
                             <Button
                                 size="icon"
@@ -332,6 +349,13 @@ export function EditableRow({
                     editors={editors}
                     open={assignOpen}
                     onClose={() => setAssignOpen(false)}
+                />
+            )}
+            {scheduleOpen && (
+                <MetricoolScheduleModal
+                    piece={piece}
+                    open={scheduleOpen}
+                    onClose={() => setScheduleOpen(false)}
                 />
             )}
         </>
