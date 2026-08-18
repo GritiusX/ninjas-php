@@ -224,6 +224,10 @@ class MetricsController extends Controller
                 @unlink($path);
             }
         }
+
+        // Dar un momento para que los procesos terminen y luego reiniciar
+        usleep(500_000);
+        exec('nohup chromedriver --port=9515 --allowed-ips= --allowed-origins=* > /dev/null 2>&1 &');
     }
 
     /**
