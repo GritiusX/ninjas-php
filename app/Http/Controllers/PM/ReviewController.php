@@ -243,6 +243,49 @@ class ReviewController extends Controller
     {
         $piece->load('client');
 
+        $this->finalizeApproval($piece);
+
+        return redirect()->route('pm.dashboard')->with('success', 'Pieza marcada como aprobada por el cliente.');
+    }
+
+    /**
+     * Aprobación total: el PM aprueba directamente desde INTERNAL_REVIEW sin
+     * pasar por revisión externa del cliente ni generar link/WhatsApp.
+     */
+    public function approveTotal(Request $request, ContentPiece $piece): RedirectResponse
+    {
+        $piece->load('client');
+
+        $request->validate([
+            'selected_copy' => ['nullable', 'in:directo,storytelling,educativo'],
+        ]);
+
+        $piece->update(['client_chosen_copy' => $request->selected_copy]);
+
+        $this->finalizeApproval($piece);
+
+        AuditLog::create([
+            'user_id'     => $request->user()->id,
+            'action'      => 'content.approved_total',
+            'entity_type' => 'content_piece',
+            'entity_id'   => $piece->id,
+            'payload'     => [
+                'client'    => $piece->client->name,
+                'objective' => $piece->objective,
+                'reviewer'  => $request->user()->name,
+            ],
+            'ip' => $request->ip(),
+        ]);
+
+        return redirect()->route('pm.review.show', $piece)->with('success', 'Pieza aprobada.');
+    }
+
+    /**
+     * Marca la pieza como aprobada por el cliente y mueve el video a la
+     * carpeta final en Drive (best-effort, no bloquea el flujo si falla).
+     */
+    private function finalizeApproval(ContentPiece $piece): void
+    {
         $piece->update(['status' => ContentPiece::STATUS_CLIENT_APPROVED]);
 
         if ($piece->final_video_link) {
@@ -257,7 +300,5 @@ class ReviewController extends Controller
                 // Mover en Drive es best-effort, no bloquea el flujo
             }
         }
-
-        return redirect()->route('pm.dashboard')->with('success', 'Pieza marcada como aprobada por el cliente.');
     }
 }
