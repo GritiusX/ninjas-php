@@ -370,7 +370,7 @@ export default function EditorDashboard({ pieces, stats }: Props) {
         <>
             <Head title="Mi panel" />
 
-            <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
+            <div className="px-4 py-6 space-y-6">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">
                         Hola, {auth.user.name.split(' ')[0]} 👋
