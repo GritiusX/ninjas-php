@@ -173,7 +173,7 @@ export default function ClientEdit({ client }: { client: Client }) {
                             <p className="text-sm text-muted-foreground">
                                 Estás por habilitar <span className="font-semibold text-foreground">{net.label}</span> para este cliente.
                                 Metricool va a intentar obtener datos de esta red.{' '}
-                                <span className="font-medium text-amber-600">Asegurate de que el cliente tiene su cuenta de {net.label} conectada en Metricool, de lo contrario el scrape va a fallar.</span>
+                                <span className="font-medium text-amber-600">Asegurate de que el cliente tiene su cuenta de {net.label} conectada en Metricool, de lo contrario la sincronización va a fallar.</span>
                             </p>
                         );
                     })()}
