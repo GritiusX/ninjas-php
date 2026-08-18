@@ -24,7 +24,7 @@ import { DeleteBriefButton } from '@/components/delete-brief-button';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import * as pmRoutes from '@/routes/pm';
 import * as reviewRoutes from '@/routes/pm/review';
@@ -387,6 +387,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
     const { flash } = usePage<{ flash: { approved?: boolean } }>().props;
     const [changesOpen, setChangesOpen] = useState(false);
     const [approvedOpen, setApprovedOpen] = useState(false);
+    const [resendLinkOpen, setResendLinkOpen] = useState(false);
     const [selectedCopy, setSelectedCopy] = useState<CopyKey | null>(null);
     const [whatsappInput, setWhatsappInput] = useState('');
     const [whatsappSaving, setWhatsappSaving] = useState(false);
@@ -460,11 +461,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                             {piece.review_token && (piece.status === 'CLIENT_REVIEW' || (isResend && piece.status === 'INTERNAL_REVIEW')) && (
                                 <Button
                                     variant="outline"
-                                    onClick={() => {
-                                        if (confirm('¿Regenerar el link? El link anterior dejará de funcionar.')) {
-                                            router.post(`/pm/review/${piece.id}/resend-link`);
-                                        }
-                                    }}
+                                    onClick={() => setResendLinkOpen(true)}
                                     className="gap-2"
                                 >
                                     <RefreshCw className="h-4 w-4" />
@@ -734,6 +731,34 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                 open={changesOpen}
                 onClose={() => setChangesOpen(false)}
             />
+
+            <Dialog open={resendLinkOpen} onOpenChange={setResendLinkOpen}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <RefreshCw className="h-4 w-4" />
+                            Regenerar link de revisión
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        Se generará un nuevo link para el cliente. El link anterior dejará de funcionar.
+                    </p>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setResendLinkOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                setResendLinkOpen(false);
+                                router.post(`/pm/review/${piece.id}/resend-link`);
+                            }}
+                        >
+                            <RefreshCw className="mr-1.5 h-4 w-4" />
+                            Regenerar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={approvedOpen} onOpenChange={setApprovedOpen}>
                 <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-md p-0">
