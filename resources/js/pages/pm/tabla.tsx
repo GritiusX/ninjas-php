@@ -226,6 +226,15 @@ export function EditableRow({
                             </Button>
                         </Link>
                         <OpenAsEditorLink piece={piece} />
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            title={piece.assigned_editor_id ? 'Reasignar editor' : 'Asignar editor'}
+                            onClick={() => setAssignOpen(true)}
+                        >
+                            <UserCheck className="h-3.5 w-3.5" />
+                        </Button>
                         {pendingEditorNotify && (
                             <Button
                                 size="icon"
