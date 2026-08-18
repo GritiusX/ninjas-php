@@ -11,6 +11,7 @@ import {
     ExternalLink,
     FilePlus,
     LayoutGrid,
+    MessageSquare,
     Pencil,
     Plus,
     Search,
@@ -1188,10 +1189,12 @@ function BriefCard({
 function ReviewCard({ piece, editors }: { piece: ContentPiece; editors: Editor[] }) {
     const deadline = fmtDeadline(piece.deadline);
     const [assignOpen, setAssignOpen] = useState(false);
+    const roundNumber = (piece.review_rounds?.length ?? 0) + 1;
+    const isReReview = roundNumber > 1;
 
     return (
         <>
-            <Card className="border-border bg-card transition-colors hover:border-ring">
+            <Card className={`transition-colors hover:border-ring ${isReReview ? 'border-amber-400/60 bg-amber-50/40 dark:border-amber-600/30 dark:bg-amber-950/10' : 'border-border bg-card'}`}>
                 <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -1199,6 +1202,11 @@ function ReviewCard({ piece, editors }: { piece: ContentPiece; editors: Editor[]
                                 <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                     {piece.client?.name}
                                 </span>
+                                {isReReview && (
+                                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25">
+                                        Ronda {roundNumber}
+                                    </span>
+                                )}
                                 {deadline && (
                                     <span
                                         className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}
@@ -1474,6 +1482,14 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                                     <ExternalLink className="h-3 w-3" />
                                     Ver video
                                 </a>
+                            )}
+                            {piece.client_feedback && (
+                                <div className="mt-1.5 flex items-start gap-1.5 rounded-md bg-amber-50 px-2 py-1.5 dark:bg-amber-950/30">
+                                    <MessageSquare className="mt-px h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                    <p className="text-xs text-amber-800 dark:text-amber-300 leading-snug">
+                                        {piece.client_feedback}
+                                    </p>
+                                </div>
                             )}
                         </div>
                         <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:flex-nowrap">

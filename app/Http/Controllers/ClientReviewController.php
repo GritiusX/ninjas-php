@@ -17,7 +17,7 @@ class ClientReviewController extends Controller
 
     public function show(string $token): Response
     {
-        $piece = ContentPiece::with('client')
+        $piece = ContentPiece::with(['client', 'reviewRounds' => fn ($q) => $q->whereNotNull('responded_at')->orderBy('round_number')])
             ->where('review_token', $token)
             ->first();
 
@@ -36,10 +36,17 @@ class ClientReviewController extends Controller
             ContentPiece::STATUS_CLIENT_REVISION,
         ]);
 
+        $pastRounds = $piece->reviewRounds->map(fn ($r) => [
+            'round_number'    => $r->round_number,
+            'client_decision' => $r->client_decision,
+            'client_feedback' => $r->client_feedback,
+        ])->values();
+
         return Inertia::render('client-review', [
             'piece'            => $this->safePiece($piece),
             'already_responded'=> $alreadyResponded,
             'token'            => $token,
+            'past_rounds'      => $pastRounds,
         ]);
     }
 
@@ -88,13 +95,15 @@ class ClientReviewController extends Controller
             $this->notifications->notifyPmClientRequestedChanges($piece, $comment ?? '');
         }
 
-        ContentPieceReviewRound::where('review_token', $token)->update([
-            'client_decision' => $decision === 'approve'
-                ? ContentPieceReviewRound::DECISION_APPROVED
-                : ContentPieceReviewRound::DECISION_REVISION,
-            'client_feedback' => $comment,
-            'responded_at'    => now(),
-        ]);
+        ContentPieceReviewRound::where('review_token', $token)
+            ->whereNull('responded_at')
+            ->update([
+                'client_decision' => $decision === 'approve'
+                    ? ContentPieceReviewRound::DECISION_APPROVED
+                    : ContentPieceReviewRound::DECISION_REVISION,
+                'client_feedback' => $comment,
+                'responded_at'    => now(),
+            ]);
 
         return Inertia::render('client-review', [
             'piece'            => $this->safePiece($piece),

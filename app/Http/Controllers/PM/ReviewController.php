@@ -113,13 +113,20 @@ class ReviewController extends Controller
             'selected_copy' => ['nullable', 'in:directo,storytelling,educativo'],
         ]);
 
-        $token = \Illuminate\Support\Str::uuid()->toString();
+        // En re-envíos mantenemos el mismo token para que el cliente use el
+        // mismo link y vea el video nuevo sin necesitar uno distinto.
+        $isResend = $piece->reviewRounds()->exists();
+        $token    = $isResend ? $piece->review_token : \Illuminate\Support\Str::uuid()->toString();
 
-        $piece->update([
+        $updateData = [
             'status'             => ContentPiece::STATUS_CLIENT_REVIEW,
-            'review_token'       => $token,
+            'client_feedback'    => null,
             'client_chosen_copy' => $request->selected_copy,
-        ]);
+        ];
+        if (! $isResend) {
+            $updateData['review_token'] = $token;
+        }
+        $piece->update($updateData);
 
         AuditLog::create([
             'user_id'     => $request->user()->id,
@@ -130,6 +137,7 @@ class ReviewController extends Controller
                 'client'    => $piece->client->name,
                 'objective' => $piece->objective,
                 'reviewer'  => $request->user()->name,
+                'round'     => $piece->reviewRounds()->count() + 1,
             ],
             'ip' => $request->ip(),
         ]);

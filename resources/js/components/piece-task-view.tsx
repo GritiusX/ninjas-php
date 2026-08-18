@@ -188,7 +188,7 @@ export function PieceTaskView({ piece, submitVideoUrl, backUrl, backLabel }: Pro
                                 {piece.client?.name}
                             </p>
                             <h1 className="text-xl font-bold text-foreground leading-tight">
-                                {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
+                                {piece.title ?? piece.concept ?? piece.product ?? 'Sin título'}
                             </h1>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 shrink-0">

@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, Bell, Check, ChevronDown, ChevronRight, Download, Eye, ExternalLink, Pencil, UserCheck, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Bell, Check, ChevronDown, ChevronRight, Download, Eye, ExternalLink, MessageSquare, Pencil, UserCheck, X } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
 import { OpenAsEditorLink } from '@/components/open-as-editor-link';
@@ -21,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import * as briefRoutes from '@/routes/pm/brief';
 import * as reviewRoutes from '@/routes/pm/review';
 import type { Client, ContentPiece, Editor } from '@/types';
@@ -154,13 +155,15 @@ export function EditableRow({
     }
 
     const pendingEditorNotify = piece.status === 'CLIENT_REVISION' && !!piece.editor;
+    const roundNumber = (piece.review_rounds?.length ?? 0) + 1;
+    const isReReview = piece.status === 'INTERNAL_REVIEW' && roundNumber > 1;
 
     return (
         <>
             <tr
                 className={`border-b border-border hover:bg-muted/20 transition-colors ${
                     pendingEditorNotify ? 'border-l-2 border-l-rose-500 bg-rose-500/5' : ''
-                }`}
+                } ${isReReview ? 'border-l-2 border-l-amber-400 bg-amber-500/5' : ''}`}
                 title={pendingEditorNotify ? 'Esperando que se avise al editor sobre los cambios pedidos por el cliente' : undefined}
             >
                 <td className="px-3 py-2.5 text-sm font-medium text-muted-foreground">
@@ -173,7 +176,24 @@ export function EditableRow({
                     {piece.development ?? piece.concept ?? piece.product ?? <span className="text-muted-foreground italic">Sin desarrollo</span>}
                 </td>
                 <td className="px-3 py-2.5">
-                    <StatusBadge status={piece.status} />
+                    <div className="flex items-center gap-1.5">
+                        <StatusBadge status={piece.status} />
+                        {isReReview && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25 whitespace-nowrap">
+                                Ronda {roundNumber}
+                            </span>
+                        )}
+                        {piece.client_feedback && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <MessageSquare className="h-3.5 w-3.5 shrink-0 text-amber-500 cursor-default" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs whitespace-pre-wrap">
+                                    {piece.client_feedback}
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                    </div>
                 </td>
                 <td className="px-3 py-2.5 text-sm">
                     <button

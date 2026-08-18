@@ -129,8 +129,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/error-logs', [ErrorLogController::class, 'index'])->name('error-logs.index');
     Route::post('/ai-context/global', [AiContextController::class, 'updateGlobal'])->name('ai-context.global');
     Route::patch('/ai-context/client/{client}', [AiContextController::class, 'updateClient'])->name('ai-context.client');
-    Route::get('/metricool-credentials', [MetricoolCredentialController::class, 'index'])->name('metricool-credentials.index');
-    Route::post('/metricool-credentials', [MetricoolCredentialController::class, 'update'])->name('metricool-credentials.update');
+    Route::middleware('superadmin')->group(function () {
+        Route::get('/metricool-credentials', [MetricoolCredentialController::class, 'index'])->name('metricool-credentials.index');
+        Route::post('/metricool-credentials', [MetricoolCredentialController::class, 'update'])->name('metricool-credentials.update');
+    });
     Route::get('/metricool-debug', [MetricoolDebugController::class, 'index'])->name('metricool-debug.index');
     Route::get('/metricool-debug/image', [MetricoolDebugController::class, 'image'])->name('metricool-debug.image');
 });

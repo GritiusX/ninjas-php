@@ -36,7 +36,7 @@ class PmController extends Controller
 
     public function dashboard(Request $request): Response
     {
-        $reviewQueue = ContentPiece::with('client')
+        $reviewQueue = ContentPiece::with(['client', 'editor', 'reviewRounds'])
             ->where('status', ContentPiece::STATUS_INTERNAL_REVIEW)
             ->orderBy('priority')
             ->orderBy('deadline')

@@ -526,7 +526,6 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                             <CardContent className="space-y-3 text-sm">
                                 {[
                                     { label: 'Título', value: piece.title },
-                                    { label: 'Concepto', value: piece.concept },
                                     { label: 'Producto', value: piece.product },
                                     { label: 'Categoría', value: piece.category },
                                     { label: 'Objetivo', value: piece.objective },
