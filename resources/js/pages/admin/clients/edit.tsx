@@ -69,7 +69,7 @@ export default function ClientEdit({ client }: { client: Client }) {
     return (
         <>
             <Head title={`Editar — ${client.name}`} />
-            <div className="mx-auto max-w-xl px-4 py-6 space-y-5">
+            <div className="px-4 py-6 space-y-5">
                 <div className="flex items-center gap-3">
                     <Link href={clientRoutes.index()}>
                         <Button variant="ghost" size="sm" className="text-muted-foreground"><ArrowLeft className="h-4 w-4 mr-1" />Clientes</Button>
