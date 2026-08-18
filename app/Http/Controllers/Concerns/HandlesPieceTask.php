@@ -28,7 +28,7 @@ trait HandlesPieceTask
         ]);
     }
 
-    public function submitVideo(Request $request, ContentPiece $piece): RedirectResponse
+    public function submitVideo(Request $request, ContentPiece $piece, GoogleDriveService $driveService): RedirectResponse
     {
         if ($piece->assigned_editor_id !== $request->user()->id) {
             abort(403);
@@ -49,11 +49,10 @@ trait HandlesPieceTask
         set_time_limit(0);
 
         try {
-            $drive     = new GoogleDriveService();
-            $videoLink = $drive->uploadVideo(
+            $videoLink = $driveService->uploadVideo(
                 $file->getRealPath(),
                 $file->getClientOriginalName(),
-                $piece->client->name,
+                $piece->client,
                 $pieceName,
             );
         } catch (GoogleServiceException $e) {
@@ -75,10 +74,10 @@ trait HandlesPieceTask
         ]);
 
         if ($replacePrevious && $previousLink) {
-            $oldFileId = $drive->extractFileId($previousLink);
+            $oldFileId = $driveService->extractFileId($previousLink);
             if ($oldFileId) {
                 try {
-                    $drive->deleteFile($oldFileId);
+                    $driveService->deleteFile($oldFileId);
                 } catch (\Throwable $e) {
                     report($e);
                 }

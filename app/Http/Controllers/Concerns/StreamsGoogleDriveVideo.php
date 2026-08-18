@@ -21,7 +21,7 @@ trait StreamsGoogleDriveVideo
             abort(404);
         }
 
-        $drive    = new GoogleDriveService();
+        $drive    = app(GoogleDriveService::class);
         $meta     = $drive->getFileMetadata($fileId);
         $mimeType = $meta->getMimeType() ?: 'video/mp4';
         $fileSize = (int) $meta->getSize();

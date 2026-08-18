@@ -32,6 +32,11 @@ class Client extends Model
         ];
     }
 
+    /**
+     * drive_folder_id / drive_in_progress_folder_id / drive_final_folder_id
+     * quedan fuera de $fillable a propósito: solo los setea internamente
+     * GoogleDriveService::resolveClientFolders(), nunca el form de admin.
+     */
     public function contentPieces(): HasMany
     {
         return $this->hasMany(ContentPiece::class);
