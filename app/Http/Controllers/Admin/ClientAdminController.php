@@ -34,6 +34,8 @@ class ClientAdminController extends Controller
             'meta_ad_account_id'     => ['nullable', 'string', 'max:50'],
             'meta_access_token'      => ['nullable', 'string'],
             'metricool_blog_id'      => ['nullable', 'string', 'max:30'],
+            'metricool_networks'     => ['nullable', 'array'],
+            'metricool_networks.*'   => ['string', 'in:facebook,instagram,tiktok,youtube,googleAds,metaAds'],
             'google_ads_customer_id' => ['nullable', 'string', 'max:50'],
         ]);
 
@@ -58,6 +60,8 @@ class ClientAdminController extends Controller
             'meta_ad_account_id'     => ['nullable', 'string', 'max:50'],
             'meta_access_token'      => ['nullable', 'string'],
             'metricool_blog_id'      => ['nullable', 'string', 'max:30'],
+            'metricool_networks'     => ['nullable', 'array'],
+            'metricool_networks.*'   => ['string', 'in:facebook,instagram,tiktok,youtube,googleAds,metaAds'],
             'google_ads_customer_id' => ['nullable', 'string', 'max:50'],
         ]);
 
