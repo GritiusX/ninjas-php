@@ -194,14 +194,28 @@ class ReviewController extends Controller
         $oldToken = $piece->review_token;
 
         $piece->update([
-            'status'       => ContentPiece::STATUS_CLIENT_REVIEW,
-            'review_token' => $newToken,
+            'status'          => ContentPiece::STATUS_CLIENT_REVIEW,
+            'review_token'    => $newToken,
+            'client_feedback' => null,
         ]);
 
+        $updatedCount = 0;
         if ($oldToken) {
-            ContentPieceReviewRound::where('review_token', $oldToken)
+            $updatedCount = ContentPieceReviewRound::where('review_token', $oldToken)
                 ->whereNull('responded_at')
                 ->update(['review_token' => $newToken]);
+        }
+
+        // Si no había un round abierto (ej: regenerando desde INTERNAL_REVIEW
+        // después de que el cliente ya respondió la ronda anterior), se crea uno nuevo.
+        if ($updatedCount === 0) {
+            ContentPieceReviewRound::create([
+                'content_piece_id' => $piece->id,
+                'round_number'     => $piece->reviewRounds()->count() + 1,
+                'review_token'     => $newToken,
+                'video_link'       => $piece->final_video_link,
+                'sent_at'          => now(),
+            ]);
         }
 
         return redirect()->route('pm.review.show', $piece)->with('success', 'Link regenerado. El anterior ya no es válido.');

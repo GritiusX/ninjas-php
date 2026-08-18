@@ -457,7 +457,7 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                     {piece.client && (
                         <div className="flex items-center gap-2">
                             <CopyPublicReviewLink token={piece.review_token} variant="button" />
-                            {piece.review_token && piece.status === 'CLIENT_REVIEW' && (
+                            {piece.review_token && (piece.status === 'CLIENT_REVIEW' || (isResend && piece.status === 'INTERNAL_REVIEW')) && (
                                 <Button
                                     variant="outline"
                                     onClick={() => {
