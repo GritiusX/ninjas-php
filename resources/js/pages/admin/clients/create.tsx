@@ -16,13 +16,14 @@ export default function ClientCreate() {
     return (
         <>
             <Head title="Nuevo cliente" />
-            <div className="mx-auto max-w-xl px-4 py-6 space-y-5">
+            <div className="px-4 py-6 space-y-5">
                 <div className="flex items-center gap-3">
                     <Link href={clientRoutes.index()}>
                         <Button variant="ghost" size="sm" className="text-muted-foreground"><ArrowLeft className="h-4 w-4 mr-1" />Clientes</Button>
                     </Link>
                     <h1 className="text-xl font-bold text-foreground">Nuevo cliente</h1>
                 </div>
+                <div className="mx-auto w-full max-w-lg">
                 <Card className="bg-card border-border">
                     <CardContent className="pt-5">
                         <form onSubmit={submit} className="space-y-4">
@@ -59,6 +60,7 @@ export default function ClientCreate() {
                         </form>
                     </CardContent>
                 </Card>
+                </div>
             </div>
         </>
     );
