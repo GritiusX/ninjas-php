@@ -1924,9 +1924,13 @@ export default function PmDashboard({
                 {tab === 'published' && (
                     <section className="space-y-3">
                         {publishedQueue.length > 0 ? (
-                            publishedQueue.map((p) => (
-                                <PublishedCard key={p.id} piece={p} />
-                            ))
+                            viewMode === 'table' ? (
+                                <BriefTable pieces={publishedQueue} editors={editors} />
+                            ) : (
+                                publishedQueue.map((p) => (
+                                    <PublishedCard key={p.id} piece={p} />
+                                ))
+                            )
                         ) : (
                             <div className="flex flex-col items-center justify-center py-20 text-center">
                                 <p className="text-lg font-medium text-foreground">
