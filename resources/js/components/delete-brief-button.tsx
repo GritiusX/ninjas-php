@@ -29,7 +29,13 @@ export function DeleteBriefButton({ pieceId, label, variant = 'icon', onDeleted 
     function confirmDelete() {
         setProcessing(true);
         router.delete(briefRoutes.destroy.url(pieceId), {
-            onSuccess: () => onDeleted?.(),
+            onSuccess: () => {
+                if (onDeleted) {
+                    onDeleted();
+                } else {
+                    router.visit('/pm');
+                }
+            },
             onFinish: () => {
                 setProcessing(false);
                 setOpen(false);
