@@ -517,7 +517,14 @@ function BulkImportModal({
                         {/* Referencia de columnas (siempre visible) */}
                         <div className="rounded-md border border-border bg-muted/30 p-3 text-sm space-y-1.5">
                             <p className="font-medium text-foreground">Columnas requeridas (en este orden):</p>
-                            <p className="font-mono text-xs text-muted-foreground break-all">{TEMPLATE_HEADER}</p>
+                            <ol className="text-xs text-muted-foreground space-y-0.5 list-none">
+                                {TEMPLATE_HEADER.split('\t').map((col, i) => (
+                                    <li key={i} className="flex items-baseline gap-1.5">
+                                        <span className="shrink-0 font-mono text-muted-foreground/60">{i + 1}.</span>
+                                        <span>{col}</span>
+                                    </li>
+                                ))}
+                            </ol>
                             {inputMode === 'upload' ? (
                                 <button
                                     type="button"
