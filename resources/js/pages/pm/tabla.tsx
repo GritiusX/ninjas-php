@@ -1,5 +1,5 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Download, Eye, ExternalLink, Pencil, UserCheck, X } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { AlertCircle, ArrowLeft, Bell, Check, ChevronDown, ChevronRight, Download, Eye, ExternalLink, Pencil, UserCheck, X } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
 import { OpenAsEditorLink } from '@/components/open-as-editor-link';
@@ -206,6 +206,17 @@ export function EditableRow({
                             </Button>
                         </Link>
                         <OpenAsEditorLink piece={piece} />
+                        {pendingEditorNotify && (
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
+                                title="Avisar al editor"
+                                onClick={() => router.post(`/pm/review/${piece.id}/notify-editor`)}
+                            >
+                                <Bell className="h-3.5 w-3.5" />
+                            </Button>
+                        )}
                         <Button
                             size="icon"
                             variant="ghost"

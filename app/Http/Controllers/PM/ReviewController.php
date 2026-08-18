@@ -116,7 +116,7 @@ class ReviewController extends Controller
         $token = \Illuminate\Support\Str::uuid()->toString();
 
         $piece->update([
-            'status'             => ContentPiece::STATUS_PM_APPROVED,
+            'status'             => ContentPiece::STATUS_CLIENT_REVIEW,
             'review_token'       => $token,
             'client_chosen_copy' => $request->selected_copy,
         ]);
@@ -133,10 +133,6 @@ class ReviewController extends Controller
             ],
             'ip' => $request->ip(),
         ]);
-
-        // Siempre pasa a CLIENT_REVIEW (el link público ya está disponible)
-        $piece->refresh();
-        $piece->update(['status' => ContentPiece::STATUS_CLIENT_REVIEW]);
 
         ContentPieceReviewRound::create([
             'content_piece_id'   => $piece->id,
@@ -182,6 +178,25 @@ class ReviewController extends Controller
         $this->notifications->notifyEditorChangesRequested($piece);
 
         return redirect()->route('pm.dashboard')->with('success', 'Cambios solicitados al editor.');
+    }
+
+    public function resendLink(ContentPiece $piece): RedirectResponse
+    {
+        $newToken = \Illuminate\Support\Str::uuid()->toString();
+        $oldToken = $piece->review_token;
+
+        $piece->update([
+            'status'       => ContentPiece::STATUS_CLIENT_REVIEW,
+            'review_token' => $newToken,
+        ]);
+
+        if ($oldToken) {
+            ContentPieceReviewRound::where('review_token', $oldToken)
+                ->whereNull('responded_at')
+                ->update(['review_token' => $newToken]);
+        }
+
+        return redirect()->route('pm.review.show', $piece)->with('success', 'Link regenerado. El anterior ya no es válido.');
     }
 
     public function notifyEditor(ContentPiece $piece): RedirectResponse

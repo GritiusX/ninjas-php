@@ -10,6 +10,7 @@ import {
     Loader2,
     MessageCircle,
     MessageSquare,
+    RefreshCw,
     Save,
     Sparkles,
     ThumbsUp,
@@ -456,6 +457,20 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                     {piece.client && (
                         <div className="flex items-center gap-2">
                             <CopyPublicReviewLink token={piece.review_token} variant="button" />
+                            {piece.review_token && piece.status === 'CLIENT_REVIEW' && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        if (confirm('¿Regenerar el link? El link anterior dejará de funcionar.')) {
+                                            router.post(`/pm/review/${piece.id}/resend-link`);
+                                        }
+                                    }}
+                                    className="gap-2"
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                    Regenerar link
+                                </Button>
+                            )}
                             <DeleteBriefButton
                                 pieceId={piece.id}
                                 label={piece.title ?? piece.concept ?? piece.product}

@@ -76,6 +76,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::post('/review/{piece}/request-changes', [ReviewController::class, 'requestChanges'])->name('review.request-changes');
     Route::post('/review/{piece}/approve-client', [ReviewController::class, 'approveClientRevision'])->name('review.approve-client');
     Route::post('/review/{piece}/notify-editor', [ReviewController::class, 'notifyEditor'])->name('review.notify-editor');
+    Route::post('/review/{piece}/resend-link', [ReviewController::class, 'resendLink'])->name('review.resend-link');
     Route::get('/review/{piece}/stream-video', [VideoStreamController::class, 'stream'])->name('review.stream-video');
     Route::patch('/client/{client}/whatsapp', [\App\Http\Controllers\PM\ClientWhatsAppController::class, 'update'])->name('client.whatsapp.update');
 
