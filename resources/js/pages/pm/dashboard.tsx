@@ -269,13 +269,72 @@ function isBulkHeaderRow(cols: string[]): boolean {
     return first.startsWith('titulo') || first.startsWith('título') || first.startsWith('desarrollo');
 }
 
+// Tokeniza texto delimitado (TSV/CSV) respetando comillas, para que celdas
+// con saltos de línea embebidos (ej. varios links pegados con Alt+Enter en
+// una misma celda de Sheets/Excel) no corten la fila en pedazos.
+function parseDelimitedText(text: string, delimiter: string): string[][] {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let field = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < text.length) {
+        const char = text[i];
+
+        if (inQuotes) {
+            if (char === '"') {
+                if (text[i + 1] === '"') {
+                    field += '"';
+                    i += 2;
+                } else {
+                    inQuotes = false;
+                    i += 1;
+                }
+            } else {
+                field += char;
+                i += 1;
+            }
+            continue;
+        }
+
+        if (char === '"' && field === '') {
+            inQuotes = true;
+            i += 1;
+        } else if (char === delimiter) {
+            row.push(field);
+            field = '';
+            i += 1;
+        } else if (char === '\r') {
+            i += 1;
+        } else if (char === '\n') {
+            row.push(field);
+            rows.push(row);
+            row = [];
+            field = '';
+            i += 1;
+        } else {
+            field += char;
+            i += 1;
+        }
+    }
+
+    if (field !== '' || row.length > 0) {
+        row.push(field);
+        rows.push(row);
+    }
+
+    return rows;
+}
+
 function parseTsv(text: string, clients: Client[], editors: Editor[]): BulkRow[] {
-    const lines = text.trim().split('\n').filter((l) => l.trim() !== '');
+    const table = parseDelimitedText(text.trim(), '\t');
     const rows: BulkRow[] = [];
 
-    for (const line of lines) {
-        const cols = line.split('\t').map((c) => c.trim());
+    for (const rawCols of table) {
+        const cols = rawCols.map((c) => c.trim());
 
+        if (cols.every((c) => c === '')) continue;
         if (isBulkHeaderRow(cols)) continue;
 
         const title = cols[0] ?? '';
