@@ -66,6 +66,21 @@ class MetricoolClient
         if (!empty($media)) {
             $body['media'] = $media;
             $body['saveExternalMediaFiles'] = true;
+
+            // Todo lo que se programa acá es video final de una pieza, no un
+            // carrusel de imágenes — publicar como Reel en vez del Post por
+            // defecto de Metricool. Instagram rechaza posts de un solo video
+            // que no sean Reel; en Facebook un Reel debe durar 4-90s, así
+            // que un video más largo va a fallar acá y requiere ajustarlo
+            // a mano en Metricool (aceptado: la mayoría del contenido son
+            // reels cortos).
+            $networks = array_column($providers, 'network');
+            if (in_array('instagram', $networks, true)) {
+                $body['instagramData'] = ['type' => 'REEL'];
+            }
+            if (in_array('facebook', $networks, true)) {
+                $body['facebookData'] = ['type' => 'REEL'];
+            }
         }
 
         Log::info('Metricool schedulePost request', [
