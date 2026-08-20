@@ -169,7 +169,7 @@ export function PieceTaskView({ piece, submitVideoUrl, backUrl, backLabel }: Pro
         <>
             <Head title={`${piece.client?.name} · ${piece.title ?? piece.concept ?? piece.product ?? 'Tarea'}`} />
 
-            <div className="mx-auto max-w-2xl px-4 py-6 space-y-6 lg:max-w-none">
+            <div className="px-4 py-6 space-y-6">
                 {/* Header */}
                 <div className="space-y-3">
                     <div>
@@ -188,7 +188,7 @@ export function PieceTaskView({ piece, submitVideoUrl, backUrl, backLabel }: Pro
                                 {piece.client?.name}
                             </p>
                             <h1 className="text-xl font-bold text-foreground leading-tight">
-                                {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
+                                {piece.title ?? piece.concept ?? piece.product ?? 'Sin título'}
                             </h1>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 shrink-0">

@@ -11,6 +11,7 @@ import {
     ExternalLink,
     FilePlus,
     LayoutGrid,
+    MessageSquare,
     Pencil,
     Plus,
     Search,
@@ -24,6 +25,7 @@ import {
 import { useEffect, useState } from 'react';
 import { CopyPublicReviewLink } from '@/components/copy-public-review-link';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
+import { MetricoolScheduleModal } from '@/components/metricool-schedule-modal';
 import { OpenAsEditorLink } from '@/components/open-as-editor-link';
 import { EditableRow } from './tabla';
 import { StatusBadge } from '@/components/status-badge';
@@ -575,7 +577,14 @@ function BulkImportModal({
                         {/* Referencia de columnas (siempre visible) */}
                         <div className="rounded-md border border-border bg-muted/30 p-3 text-sm space-y-1.5">
                             <p className="font-medium text-foreground">Columnas requeridas (en este orden):</p>
-                            <p className="font-mono text-xs text-muted-foreground break-all">{TEMPLATE_HEADER}</p>
+                            <ol className="text-xs text-muted-foreground space-y-0.5 list-none">
+                                {TEMPLATE_HEADER.split('\t').map((col, i) => (
+                                    <li key={i} className="flex items-baseline gap-1.5">
+                                        <span className="shrink-0 font-mono text-muted-foreground/60">{i + 1}.</span>
+                                        <span>{col}</span>
+                                    </li>
+                                ))}
+                            </ol>
                             {inputMode === 'upload' ? (
                                 <button
                                     type="button"
@@ -1247,10 +1256,12 @@ function BriefCard({
 function ReviewCard({ piece, editors }: { piece: ContentPiece; editors: Editor[] }) {
     const deadline = fmtDeadline(piece.deadline);
     const [assignOpen, setAssignOpen] = useState(false);
+    const roundNumber = (piece.review_rounds?.length ?? 0) + 1;
+    const isReReview = roundNumber > 1;
 
     return (
         <>
-            <Card className="border-border bg-card transition-colors hover:border-ring">
+            <Card className={`transition-colors hover:border-ring ${isReReview ? 'border-amber-400/60 bg-amber-50/40 dark:border-amber-600/30 dark:bg-amber-950/10' : 'border-border bg-card'}`}>
                 <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -1258,6 +1269,11 @@ function ReviewCard({ piece, editors }: { piece: ContentPiece; editors: Editor[]
                                 <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                     {piece.client?.name}
                                 </span>
+                                {isReReview && (
+                                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25">
+                                        Ronda {roundNumber}
+                                    </span>
+                                )}
                                 {deadline && (
                                     <span
                                         className={`flex items-center gap-1 text-xs ${deadline.urgent ? 'text-red-400' : 'text-muted-foreground'}`}
@@ -1319,191 +1335,6 @@ function ReviewCard({ piece, editors }: { piece: ContentPiece; editors: Editor[]
     );
 }
 
-// ─── Metricool schedule modal ────────────────────────────────────────────────
-
-type MetricoolNetwork = { network: string; id: string; label: string };
-
-function MetricoolScheduleModal({
-    piece,
-    open,
-    onClose,
-}: {
-    piece: ContentPiece;
-    open: boolean;
-    onClose: () => void;
-}) {
-    const [networks, setNetworks] = useState<MetricoolNetwork[]>([]);
-    const [selectedNetworks, setSelectedNetworks] = useState<string[]>([]);
-    const [dateTime, setDateTime] = useState('');
-    const [timezone] = useState('America/Argentina/Buenos_Aires');
-    const [text, setText] = useState('');
-    const [draft, setDraft] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [fetchError, setFetchError] = useState<string | null>(null);
-    const [processing, setProcessing] = useState(false);
-
-    useEffect(() => {
-        if (!open) return;
-        setLoading(true);
-        setFetchError(null);
-        setSelectedNetworks([]);
-        fetch(`/pm/pieces/${piece.id}/metricool-networks`, {
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                if (data.error) { setFetchError(data.error); return; }
-                setNetworks(data.networks ?? []);
-                if (data.copy_text) setText(data.copy_text);
-            })
-            .catch(() => setFetchError('Error al cargar redes de Metricool.'))
-            .finally(() => setLoading(false));
-    }, [open, piece.id]);
-
-    function toggleNetwork(network: string) {
-        setSelectedNetworks((prev) =>
-            prev.includes(network) ? prev.filter((n) => n !== network) : [...prev, network],
-        );
-    }
-
-    function submit(e: React.FormEvent) {
-        e.preventDefault();
-        if (!selectedNetworks.length || !dateTime || !text.trim()) return;
-        setProcessing(true);
-        const providers = networks
-            .filter((n) => selectedNetworks.includes(n.network))
-            .map(({ network, id }) => ({ network, id }));
-
-        router.post(
-            `/pm/pieces/${piece.id}/schedule-metricool`,
-            { providers, date_time: dateTime.length === 16 ? dateTime + ':00' : dateTime, timezone, text, draft },
-            { onFinish: () => { setProcessing(false); onClose(); } },
-        );
-    }
-
-    const canSubmit = !processing && selectedNetworks.length > 0 && !!dateTime && !!text.trim();
-
-    return (
-        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Send className="h-4 w-4" />
-                        Programar en Metricool
-                    </DialogTitle>
-                </DialogHeader>
-                <p className="text-sm text-muted-foreground">
-                    {piece.client?.name} — {piece.title ?? piece.concept ?? piece.product ?? 'Sin concepto'}
-                </p>
-
-                {loading && (
-                    <p className="py-4 text-center text-sm text-muted-foreground">Cargando redes...</p>
-                )}
-
-                {fetchError && (
-                    <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                        {fetchError}
-                    </div>
-                )}
-
-                {!loading && !fetchError && (
-                    <form id="metricool-form" onSubmit={submit} className="space-y-4 pt-1">
-                        {/* Networks */}
-                        <div className="space-y-2">
-                            <Label>Redes sociales</Label>
-                            {networks.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                    No hay redes conectadas para este cliente en Metricool.
-                                </p>
-                            ) : (
-                                <div className="flex flex-wrap gap-2">
-                                    {networks.map((n) => (
-                                        <button
-                                            key={n.network}
-                                            type="button"
-                                            onClick={() => toggleNetwork(n.network)}
-                                            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                                                selectedNetworks.includes(n.network)
-                                                    ? 'border-primary bg-primary text-primary-foreground'
-                                                    : 'border-border bg-background text-foreground hover:border-primary/60'
-                                            }`}
-                                        >
-                                            {n.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Date/time */}
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
-                                Fecha y hora de publicación
-                            </Label>
-                            <Input
-                                type="datetime-local"
-                                value={dateTime}
-                                onChange={(e) => setDateTime(e.target.value)}
-                            />
-                        </div>
-
-                        {/* Copy text */}
-                        <div className="space-y-1.5">
-                            <Label>Copy</Label>
-                            <textarea
-                                className="min-h-[100px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-                                value={text}
-                                onChange={(e) => setText(e.target.value)}
-                                placeholder="Texto del post..."
-                            />
-                        </div>
-
-                        {/* Video attachment status */}
-                        {piece.final_video_link ? (
-                            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Video className="h-3.5 w-3.5" />
-                                Se adjuntará el video final (Drive) al post.
-                            </p>
-                        ) : (
-                            <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-                                <AlertCircle className="h-3.5 w-3.5" />
-                                Esta pieza no tiene video final cargado — se enviará sin video.
-                            </p>
-                        )}
-
-                        {/* Draft toggle */}
-                        <label className="flex cursor-pointer items-center gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                checked={draft}
-                                onChange={(e) => setDraft(e.target.checked)}
-                                className="h-4 w-4 rounded border-input accent-primary"
-                            />
-                            Guardar como borrador (no publicar automáticamente)
-                        </label>
-                    </form>
-                )}
-
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose} disabled={processing}>
-                        Cancelar
-                    </Button>
-                    <Button
-                        type="submit"
-                        form="metricool-form"
-                        disabled={!canSubmit || loading || !!fetchError}
-                    >
-                        <Send className="mr-1.5 h-4 w-4" />
-                        {processing ? 'Enviando...' : draft ? 'Guardar borrador' : 'Programar'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 // ─── Approved (ready to publish) card ───────────────────────────────────────
 
 function ApprovedCard({ piece }: { piece: ContentPiece }) {
@@ -1533,6 +1364,14 @@ function ApprovedCard({ piece }: { piece: ContentPiece }) {
                                     <ExternalLink className="h-3 w-3" />
                                     Ver video
                                 </a>
+                            )}
+                            {piece.client_feedback && (
+                                <div className="mt-1.5 flex items-start gap-1.5 rounded-md bg-amber-50 px-2 py-1.5 dark:bg-amber-950/30">
+                                    <MessageSquare className="mt-px h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                    <p className="text-xs text-amber-800 dark:text-amber-300 leading-snug">
+                                        {piece.client_feedback}
+                                    </p>
+                                </div>
                             )}
                         </div>
                         <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:flex-nowrap">
@@ -1960,9 +1799,13 @@ export default function PmDashboard({
                 {tab === 'published' && (
                     <section className="space-y-3">
                         {publishedQueue.length > 0 ? (
-                            publishedQueue.map((p) => (
-                                <PublishedCard key={p.id} piece={p} />
-                            ))
+                            viewMode === 'table' ? (
+                                <BriefTable pieces={publishedQueue} editors={editors} />
+                            ) : (
+                                publishedQueue.map((p) => (
+                                    <PublishedCard key={p.id} piece={p} />
+                                ))
+                            )
                         ) : (
                             <div className="flex flex-col items-center justify-center py-20 text-center">
                                 <p className="text-lg font-medium text-foreground">

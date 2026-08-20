@@ -25,6 +25,7 @@ import type { Auth, NavItem } from '@/types';
 function useNavItems(): NavItem[] {
     const { auth } = usePage<{ auth: Auth }>().props;
     const role = auth.user.role;
+    const email = auth.user.email;
     const unread = auth.user.unread_notifications;
 
     const notifItem: NavItem = {
@@ -59,7 +60,7 @@ function useNavItems(): NavItem[] {
             { title: 'Accesos / Matriz', href: adminRoutes.matrix(), icon: Shield },
             { title: 'Alertas', href: '/admin/alerts', icon: Bell },
             { title: 'Contexto IA', href: '/admin/ai-context', icon: Sparkles },
-            { title: 'Credenciales Metricool', href: '/admin/metricool-credentials', icon: KeyRound },
+            ...(email === 'admin@littleninjas.com.ar' ? [{ title: 'Credenciales Metricool', href: '/admin/metricool-credentials', icon: KeyRound }] : []),
             { title: 'Logs de errores', href: '/admin/error-logs', icon: AlertTriangle },
         );
     }

@@ -113,13 +113,20 @@ class ReviewController extends Controller
             'selected_copy' => ['nullable', 'in:directo,storytelling,educativo'],
         ]);
 
-        $token = \Illuminate\Support\Str::uuid()->toString();
+        // En re-envíos mantenemos el mismo token para que el cliente use el
+        // mismo link y vea el video nuevo sin necesitar uno distinto.
+        $isResend = $piece->reviewRounds()->exists();
+        $token    = $isResend ? $piece->review_token : \Illuminate\Support\Str::uuid()->toString();
 
-        $piece->update([
-            'status'             => ContentPiece::STATUS_PM_APPROVED,
-            'review_token'       => $token,
+        $updateData = [
+            'status'             => ContentPiece::STATUS_CLIENT_REVIEW,
+            'client_feedback'    => null,
             'client_chosen_copy' => $request->selected_copy,
-        ]);
+        ];
+        if (! $isResend) {
+            $updateData['review_token'] = $token;
+        }
+        $piece->update($updateData);
 
         AuditLog::create([
             'user_id'     => $request->user()->id,
@@ -130,13 +137,10 @@ class ReviewController extends Controller
                 'client'    => $piece->client->name,
                 'objective' => $piece->objective,
                 'reviewer'  => $request->user()->name,
+                'round'     => $piece->reviewRounds()->count() + 1,
             ],
             'ip' => $request->ip(),
         ]);
-
-        // Siempre pasa a CLIENT_REVIEW (el link público ya está disponible)
-        $piece->refresh();
-        $piece->update(['status' => ContentPiece::STATUS_CLIENT_REVIEW]);
 
         ContentPieceReviewRound::create([
             'content_piece_id'   => $piece->id,
@@ -182,6 +186,39 @@ class ReviewController extends Controller
         $this->notifications->notifyEditorChangesRequested($piece);
 
         return redirect()->route('pm.dashboard')->with('success', 'Cambios solicitados al editor.');
+    }
+
+    public function resendLink(ContentPiece $piece): RedirectResponse
+    {
+        $newToken = \Illuminate\Support\Str::uuid()->toString();
+        $oldToken = $piece->review_token;
+
+        $piece->update([
+            'status'          => ContentPiece::STATUS_CLIENT_REVIEW,
+            'review_token'    => $newToken,
+            'client_feedback' => null,
+        ]);
+
+        $updatedCount = 0;
+        if ($oldToken) {
+            $updatedCount = ContentPieceReviewRound::where('review_token', $oldToken)
+                ->whereNull('responded_at')
+                ->update(['review_token' => $newToken]);
+        }
+
+        // Si no había un round abierto (ej: regenerando desde INTERNAL_REVIEW
+        // después de que el cliente ya respondió la ronda anterior), se crea uno nuevo.
+        if ($updatedCount === 0) {
+            ContentPieceReviewRound::create([
+                'content_piece_id' => $piece->id,
+                'round_number'     => $piece->reviewRounds()->count() + 1,
+                'review_token'     => $newToken,
+                'video_link'       => $piece->final_video_link,
+                'sent_at'          => now(),
+            ]);
+        }
+
+        return redirect()->route('pm.review.show', $piece)->with('success', 'Link regenerado. El anterior ya no es válido.');
     }
 
     public function notifyEditor(ContentPiece $piece): RedirectResponse

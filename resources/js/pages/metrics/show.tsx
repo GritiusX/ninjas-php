@@ -971,7 +971,7 @@ export default function MetricsShow({ client, networkResults: initialResults, st
 
     return (
         <>
-            <Head title={`${client.name} — Scraper Metricool`} />
+            <Head title={`${client.name} — Métricas Metricool`} />
             <ScrapingOverlay visible={showOverlay} error={pollError} progress={progress} onRetry={pollError ? handleRefresh : undefined} onCancel={!pollError && !navigating ? handleCancel : undefined} />
 
             <div className="flex flex-col gap-6 p-6">
@@ -1070,7 +1070,7 @@ export default function MetricsShow({ client, networkResults: initialResults, st
 
 MetricsShow.layout = {
     breadcrumbs: [
-        { title: 'Scraper Metricool', href: '/metrics' },
+        { title: 'Métricas Metricool', href: '/metrics' },
         { title: 'Cliente', href: '#' },
     ],
 };

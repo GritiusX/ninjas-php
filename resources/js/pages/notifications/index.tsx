@@ -37,7 +37,7 @@ export default function NotificationsIndex({ notifications }: Props) {
         <>
             <Head title="Notificaciones" />
 
-            <div className="mx-auto max-w-2xl px-4 py-6 space-y-5">
+            <div className="px-4 py-6 space-y-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Bell className="h-5 w-5 text-muted-foreground" />

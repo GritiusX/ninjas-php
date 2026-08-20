@@ -10,7 +10,9 @@ import {
     Loader2,
     MessageCircle,
     MessageSquare,
+    RefreshCw,
     Save,
+    Send,
     Sparkles,
     ThumbsUp,
     XCircle,
@@ -20,10 +22,11 @@ import { Input } from '@/components/ui/input';
 import { FormattedText } from '@/lib/formatted-text';
 import { CopyPublicReviewLink, publicReviewUrl } from '@/components/copy-public-review-link';
 import { DeleteBriefButton } from '@/components/delete-brief-button';
+import { MetricoolScheduleModal } from '@/components/metricool-schedule-modal';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import * as pmRoutes from '@/routes/pm';
 import * as reviewRoutes from '@/routes/pm/review';
@@ -386,6 +389,8 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
     const { flash } = usePage<{ flash: { approved?: boolean } }>().props;
     const [changesOpen, setChangesOpen] = useState(false);
     const [approvedOpen, setApprovedOpen] = useState(false);
+    const [resendLinkOpen, setResendLinkOpen] = useState(false);
+    const [scheduleOpen, setScheduleOpen] = useState(false);
     const [selectedCopy, setSelectedCopy] = useState<CopyKey | null>(null);
     const [whatsappInput, setWhatsappInput] = useState('');
     const [whatsappSaving, setWhatsappSaving] = useState(false);
@@ -455,7 +460,26 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
 
                     {piece.client && (
                         <div className="flex items-center gap-2">
+                            {piece.status === 'CLIENT_APPROVED' && (
+                                <Button
+                                    className="bg-green-600 hover:bg-green-500 text-white"
+                                    onClick={() => setScheduleOpen(true)}
+                                >
+                                    <Send className="mr-1.5 h-4 w-4" />
+                                    Programar
+                                </Button>
+                            )}
                             <CopyPublicReviewLink token={piece.review_token} variant="button" />
+                            {piece.review_token && (piece.status === 'CLIENT_REVIEW' || (isResend && piece.status === 'INTERNAL_REVIEW')) && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setResendLinkOpen(true)}
+                                    className="gap-2"
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                    Regenerar link
+                                </Button>
+                            )}
                             <DeleteBriefButton
                                 pieceId={piece.id}
                                 label={piece.title ?? piece.concept ?? piece.product}
@@ -511,7 +535,6 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                             <CardContent className="space-y-3 text-sm">
                                 {[
                                     { label: 'Título', value: piece.title },
-                                    { label: 'Concepto', value: piece.concept },
                                     { label: 'Producto', value: piece.product },
                                     { label: 'Categoría', value: piece.category },
                                     { label: 'Objetivo', value: piece.objective },
@@ -531,6 +554,86 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                                     ))}
                             </CardContent>
                         </Card>
+
+                        {/* Historial de rondas */}
+                        {reviewRounds.length > 0 && (
+                            <Card className="bg-card border-border">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm text-foreground flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                        Historial de rondas
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {[...reviewRounds].reverse().map((round) => (
+                                        <div
+                                            key={round.id}
+                                            className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-foreground">
+                                                    Ronda {round.round_number}
+                                                </span>
+                                                <span
+                                                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                        round.client_decision === 'approved'
+                                                            ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                                            : round.client_decision === 'revision'
+                                                            ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                                                            : 'bg-muted text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    {round.client_decision === 'approved'
+                                                        ? 'Aprobado'
+                                                        : round.client_decision === 'revision'
+                                                        ? 'Pidió cambios'
+                                                        : 'Esperando respuesta'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Enviado {new Date(round.sent_at).toLocaleDateString('es-AR', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                })}
+                                            </p>
+                                            {round.client_feedback && (
+                                                <FormattedText
+                                                    text={round.client_feedback}
+                                                    className="text-sm text-foreground"
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Client feedback (if exists) */}
+                        {piece.client_feedback && (
+                            <Card className="bg-card border-orange-200 dark:border-orange-800/50">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4" />
+                                        Respuesta del cliente
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <FormattedText text={piece.client_feedback} className="text-sm text-foreground" />
+                                    {piece.status === 'CLIENT_REVIEW' && (
+                                        <Button
+                                            size="sm"
+                                            className="mt-3 w-full bg-green-600 hover:bg-green-500"
+                                            onClick={() => router.post(reviewRoutes.approveClient.url(piece.id))}
+                                        >
+                                            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                                            Marcar como aprobado
+                                        </Button>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
                     {/* Copy + actions — right (2 cols) */}
@@ -631,85 +734,6 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                             </Card>
                         )}
 
-                        {/* Historial de rondas */}
-                        {reviewRounds.length > 0 && (
-                            <Card className="bg-card border-border">
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm text-foreground flex items-center gap-2">
-                                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                        Historial de rondas
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    {[...reviewRounds].reverse().map((round) => (
-                                        <div
-                                            key={round.id}
-                                            className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-semibold text-foreground">
-                                                    Ronda {round.round_number}
-                                                </span>
-                                                <span
-                                                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                                        round.client_decision === 'approved'
-                                                            ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                                                            : round.client_decision === 'revision'
-                                                            ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
-                                                            : 'bg-muted text-muted-foreground'
-                                                    }`}
-                                                >
-                                                    {round.client_decision === 'approved'
-                                                        ? 'Aprobado'
-                                                        : round.client_decision === 'revision'
-                                                        ? 'Pidió cambios'
-                                                        : 'Esperando respuesta'}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                Enviado {new Date(round.sent_at).toLocaleDateString('es-AR', {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })}
-                                            </p>
-                                            {round.client_feedback && (
-                                                <FormattedText
-                                                    text={round.client_feedback}
-                                                    className="text-sm text-foreground"
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Client feedback (if exists) */}
-                        {piece.client_feedback && (
-                            <Card className="bg-card border-orange-200 dark:border-orange-800/50">
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm text-orange-600 dark:text-orange-400 flex items-center gap-2">
-                                        <MessageSquare className="h-4 w-4" />
-                                        Respuesta del cliente
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <FormattedText text={piece.client_feedback} className="text-sm text-foreground" />
-                                    {piece.status === 'CLIENT_REVIEW' && (
-                                        <Button
-                                            size="sm"
-                                            className="mt-3 w-full bg-green-600 hover:bg-green-500"
-                                            onClick={() => router.post(reviewRoutes.approveClient.url(piece.id))}
-                                        >
-                                            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                                            Marcar como aprobado
-                                        </Button>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
                     </div>
                 </div>
             </div>
@@ -719,6 +743,40 @@ export default function ReviewRoom({ piece, geminiUsage }: Props) {
                 open={changesOpen}
                 onClose={() => setChangesOpen(false)}
             />
+
+            <MetricoolScheduleModal
+                piece={piece}
+                open={scheduleOpen}
+                onClose={() => setScheduleOpen(false)}
+            />
+
+            <Dialog open={resendLinkOpen} onOpenChange={setResendLinkOpen}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <RefreshCw className="h-4 w-4" />
+                            Regenerar link de revisión
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        Se generará un nuevo link para el cliente. El link anterior dejará de funcionar.
+                    </p>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setResendLinkOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                setResendLinkOpen(false);
+                                router.post(`/pm/review/${piece.id}/resend-link`);
+                            }}
+                        >
+                            <RefreshCw className="mr-1.5 h-4 w-4" />
+                            Regenerar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={approvedOpen} onOpenChange={setApprovedOpen}>
                 <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-md p-0">

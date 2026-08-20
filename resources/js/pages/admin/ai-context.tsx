@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 type ClientRow = { id: number; name: string; ai_context: string | null };
 
@@ -15,6 +16,7 @@ type Props = {
 
 export default function AiContextPage({ clients, globalContext }: Props) {
     const [selectedClientId, setSelectedClientId] = useState('');
+    const [confirmClearContext, setConfirmClearContext] = useState(false);
 
     const globalForm = useForm({ context: globalContext });
     const clientForm = useForm({ ai_context: '' });
@@ -131,10 +133,7 @@ export default function AiContextPage({ clients, globalContext }: Props) {
                                             size="sm"
                                             variant="ghost"
                                             className="text-destructive hover:text-destructive"
-                                            onClick={() => {
-                                                clientForm.setData('ai_context', '');
-                                                router.patch(`/admin/ai-context/client/${selectedClientId}`, { ai_context: '' });
-                                            }}
+                                            onClick={() => setConfirmClearContext(true)}
                                         >
                                             Borrar contexto
                                         </Button>
@@ -145,6 +144,19 @@ export default function AiContextPage({ clients, globalContext }: Props) {
                     </CardContent>
                 </Card>
             </div>
+
+            <ConfirmDialog
+                open={confirmClearContext}
+                title="¿Borrar contexto de IA?"
+                description={`El contexto específico de "${selectedClient?.name}" se eliminará permanentemente.`}
+                confirmLabel="Borrar"
+                onConfirm={() => {
+                    clientForm.setData('ai_context', '');
+                    router.patch(`/admin/ai-context/client/${selectedClientId}`, { ai_context: '' });
+                    setConfirmClearContext(false);
+                }}
+                onCancel={() => setConfirmClearContext(false)}
+            />
         </>
     );
 }

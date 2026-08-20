@@ -2,6 +2,12 @@ import { router } from '@inertiajs/react';
 import { Bold, Strikethrough, Underline } from 'lucide-react';
 import { useRef, useState } from 'react';
 
+type PastRound = {
+    round_number: number;
+    client_decision: 'approved' | 'revision';
+    client_feedback: string | null;
+};
+
 type Props = {
     piece: {
         id: number;
@@ -16,11 +22,12 @@ type Props = {
     decision?: 'approve' | 'reject';
     token: string;
     error?: string;
+    past_rounds?: PastRound[];
 };
 
-type DecisionOption = 'approve' | 'approve_comment' | 'reject';
+type DecisionOption = 'approve' | 'reject';
 
-export default function ClientReview({ piece, already_responded, decision, token, error }: Props) {
+export default function ClientReview({ piece, already_responded, decision, token, error, past_rounds }: Props) {
     const [selected, setSelected] = useState<DecisionOption | null>(null);
     const [processing, setProcessing] = useState(false);
     const [comment, setComment] = useState('');
@@ -52,9 +59,6 @@ export default function ClientReview({ piece, already_responded, decision, token
 
         if (!selected) return;
 
-        const finalDecision: 'approve' | 'reject' =
-            selected === 'reject' ? 'reject' : 'approve';
-
         if (selected === 'reject' && !comment.trim()) {
             setCommentError('Este campo es requerido para solicitar cambios.');
             return;
@@ -65,12 +69,12 @@ export default function ClientReview({ piece, already_responded, decision, token
 
         router.post(
             `/review/${token}/respond`,
-            { decision: finalDecision, comment },
+            { decision: selected, comment: selected === 'reject' ? comment : '' },
             { onFinish: () => setProcessing(false) },
         );
     }
 
-    const showCommentBox = selected === 'approve_comment' || selected === 'reject';
+    const showCommentBox = selected === 'reject';
 
     return (
         <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -148,6 +152,43 @@ export default function ClientReview({ piece, already_responded, decision, token
                     </div>
                 )}
 
+                {/* Historial de revisiones anteriores */}
+                {past_rounds && past_rounds.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1">
+                            Revisiones anteriores
+                        </p>
+                        {past_rounds.map((r) => (
+                            <div
+                                key={r.round_number}
+                                className={`rounded-2xl border px-5 py-4 ${
+                                    r.client_decision === 'approved'
+                                        ? 'bg-green-50 border-green-200'
+                                        : 'bg-orange-50 border-orange-200'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        Versión {r.round_number}
+                                    </span>
+                                    <span
+                                        className={`text-xs font-semibold ${
+                                            r.client_decision === 'approved'
+                                                ? 'text-green-700'
+                                                : 'text-orange-700'
+                                        }`}
+                                    >
+                                        {r.client_decision === 'approved' ? '✅ Aprobado' : '📝 Cambios pedidos'}
+                                    </span>
+                                </div>
+                                {r.client_feedback && (
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{r.client_feedback}</p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Response area */}
                 {already_responded ? (
                     <div
@@ -214,28 +255,6 @@ export default function ClientReview({ piece, already_responded, decision, token
                                     </div>
                                 </label>
 
-                                {/* Approve with comment */}
-                                <label
-                                    className={`flex items-center gap-3 cursor-pointer rounded-xl border px-4 py-3 transition-colors ${
-                                        selected === 'approve_comment'
-                                            ? 'border-green-400 bg-green-50'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="decision_option"
-                                        value="approve_comment"
-                                        checked={selected === 'approve_comment'}
-                                        onChange={() => setSelected('approve_comment')}
-                                        className="accent-green-600"
-                                    />
-                                    <div>
-                                        <p className="font-medium text-gray-800 text-sm">Apruebo con un comentario</p>
-                                        <p className="text-xs text-gray-400">Apruebo pero quiero agregar algo</p>
-                                    </div>
-                                </label>
-
                                 {/* Reject */}
                                 <label
                                     className={`flex items-center gap-3 cursor-pointer rounded-xl border px-4 py-3 transition-colors ${
@@ -264,9 +283,7 @@ export default function ClientReview({ piece, already_responded, decision, token
                                 <div className="space-y-1">
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs font-medium text-gray-600">
-                                            {selected === 'reject'
-                                                ? 'Comentarios (requerido)'
-                                                : 'Tu comentario (opcional)'}
+                                            Comentarios (requerido)
                                         </label>
                                         <div className="flex items-center gap-1">
                                             <button
@@ -298,11 +315,7 @@ export default function ClientReview({ piece, already_responded, decision, token
                                     <textarea
                                         ref={commentRef}
                                         className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 min-h-[100px] resize-y"
-                                        placeholder={
-                                            selected === 'reject'
-                                                ? '¿Qué cambios necesitás?'
-                                                : '¿Querés agregar algo?'
-                                        }
+                                        placeholder="¿Qué cambios necesitás?"
                                         value={comment}
                                         onChange={(e) => {
                                             setComment(e.target.value);

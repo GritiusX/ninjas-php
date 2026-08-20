@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Link2, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { BarChart2, Link2, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -195,6 +195,13 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                                         )}
                                         <td className="px-4 py-3">
                                             <div className="flex items-center justify-end gap-1">
+                                                {c.metricool_blog_id && (
+                                                    <Link href={`/metrics/${c.id}`}>
+                                                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-blue-500" title="Ver métricas Metricool">
+                                                            <BarChart2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </Link>
+                                                )}
                                                 <Link href={clientRoutes.edit.url(c.id)}>
                                                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
                                                         <Pencil className="h-3.5 w-3.5" />

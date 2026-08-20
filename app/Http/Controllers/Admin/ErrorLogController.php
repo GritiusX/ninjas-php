@@ -60,7 +60,7 @@ class ErrorLogController extends Controller
 
                 $entries[] = [
                     'timestamp' => $timestamp,
-                    'message'   => trim($message),
+                    'message'   => $this->extractMessage(trim($message)),
                     'exception' => $context['exception'] ?? null,
                     'file'      => $context['file'] ?? null,
                     'url'       => $context['url'] ?? null,
@@ -72,5 +72,24 @@ class ErrorLogController extends Controller
         }
 
         return array_slice($entries, 0, $limit);
+    }
+
+    private function extractMessage(string $raw): string
+    {
+        $decoded = json_decode($raw, true);
+
+        if (!is_array($decoded)) {
+            return $raw;
+        }
+
+        // Intentamos extraer el texto más descriptivo del JSON
+        foreach (['message', 'error', 'msg', 'detail', 'description'] as $key) {
+            if (!empty($decoded[$key]) && is_string($decoded[$key])) {
+                return $decoded[$key];
+            }
+        }
+
+        // Fallback: JSON pretty-print compacto
+        return json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

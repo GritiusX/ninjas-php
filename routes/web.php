@@ -76,6 +76,7 @@ Route::middleware(['auth', 'role:pm'])->prefix('pm')->name('pm.')->group(functio
     Route::post('/review/{piece}/request-changes', [ReviewController::class, 'requestChanges'])->name('review.request-changes');
     Route::post('/review/{piece}/approve-client', [ReviewController::class, 'approveClientRevision'])->name('review.approve-client');
     Route::post('/review/{piece}/notify-editor', [ReviewController::class, 'notifyEditor'])->name('review.notify-editor');
+    Route::post('/review/{piece}/resend-link', [ReviewController::class, 'resendLink'])->name('review.resend-link');
     Route::get('/review/{piece}/stream-video', [VideoStreamController::class, 'stream'])->name('review.stream-video');
     Route::patch('/client/{client}/whatsapp', [\App\Http\Controllers\PM\ClientWhatsAppController::class, 'update'])->name('client.whatsapp.update');
 
@@ -128,8 +129,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/error-logs', [ErrorLogController::class, 'index'])->name('error-logs.index');
     Route::post('/ai-context/global', [AiContextController::class, 'updateGlobal'])->name('ai-context.global');
     Route::patch('/ai-context/client/{client}', [AiContextController::class, 'updateClient'])->name('ai-context.client');
-    Route::get('/metricool-credentials', [MetricoolCredentialController::class, 'index'])->name('metricool-credentials.index');
-    Route::post('/metricool-credentials', [MetricoolCredentialController::class, 'update'])->name('metricool-credentials.update');
+    Route::middleware('superadmin')->group(function () {
+        Route::get('/metricool-credentials', [MetricoolCredentialController::class, 'index'])->name('metricool-credentials.index');
+        Route::post('/metricool-credentials', [MetricoolCredentialController::class, 'update'])->name('metricool-credentials.update');
+    });
     Route::get('/metricool-debug', [MetricoolDebugController::class, 'index'])->name('metricool-debug.index');
     Route::get('/metricool-debug/image', [MetricoolDebugController::class, 'image'])->name('metricool-debug.image');
 });

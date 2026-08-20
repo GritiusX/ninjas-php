@@ -11,7 +11,7 @@ export default function PmTask({ piece }: Props) {
         <PieceTaskView
             piece={piece}
             submitVideoUrl={pmRoutes.submitVideo.url(piece.id)}
-            backUrl={pmRoutes.tabla.url()}
+            backUrl={pmRoutes.dashboard.url()}
             backLabel="Volver"
         />
     );
